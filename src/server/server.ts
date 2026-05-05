@@ -42,6 +42,13 @@ async function routeRequest(req: Request, url: URL): Promise<Response> {
     return new Response(file);
   }
 
+  // Vendor CSS that production copies from node_modules (see electrobun.config.ts)
+  if (decodedPath === '/maplibre-gl.css') {
+    return new Response(
+      Bun.file('node_modules/maplibre-gl/dist/maplibre-gl.css')
+    );
+  }
+
   return new Response('Not Found', { status: 404 });
 }
 
