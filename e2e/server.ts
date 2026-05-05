@@ -22,22 +22,35 @@ mkdirSync(dataDir, { recursive: true });
 mkdirSync(`${dataDir}/cache`, { recursive: true });
 openAppDb(dataDir);
 
-const seed: ItemEntry = {
-  uuid: 'e2e-fixture-1',
+const seed = (
+  uuid: string,
+  date: string,
+  albums: string[],
+  camera: string
+): ItemEntry => ({
+  uuid,
   type: 'photo',
-  full: 'full/e2e-fixture-1.jpg',
-  thumb: 'thumb/e2e-fixture-1.jpg',
+  full: `full/${uuid}.jpg`,
+  thumb: `thumb/${uuid}.jpg`,
   lat: 60.17,
   lon: 24.94,
-  date: '2024-06-01T12:00:00',
+  date,
   tz: '+03:00',
-  camera: 'E2E',
+  camera,
   gps: 'exif',
   gps_accuracy: 5,
-  albums: ['E2E'],
+  albums,
   photos_url: ''
-};
-upsertItems([seed]);
+});
+
+// Mixed years/albums/cameras so cascade tests have something to narrow.
+// Date format matches photos-db output ("YYYY:MM:DD HH:MM:SS") so the
+// client's getYear() can split on the first colon.
+upsertItems([
+  seed('e2e-1', '2024:06:01 12:00:00', ['Helsinki'], 'iPhone'),
+  seed('e2e-2', '2023:08:15 10:00:00', ['Tampere'], 'Sony'),
+  seed('e2e-3', '2024:09:20 14:00:00', ['Tampere'], 'iPhone')
+]);
 
 const imageCache = createImageCache({ cacheDir: `${dataDir}/cache` });
 const { routeApiRequest } = createApiHandler(dataDir, { imageCache });
