@@ -12,3 +12,6 @@ artifacts
 .env
 *.photoslibrary
 *.dylib
+e2e/.data
+playwright-report
+test-results

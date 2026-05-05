@@ -16,10 +16,13 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "test": "bun test src",
-    "test:watch": "bun test src --watch"
+    "test:watch": "bun test src --watch",
+    "e2e": "playwright test",
+    "e2e:install": "playwright install webkit"
   },
   "devDependencies": {
     "@ianvs/prettier-plugin-sort-imports": "^4.7.1",
+    "@playwright/test": "^1.59.1",
     "@total-typescript/tsconfig": "^1.0.4",
     "@types/bun": "1.3.12",
     "@types/geojson": "^7946.0.16",

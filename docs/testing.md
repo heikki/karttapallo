@@ -10,7 +10,8 @@ Run locally:
 ```sh
 bun run test         # bun:test only
 bun run test:watch   # bun:test in watch mode
-bun run e2e          # Playwright (added in PR 2)
+bun run e2e:install  # one-time WebKit binary download (~75 MB)
+bun run e2e          # Playwright against bun e2e/server.ts
 ```
 
 ## Tiers
@@ -39,7 +40,9 @@ Loads `libkarttakuvat.dylib` via `bun:ffi` and runs non-mutating AppleScript (`r
 
 ### Tier 5 — end-to-end (Playwright)
 
-Spawns the bun dev server on an ephemeral port, drives the page in WebKit, asserts the map mounts and `/api/items` responds. Catches integration breakage that unit tests miss (port wiring, static asset serving, native bridge init).
+`e2e/server.ts` boots the same `createApiHandler` + routing the production `src/server/server.ts` uses, but against a tempdir (`e2e/.data/`) pre-seeded with one fake item — so the sync-on-empty branch is skipped and no Apple Photos library access is required. Playwright drives WebKit against the running server. Catches integration breakage that unit tests miss (HTML routing, static asset serving, native bridge init via the image cache import).
+
+Seed: `e2e/smoke.spec.ts` — verifies `/api/items` returns the seeded fixture and `<app-root>` mounts.
 
 ## What we do not test in CI
 
