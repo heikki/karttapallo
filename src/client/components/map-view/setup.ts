@@ -6,9 +6,9 @@ import {
 } from 'maplibre-gl';
 import type { StyleSpecification } from 'maplibre-gl';
 
-import { mapViewFromUrl, mapViewToUrl } from '@common/filter-url';
 import selection from '@common/selection';
 import { effect } from '@common/signals';
+import { mapViewFromUrl, mapViewToUrl } from '@common/url-state';
 import { viewState } from '@common/view-state';
 
 import type { MapApi } from './api';

@@ -2,8 +2,8 @@ import { customElement } from 'lit/decorators.js';
 import { LngLatBounds } from 'maplibre-gl';
 
 import * as data from '@common/data';
-import { mapViewFromUrl } from '@common/filter-url';
 import selection from '@common/selection';
+import { mapViewFromUrl } from '@common/url-state';
 import { MapFeatureElement } from '@components/map-view/api';
 
 function computePhotoBounds(): LngLatBounds {

@@ -1,37 +1,24 @@
-import { signal } from '@lit-labs/signals';
-
 import { HAS_MML } from './features';
-import {
-  mapStyleFromUrl,
-  mapStyleToUrl,
-  markerStyleFromUrl,
-  markerStyleToUrl,
-  routeFromUrl,
-  routeToUrl
-} from './filter-url';
-import { effect } from './signals';
-
-function resolveInitialMapStyle(): string {
-  const saved = mapStyleFromUrl();
-  if (saved === null) return 'satellite';
-  if (!HAS_MML && saved.startsWith('mml_')) return 'satellite';
-  return saved;
-}
+import { urlSignal } from './url-state';
 
 export const viewState = {
-  mapStyle: signal(resolveInitialMapStyle()),
-  markerStyle: signal(markerStyleFromUrl() ?? 'classic'),
-  routeVisible: signal(routeFromUrl())
+  mapStyle: urlSignal(
+    'style',
+    (raw) => {
+      if (raw === null) return 'satellite';
+      if (!HAS_MML && raw.startsWith('mml_')) return 'satellite';
+      return raw;
+    },
+    (v) => (v === 'satellite' ? null : v)
+  ),
+  markerStyle: urlSignal(
+    'markers',
+    (raw) => raw ?? 'classic',
+    (v) => (v === 'classic' ? null : v)
+  ),
+  routeVisible: urlSignal(
+    'route',
+    (raw) => raw === '1',
+    (v) => (v ? '1' : null)
+  )
 };
-
-effect(() => {
-  mapStyleToUrl(viewState.mapStyle.get());
-});
-
-effect(() => {
-  markerStyleToUrl(viewState.markerStyle.get());
-});
-
-effect(() => {
-  routeToUrl(viewState.routeVisible.get());
-});

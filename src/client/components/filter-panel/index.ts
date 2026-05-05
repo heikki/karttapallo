@@ -6,13 +6,8 @@ import * as actions from '@common/actions';
 import * as data from '@common/data';
 import * as edits from '@common/edits';
 import { HAS_MML } from '@common/features';
-import {
-  filtersFromUrl,
-  filtersToUrl,
-  flushViewState,
-  resetAllViewParams
-} from '@common/filter-url';
 import selection from '@common/selection';
+import { filtersFromUrl, filtersToUrl, resetUrl } from '@common/url-state';
 import { getYear, isVideo } from '@common/utils';
 import { viewState } from '@common/view-state';
 
@@ -169,8 +164,7 @@ export class FilterPanel extends SignalWatcher(LitElement) {
       album: this._album,
       camera: this._camera
     });
-    resetAllViewParams();
-    flushViewState();
+    resetUrl();
     actions.resetMap();
   }
 

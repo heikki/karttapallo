@@ -1,25 +1,22 @@
 import { signal } from '@lit-labs/signals';
 
 import * as data from '@common/data';
-import { photoFromUrl, photoToUrl } from '@common/filter-url';
 import { effect } from '@common/signals';
 import type { Photo } from '@common/types';
+import { urlSignal } from '@common/url-state';
 
 export type InteractionMode = 'idle' | 'placement' | 'measure' | 'route-edit';
 
-export const selectedPhotoUuid = signal<string | null>(photoFromUrl());
+export const selectedPhotoUuid = urlSignal<string | null>(
+  'id',
+  (raw) => raw,
+  (v) => v
+);
+// Captured at module load: the URL-seeded uuid (if any). Used by the
+// restoration effect below to decide whether the seed actually points
+// at a photo we have, independent of any later user-initiated changes.
+const seedUuid = selectedPhotoUuid.get();
 export const interactionMode = signal<InteractionMode>('idle');
-
-// Skip first run so the URL-seeded initial value doesn't race with restore.
-let firstUrlRun = true;
-effect(() => {
-  const uuid = selectedPhotoUuid.get();
-  if (firstUrlRun) {
-    firstUrlRun = false;
-    return;
-  }
-  photoToUrl(uuid);
-});
 
 function getPhoto(): Photo | undefined {
   const uuid = selectedPhotoUuid.get();
@@ -110,12 +107,11 @@ let restoredFromUrl = false;
 effect(() => {
   const filtered = data.filteredPhotos.get();
   if (!restoredFromUrl) {
-    const uuid = photoFromUrl();
-    if (uuid === null) {
+    if (seedUuid === null) {
       restoredFromUrl = true;
       return;
     }
-    if (filtered.some((p) => p.uuid === uuid)) {
+    if (filtered.some((p) => p.uuid === seedUuid)) {
       // Signal already seeded from URL — no .set() needed.
       restoredFromUrl = true;
     }
