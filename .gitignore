@@ -2,6 +2,8 @@ node_modules
 .claude
 .DS_Store
 data/cache
+data/items.json
+data/state.json
 data/*.db
 data/*.db-wal
 data/*.db-shm
