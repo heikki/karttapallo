@@ -15,7 +15,7 @@ export default defineConfig({
     launchOptions: {
       slowMo:
         process.env.E2E_SLOW === undefined
-          ? process.argv.includes('--headed')
+          ? process.env.E2E_HEADED === '1'
             ? 700
             : 0
           : Number(process.env.E2E_SLOW)
