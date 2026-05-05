@@ -7,20 +7,13 @@ import * as data from '@common/data';
 import * as edits from '@common/edits';
 import { HAS_MML } from '@common/features';
 import * as interactionMode from '@common/interaction-mode';
-import { filtersFromUrl, filtersToUrl, resetUrl } from '@common/url-state';
+import { resetUrl } from '@common/url-state';
 import { getYear, isVideo } from '@common/utils';
 import { viewState } from '@common/view-state';
 
 import './album-controls';
 
-import {
-  cascade,
-  DEFAULT_GPS,
-  DEFAULT_MEDIA,
-  renderFilterBtns,
-  renderSelect,
-  renderStyleBtns
-} from './helpers';
+import { renderFilterBtns, renderSelect, renderStyleBtns } from './helpers';
 import { styles } from './styles';
 
 const panelStyles = css`
@@ -33,90 +26,39 @@ const panelStyles = css`
   }
 `;
 
+function onYearChange(e: Event): void {
+  data.setYear((e.target as HTMLSelectElement).value);
+}
+
+function onAlbumChange(e: Event): void {
+  data.setAlbum((e.target as HTMLSelectElement).value);
+}
+
+function onCameraChange(e: Event): void {
+  data.setCamera((e.target as HTMLSelectElement).value);
+}
+
+function onReset(): void {
+  data.resetFilters();
+  resetUrl();
+  actions.resetMap();
+}
+
 @customElement('filter-panel')
 export class FilterPanel extends SignalWatcher(LitElement) {
-  @litState() private _year = 'all';
-  @litState() private _album = 'all';
-  @litState() private _camera = 'all';
-  @litState() private _gps: string[] = [...DEFAULT_GPS];
-  @litState() private _media: string[] = [...DEFAULT_MEDIA];
   @litState() private _collapsed = false;
 
-  private _initialized = false;
+  // 250ms timer separates a single click (toggle) from a double click (solo).
   private _gpsClickTimer: ReturnType<typeof setTimeout> | null = null;
   private _mediaClickTimer: ReturnType<typeof setTimeout> | null = null;
 
   static override styles = [styles, panelStyles];
 
-  override connectedCallback() {
-    super.connectedCallback();
-    this._restoreFromUrl();
-  }
-
-  override updated() {
-    if (!this._initialized && data.photos.get().length > 0) {
-      this._initialized = true;
-      this._applyFilters();
-    }
-  }
-
-  private _restoreFromUrl() {
-    const saved = filtersFromUrl();
-    if (saved === null) return;
-    if (saved.year !== undefined) this._year = saved.year;
-    if (saved.album !== undefined) this._album = saved.album;
-    if (saved.camera !== undefined) this._camera = saved.camera;
-    if (saved.gps !== undefined) this._gps = saved.gps;
-    if (saved.media !== undefined) this._media = saved.media;
-  }
-
-  private _applyFilters() {
-    const result = cascade(data.photos.get(), {
-      year: this._year,
-      album: this._album,
-      camera: this._camera
-    });
-    this._album = result.album;
-    this._camera = result.camera;
-    data.filters.set({
-      year: this._year,
-      gps: this._gps,
-      media: this._media,
-      album: this._album,
-      camera: this._camera
-    });
-    filtersToUrl({
-      year: this._year,
-      album: this._album,
-      camera: this._camera,
-      gps: this._gps,
-      media: this._media
-    });
-  }
-
-  private readonly _onYearChange = (e: Event) => {
-    this._year = (e.target as HTMLSelectElement).value;
-    this._applyFilters();
-  };
-
-  private readonly _onAlbumChange = (e: Event) => {
-    this._album = (e.target as HTMLSelectElement).value;
-    this._applyFilters();
-  };
-
-  private readonly _onCameraChange = (e: Event) => {
-    this._camera = (e.target as HTMLSelectElement).value;
-    this._applyFilters();
-  };
-
   private _onGpsClick(value: string) {
     if (this._gpsClickTimer !== null) return;
     this._gpsClickTimer = setTimeout(() => {
       this._gpsClickTimer = null;
-      this._gps = this._gps.includes(value)
-        ? this._gps.filter((v) => v !== value)
-        : [...this._gps, value];
-      this._applyFilters();
+      data.toggleGps(value);
     }, 250);
   }
 
@@ -124,10 +66,7 @@ export class FilterPanel extends SignalWatcher(LitElement) {
     if (this._mediaClickTimer !== null) return;
     this._mediaClickTimer = setTimeout(() => {
       this._mediaClickTimer = null;
-      this._media = this._media.includes(value)
-        ? this._media.filter((v) => v !== value)
-        : [...this._media, value];
-      this._applyFilters();
+      data.toggleMedia(value);
     }, 250);
   }
 
@@ -136,9 +75,7 @@ export class FilterPanel extends SignalWatcher(LitElement) {
       clearTimeout(this._gpsClickTimer);
       this._gpsClickTimer = null;
     }
-    const solo = this._gps.length === 1 && this._gps[0] === value;
-    this._gps = solo ? [...DEFAULT_GPS] : [value];
-    this._applyFilters();
+    data.soloGps(value);
   }
 
   private _onMediaDblClick(value: string) {
@@ -146,26 +83,7 @@ export class FilterPanel extends SignalWatcher(LitElement) {
       clearTimeout(this._mediaClickTimer);
       this._mediaClickTimer = null;
     }
-    const solo = this._media.length === 1 && this._media[0] === value;
-    this._media = solo ? [...DEFAULT_MEDIA] : [value];
-    this._applyFilters();
-  }
-
-  private _onReset() {
-    this._year = 'all';
-    this._album = 'all';
-    this._camera = 'all';
-    this._gps = [...DEFAULT_GPS];
-    this._media = [...DEFAULT_MEDIA];
-    data.filters.set({
-      year: this._year,
-      gps: this._gps,
-      media: this._media,
-      album: this._album,
-      camera: this._camera
-    });
-    resetUrl();
-    actions.resetMap();
+    data.soloMedia(value);
   }
 
   private static _renderStats() {
@@ -182,11 +100,9 @@ export class FilterPanel extends SignalWatcher(LitElement) {
     const years = [
       ...new Set(allPhotos.map(getYear).filter((y): y is string => y !== null))
     ].sort();
-    const { albumOptions, cameraOptions } = cascade(allPhotos, {
-      year: this._year,
-      album: this._album,
-      camera: this._camera
-    });
+    const f = data.filters.get();
+    const albumOpts = data.albumOptions.get();
+    const cameraOpts = data.cameraOptions.get();
     const editCount = edits.editCount.get();
     const isSaving = edits.saving.get();
     return html`
@@ -204,22 +120,12 @@ export class FilterPanel extends SignalWatcher(LitElement) {
           ? nothing
           : html`
               <div class="panel-body">
-                ${renderSelect('Year', years, this._year, this._onYearChange)}
-                ${renderSelect(
-                  'Album',
-                  albumOptions,
-                  this._album,
-                  this._onAlbumChange
-                )}
-                ${renderSelect(
-                  'Camera',
-                  cameraOptions,
-                  this._camera,
-                  this._onCameraChange
-                )}
+                ${renderSelect('Year', years, f.year, onYearChange)}
+                ${renderSelect('Album', albumOpts, f.album, onAlbumChange)}
+                ${renderSelect('Camera', cameraOpts, f.camera, onCameraChange)}
                 <label>Media</label>
                 ${renderFilterBtns(
-                  this._media,
+                  f.media,
                   [
                     { value: 'photo', label: 'Photos' },
                     { value: 'video', label: 'Videos' }
@@ -233,7 +139,7 @@ export class FilterPanel extends SignalWatcher(LitElement) {
                 )}
                 <label>Location</label>
                 ${renderFilterBtns(
-                  this._gps,
+                  f.gps,
                   [
                     { value: 'exif', label: 'Exif', color: '#3b82f6' },
                     { value: 'inferred', label: 'Inferred', color: '#f59e0b' },
@@ -284,14 +190,7 @@ export class FilterPanel extends SignalWatcher(LitElement) {
                   >
                     Fit
                   </button>
-                  <button
-                    class="view-btn"
-                    @click=${() => {
-                      this._onReset();
-                    }}
-                  >
-                    Reset
-                  </button>
+                  <button class="view-btn" @click=${onReset}>Reset</button>
                   <button
                     class="view-btn ${interactionMode.current.get() ===
                     'measure'
@@ -304,7 +203,7 @@ export class FilterPanel extends SignalWatcher(LitElement) {
                     Measure
                   </button>
                 </div>
-                <album-controls .album=${this._album}></album-controls>
+                <album-controls .album=${f.album}></album-controls>
                 <div class="view-buttons">
                   <button
                     class="view-btn"

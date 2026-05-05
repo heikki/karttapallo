@@ -14,17 +14,6 @@ if (location.search === '') {
   }
 }
 
-const ALL_GPS = ['exif', 'inferred', 'user', 'none'];
-const ALL_MEDIA = ['photo', 'video'];
-
-interface SavedFilters {
-  year: string;
-  album: string;
-  camera: string;
-  gps: string[];
-  media: string[];
-}
-
 interface MapView {
   lat: number;
   lon: number;
@@ -128,53 +117,6 @@ export function urlSignal<T>(
     });
   });
   return sig;
-}
-
-// --- Filter codec ----------------------------------------------------------
-
-const FILTER_KEYS = ['year', 'album', 'camera', 'gps', 'media'] as const;
-
-export function filtersToUrl(filters: SavedFilters): void {
-  updateUrl((params) => {
-    for (const key of FILTER_KEYS) params.delete(key);
-    if (filters.year !== 'all') params.set('year', filters.year);
-    if (filters.album !== 'all') params.set('album', filters.album);
-    if (filters.camera !== 'all') params.set('camera', filters.camera);
-    if (
-      filters.gps.length !== ALL_GPS.length ||
-      !ALL_GPS.every((v) => filters.gps.includes(v))
-    ) {
-      params.set('gps', filters.gps.join(','));
-    }
-    if (
-      filters.media.length !== ALL_MEDIA.length ||
-      !ALL_MEDIA.every((v) => filters.media.includes(v))
-    ) {
-      params.set('media', filters.media.join(','));
-    }
-  });
-}
-
-export function filtersFromUrl(): Partial<SavedFilters> | null {
-  const params = new URLSearchParams(location.search);
-  const hasFilters = FILTER_KEYS.some((k) => params.has(k));
-  if (!hasFilters) return null;
-  const result: Partial<SavedFilters> = {};
-  const year = params.get('year');
-  if (year !== null) result.year = year;
-  const album = params.get('album');
-  if (album !== null) result.album = album;
-  const camera = params.get('camera');
-  if (camera !== null) result.camera = camera;
-  const gps = params.get('gps');
-  if (gps !== null) {
-    result.gps = gps.split(',').filter((v) => ALL_GPS.includes(v));
-  }
-  const media = params.get('media');
-  if (media !== null) {
-    result.media = media.split(',').filter((v) => ALL_MEDIA.includes(v));
-  }
-  return result;
 }
 
 // --- Map view codec --------------------------------------------------------
