@@ -21,6 +21,7 @@
     "e2e:install": "playwright install webkit"
   },
   "devDependencies": {
+    "@happy-dom/global-registrator": "^20.9.0",
     "@ianvs/prettier-plugin-sort-imports": "^4.7.1",
     "@playwright/test": "^1.59.1",
     "@total-typescript/tsconfig": "^1.0.4",

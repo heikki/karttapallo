@@ -30,9 +30,11 @@ In-process server modules backed by ephemeral SQLite. `app-db.ts` opens a DB und
 
 Seed: `src/server/app-db.test.ts`.
 
-### Tier 3 — Lit components (Playwright component testing)
+### Tier 3 — Lit components (`bun:test` + happy-dom)
 
-Lit elements mounted in real WebKit. Verifies shadow-DOM rendering and event handling against the same engine the desktop app uses.
+Lit elements instantiated and mounted into a happy-dom document via `bunfig.toml` `[test] preload = ["./src/client/test-setup.ts"]`. Tests construct elements with `new ComponentClass()` (rather than `document.createElement`, since happy-dom doesn't auto-upgrade unregistered tags), append them to `document.body`, await `updateComplete`, then assert against `shadowRoot.textContent` or attributes. Suitable for leaf components with no transitive map/MapLibre dependencies; heavier components are best left to Tier 5 in WebKit.
+
+Seed: `src/client/components/metadata-modal/index.test.ts`.
 
 ### Tier 4 — native smoke (`bun:test`, gated)
 
