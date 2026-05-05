@@ -4,10 +4,10 @@ Geotagged photo map viewer with Apple Photos integration.
 
 ## Project Stats (as of 05.05.2026)
 
-- **TypeScript files**: 81
-- **Lines of code**: 12,556 (+ 1,481 tests)
-- **Total commits**: 532
-- **Total tokens**: ~1,987M | **Total cost**: ~$1,213
+- **TypeScript files**: 85
+- **Lines of code**: 12,299 (+ 1,689 tests)
+- **Total commits**: 546
+- **Total tokens**: ~2,045M | **Total cost**: ~$1,254
 
 ## Updating This Diary
 
@@ -34,18 +34,20 @@ git log --pretty=format:"%ad|%s" --date=format:"%Y-%m-%d" | head -50  # Recent c
 - State the user-visible change only; skip mechanism and backstory unless that _is_ the change.
 - Describe final outcomes, not reverted intermediate attempts.
 
-## 05.05.2026 — Module consolidation; testing tiers
+## 05.05.2026 — Module consolidation; testing tiers; backend rewrite
 
-**Tokens**: 237M | **Cost**: $147
+**Tokens**: 292M | **Cost**: $187
 
 - App: keyboard works immediately on launch when `?id=...` pre-selects a photo
 - Map: globe background canvas no longer intercepts clicks
+- Map view fills the window — was leaving a 28px dark band at the bottom
 - Internal: big module-consolidation pass — features encapsulated, helpers re-inlined into their hosts, map-view api/context/feature-element trio collapsed into one
 - Internal: state primitives extracted — `urlSignal()` for URL-backed signals, `defineMode`/enter/exit/toggle for interaction modes, filter verbs+codec folded into `data.ts`
 - Internal: `MapFeatureElement` defaults to shadow DOM; map features no longer reach sibling panels via `document.getElementById`
-- Internal: bun:test covers @common (data, edits, selection, url-state, interaction-mode), server SQLite, components via happy-dom, and a darwin-gated FFI/AppleScript smoke
+- Internal: bun:test covers @common (data, edits, selection, url-state, interaction-mode), server modules, components via happy-dom, and a darwin-gated FFI/AppleScript smoke
 - Internal: Playwright WebKit E2E covers page mount, filter-panel collapse, cascade, filter persistence, a full-session journey, and a popup flow with keyboard nav + placement
 - Internal: macOS GitHub Actions CI for format/lint/typecheck/test/e2e; `KARTTAKUVAT_NO_PHOTOS_WRITES` latch keeps tests away from Photos.app
+- Internal: server refactor — dropped SQLite `app.db` (items live in memory backed by `data/items.json`, settings in `data/state.json`, per-album visibility in `_files.json` sidecars); dev and desktop entries collapsed into `src/server/` sharing one `createRequestHandler`; sync runs in-process via `itemStore.rebuild()`
 
 ## 04.05.2026 — Lit elements & actions module
 

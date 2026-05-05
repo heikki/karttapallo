@@ -1,6 +1,6 @@
 # App Specification
 
-Karttakuvat displays geotagged photographs and videos on an interactive map. Metadata is synced from the Apple Photos SQLite database; images are converted on demand via a native ObjC++ dylib (ImageIO/AVFoundation) loaded through `bun:ffi`. The dev server and desktop app provide API endpoints for editing metadata back into Photos.app via in-process NSAppleScript (loaded through the same native dylib).
+Karttakuvat displays geotagged photographs and videos on an interactive map. Metadata is synced from the Apple Photos SQLite database; images are converted on demand via a native ObjC++ dylib (ImageIO/AVFoundation/NSAppleScript) loaded through `bun:ffi`. The dev server and desktop app provide API endpoints for editing metadata back into Photos.app via in-process NSAppleScript through that same dylib.
 
 ## Architecture
 
@@ -56,13 +56,13 @@ interactionMode.defineMode('measure', {
 });
 ```
 
-A single edge watcher inside the module dispatches `onExit` then `onEnter`; the per-feature copy is gone. Callers transition via `enter`/`exit`/`toggle`. Cross-cutting effects are central, not per-mode: a crosshair effect in `map-view/setup.ts` watches `current` and toggles a canvas class; Escape-to-exit lives in `<map-popup>`'s keydown handler so it sits in the priority chain (date-edit > mode-exit > popup-close).
+A single edge watcher inside the module dispatches `onExit` then `onEnter`. Callers transition via `enter`/`exit`/`toggle`. Cross-cutting effects are central, not per-mode: a crosshair effect in `map-view/setup.ts` watches `current` and toggles a canvas class; Escape-to-exit lives in `<map-popup>`'s keydown handler so it sits in the priority chain (date-edit > mode-exit > popup-close).
 
 ### Layer ordering (DOM-order z)
 
 Cross-feature layer order is the order of `<map-*>` elements in `<map-view>`'s feature template, bottom to top. Each feature's `firstUpdated` calls `addLayer(...)` with no `before` argument, so the layer lands on top of whatever's already in the stack at that moment. Lit fires `firstUpdated` in document order, so template order = init order = z-order. Within a feature, the order of `addLayer` calls determines internal stacking. Layer order survives basemap swaps via `transformStyle`, which carries app-owned layers across `setStyle`.
 
-`<map-markers>` is the one feature that swaps its layer set at runtime (classic ↔ points). It owns one extra invisible symbol layer — `markers-anchor` — added in `markers.init()` before either style is installed. Both `ClassicLayer.install` and `PointsLayer.install` take that anchor's id as their `before` argument; the anchor itself is never removed, so markers keeps its z-position across swaps even though its implementation layers come and go.
+`<map-markers>` is the one feature that swaps its layer set at runtime (classic ↔ points). It owns one extra invisible symbol layer — `markers-anchor` — added in `markers.init()` before either style is installed. Both `ClassicLayer.install` and `PointsLayer.install` take that anchor's id as their `before` argument; the anchor is never removed, so markers keeps its z-position across swaps.
 
 ## Startup
 
@@ -72,7 +72,7 @@ View-state signals (`mapStyle`, `markerStyle`, `routeVisible`, `selectedPhotoUui
 2. `<app-root>` renders `<map-view>` plus the panel components.
 3. `<map-view>`'s `firstUpdated` calls `setupMap(container, this)` to build the MapGL instance and wire all map-level concerns, then registers a single `map.once('load')` handler.
 4. `loadPhotos()` resolves in parallel — fetches `/api/items`, sorts by date, writes into `data.photos`. The `filteredPhotos` computed re-derives, fanning out to every effect that reads it.
-5. `data.ts`'s photos-load effect re-runs the URL-restored filter cascade against the loaded photos so any album/camera that no longer exists falls back to `'all'`. Filter signal updates cascade to readers.
+5. `data.ts`'s photos-load effect re-runs the URL-restored filter cascade against the loaded photos so any album/camera that no longer exists falls back to `'all'`.
 6. On map load: `<map-view>` flips an internal `@state _map`, which triggers a re-render that mounts the `<map-*>` feature children. Each feature `@consume`s `mapContext` and reads `this.api.map` from its `firstUpdated`, where it adds layers, registers map listeners, and wires `effect()`s. Template order = z-order for layer features. Fit zooms to filtered photos unless a map view was restored from URL.
 
 ## Filters
@@ -88,12 +88,12 @@ Five filters that apply together, with cascading dependencies:
 ### Toggle Buttons
 
 - **Media**: Photos / Videos. Toggle buttons (active = included). Single-click toggles one button. Double-click solos that button (deactivates all others).
-- **Location**: Exif / Inferred / User / None. Same toggle/solo behavior. Color-coded to match marker colors (blue/amber/green/gray). Default excludes "None" — photos without GPS are hidden by default.
+- **Location**: Exif / Inferred / User / None. Same toggle/solo behavior. Color-coded to match marker colors (blue/amber/green/gray). "None" (photos without GPS) is excluded by default.
 
 Changing any filter recomputes the filtered set and notifies:
 
 1. Stats — updates count
-2. Map — updates markers (only if style is fully loaded; changes during style transitions are silently dropped)
+2. Map — updates markers (only when the style is fully loaded; changes during style transitions are dropped)
 
 ## Map
 
@@ -104,7 +104,7 @@ MapLibre GL JS with raster tile sources. Style switching via buttons:
 - **Maasto**: MML Maastokartta over white background (hidden when `PUBLIC_MML_API_KEY` is not set)
 - **Orto**: MML Ortokuva over white background (hidden when `PUBLIC_MML_API_KEY` is not set)
 
-Selected map style is persisted in URL params (default `satellite` is omitted from URL). App-owned layers (GPX, photo, route, measure) persist across style swaps via MapLibre's `transformStyle` callback.
+Selected map style is persisted in URL params (default `satellite` omitted). App-owned layers (GPX, photo, route, measure) persist across style swaps via MapLibre's `transformStyle` callback.
 
 ### Projection
 
@@ -126,7 +126,7 @@ Two switchable styles, persisted via the `markers` URL param. Sources: `componen
 
 ### Globe Background
 
-Animated cosmic background (nebula + twinkling stars) rendered via a separate WebGL2 canvas behind the map. Two-pass rendering: expensive nebula texture rendered to FBO only when map is idle, cheap blit shader composites cached texture + live globe glow every frame. Visible only in globe projection. Pauses animation during map interaction to save GPU. Renders at half resolution, capped at 30fps.
+Animated cosmic background (nebula + twinkling stars) rendered via a separate WebGL2 canvas behind the map. Two-pass rendering: nebula texture rendered to FBO only when map is idle; a blit shader composites the cached texture with live globe glow every frame. Visible only in globe projection. Animation pauses during map interaction. Renders at half resolution, capped at 30fps.
 
 Default center: Kuhmo, Finland (29.52, 64.13). Zoom 10. Box zoom, double-click zoom, and keyboard navigation disabled.
 
@@ -164,7 +164,7 @@ Allows setting a photo's location by clicking on the map.
 ### Popup Behavior
 
 - **Dynamic offset**: Popup is positioned above the marker with an offset based on the marker's visual radius at the current zoom level. Re-anchored on zoom changes.
-- **Scroll zoom**: Mouse wheel on the popup or map canvas zooms around the selected marker (not the cursor), keeping the marker at the same screen position.
+- **Scroll zoom**: Mouse wheel on the popup or map canvas zooms around the selected marker (not the cursor).
 - **Pan-through**: Mouse drag on the popup (outside buttons, links, inputs) is forwarded to the map canvas for panning.
 
 ### Single Photo
@@ -210,7 +210,7 @@ When location or time edits exist:
 
 Pending edits are reflected immediately on the map (markers move to new positions) and in popups (dates show adjusted values).
 
-After all edits in a save batch land, `itemStore.applyEdits` calls `quitPhotosApp()`. This is intentional: it prevents the user from opening Photos.app and accidentally undoing the edits via a recent-changes view. Don't drop the call — the writes are durable in Photos.sqlite, but the user-facing safety property only holds while Photos.app is closed.
+`itemStore.applyEdits` quits Photos.app at the end of a save batch. The writes themselves are durable in `Photos.sqlite`, but quitting prevents the user from accidentally undoing them via Photos.app's recent-changes view.
 
 ## Lightbox
 
@@ -218,7 +218,7 @@ Full-screen overlay for browsing all filtered photos sequentially. Activated by 
 
 Controls: left/right arrow keys to navigate, Escape or backdrop click to close. Trackpad pinch zooms (anchored at cursor, 1×–8×) and two-finger scroll pans when zoomed in; zoom resets when navigating to another photo. Shows date with timezone, coordinates, and camera name in a shared pill in the top-left corner, plus "Open in Photos" and info buttons in the top-right.
 
-**Videos**: played inline via `<video>` element with the original file streamed from the Photos library (HTTP range-aware, no copying or transcoding). Native controls appear on mouse movement and hide after 3 seconds of inactivity. Space toggles play/pause. Mute state is shared across videos within the same session.
+**Videos**: played inline via `<video>` element streamed from the Photos library with HTTP range support. Native controls appear on mouse movement and hide after 3 seconds of inactivity. Space toggles play/pause. Mute state is shared across videos within the same session.
 
 ## Metadata Modal
 
@@ -249,7 +249,7 @@ When toggled on via the "Route" button in the filter panel, a blue line connects
 
 When a saved route is loaded (toggle-on or album switch), it is reconciled against the current album: photo points whose photos are no longer in the album (or have lost their location/date) are dropped, remaining points have their coordinates and chronological order refreshed, and photos newly added to the album are inserted at chronologically correct positions with straight-line segments. The reconciled route is persisted if its structure changed and no edits are pending.
 
-Reconciliation runs at load time only — not on every photo edit while the route is hidden — so the file on disk may be briefly stale until the route is next opened. Custom routed segments (driving/hiking) split by an inserted point fall back to straight; the user can re-route them via the Edit UI.
+Reconciliation runs at load time only, so the file on disk may be briefly stale until the route is next opened. Custom routed segments (driving/hiking) split by an inserted point fall back to straight; the user can re-route them via the Edit UI.
 
 ### Route Editing
 
@@ -271,7 +271,7 @@ Routes auto-save (1s debounce) via PUT `/api/albums/{album}/route`. Visibility p
 - `GET /api/albums/{album}/route` — load saved route data
 - `PUT /api/albums/{album}/route` — save route (points + segments with geometries)
 - `DELETE /api/albums/{album}/route` — clear saved route
-- `POST /api/route` — proxy to OpenRouteService for segment routing (requires ORS API key via env var or DB setting)
+- `POST /api/route` — proxy to OpenRouteService for segment routing (requires `PUBLIC_ORS_API_KEY` env var or `ors_api_key` in `data/state.json`)
 
 ## Measurement Mode
 
@@ -306,7 +306,7 @@ App state is persisted in URL query parameters:
 - **Marker style**: `markers` (e.g. `points`). Default `classic` is omitted.
 - **Route**: `route` (present when route is visible for the selected album)
 
-On startup, saved URL state is restored: filters are applied, map view is positioned, map style is set, marker style is set, and the selected photo popup is reopened. The Reset button clears all URL params.
+On startup, all URL state is restored (filters, map view, styles, selected photo popup). The Reset button clears all URL params.
 
 ## Album Files Management
 
@@ -316,16 +316,22 @@ Each album can have associated GPX tracks and markdown notes, managed via the al
 - **Upload**: drag-and-drop or file picker for `.gpx` and `.md` files, uploaded via POST `/api/albums/{album}/upload`
 - **Storage**: files stored on disk in `data/albums/{album_name}/`
 - **Visibility**: each file has a toggle to show/hide it; state persisted in `data/albums/{album}/_files.json`
-- **Deletion**: files can be deleted via the modal, removing both the disk file and DB record
+- **Deletion**: files can be deleted via the modal, removing the disk file and the visibility entry in `_files.json`
 - **GPX integration**: hidden files are excluded from track rendering on the map
 
-## Data Storage
+## Server
 
-Photo metadata lives in memory inside `ItemStore` (`src/server/item-store.ts`), built from `Photos.sqlite` + `geo-tz` at startup. The list is persisted as a snapshot at `data/items.json` so cold starts can serve `GET /api/items` immediately, and the post-startup rebuild then refreshes. Edits update the in-memory list and rewrite the snapshot in the same call.
+Both `bun run dev` and the Electrobun-packaged app boot the same backend: a single `Bun.serve({ port: 0 })` instance serving view files and API routes on the same origin (webview/browser loads from `http://127.0.0.1:PORT`). Both entries — `src/server/index.ts` (desktop launcher) and `src/server/dev.ts` (`bun run dev`) — share `createRequestHandler` for static-file resolution and per-response hooks; they differ only in static-root order and hook callback (request logging in dev, FDA detection in the desktop app). The desktop entry must be named `index.ts` because Electrobun's launcher hardcodes `app/bun/index.js`.
 
-The rebuild compares `JSON.stringify` of fresh vs. snapshot items and resolves `rebuildComplete` with `true` only when they differ. This change-detection step is load-bearing: it lets the desktop launcher skip the webview reload in the common case (no new photos / no external edits) and only pay the reload cost when there's something new to show. A future "this comparison looks unnecessary" cleanup would re-introduce a flicker on every cold start — leave it.
+### Item Store
 
-The `settings` and `album_files` SQLite tables are gone. Settings (`view`, `window`, `ors_api_key`) live in `data/state.json` (`src/server/state.ts`). Per-album file visibility lives in `data/albums/{album}/_files.json` sidecars next to `_route.json` (`src/server/album-files.ts`).
+Photo metadata lives in memory in `ItemStore` (`src/server/item-store.ts`), built from `Photos.sqlite` + `geo-tz` at startup. A snapshot at `data/items.json` lets cold starts serve `GET /api/items` immediately while the post-startup rebuild refreshes the list. Edits mutate the in-memory list and rewrite the snapshot in the same call.
+
+The rebuild compares `JSON.stringify(fresh)` with the loaded snapshot and reports whether items changed; the desktop launcher uses this to skip the webview reload when nothing changed.
+
+### Settings and Album Files
+
+Settings (`view`, `window`, `ors_api_key`) live in `data/state.json`. Per-album file visibility lives in `data/albums/{album}/_files.json` sidecars next to `_route.json`.
 
 ### View State Persistence
 
@@ -335,13 +341,19 @@ Map position, filters, map style, and marker style are persisted between session
 - **Web version**: saved to `localStorage`, restored synchronously at module load before components initialize
 - Both use debounced 1-second save on state changes
 
+### Image Cache
+
+Images are converted on demand from the Apple Photos library using a native ObjC++ dylib (`libkarttakuvat.dylib`) loaded via `bun:ffi`. The dylib uses ImageIO for HEIC/JPEG conversion and thumbnailing, and AVFoundation for video frame extraction. Full-size and thumbnail images are cached in `{dataDir}/cache/full/` and `{dataDir}/cache/thumb/`, validated by source file mtime.
+
+Videos in the lightbox are streamed directly from `Photos Library.photoslibrary/originals/` via `GET /video/:uuid` with HTTP range support for seeking; the original `.mov`/`.mp4` file is served with `Content-Type: video/quicktime` or `video/mp4`.
+
+### Data Directory
+
+Dev builds use `data/` in the project root. Installed builds use `~/Library/Application Support/Karttakuvat/` (overridable via `KARTTAKUVAT_DATA_DIR` env var). Contains `items.json` (snapshot), `state.json` (settings), `cache/` (image cache), and `albums/` (GPX/markdown files plus `_route.json` and `_files.json` sidecars).
+
 ## Desktop App (Electrobun)
 
-The app is packaged as a native macOS desktop app using Electrobun (Bun + system webview). Entry point: `src/server/index.ts` (Electrobun's launcher requires the bundled entry to be `index.js`, so the source file must be named `index.ts`). The dev entry — used by `bun run dev` for browser-based development — is `src/server/dev.ts`; both live in `src/server/` (no separate `src/app/` directory) so the two startup paths are siblings.
-
-### Architecture
-
-A single `Bun.serve({ port: 0 })` instance serves both bundled view files and API routes on the same origin. The webview loads from `http://127.0.0.1:PORT`. Images are converted on demand via the native bridge (`libkarttakuvat.dylib`). The launcher and the dev server share `createRequestHandler` (`src/server/request-handler.ts`) for static-file resolution, vendor-file mapping, and the per-response hook; they differ only in their static roots and what the hook does (logging in dev, FDA-detection in the desktop app).
+The app is packaged as a native macOS desktop app using Electrobun (Bun + system webview).
 
 ### Application Menu
 
@@ -349,13 +361,17 @@ A single `Bun.serve({ port: 0 })` instance serves both bundled view files and AP
 - **Photos**: Sync Photos, Clear Cache
 - **Window**: Minimize, Close
 
-### Sync
+### Sync Photos
 
-The "Sync Photos" menu action calls `itemStore.rebuild()` directly — no subprocess. Title shows "Syncing…" while running, dialog at end reports whether items changed. Only one sync runs at a time.
+The "Sync Photos" menu action calls `itemStore.rebuild()`. Title shows "Syncing…" while running; dialog at end reports whether items changed. Only one sync runs at a time.
+
+### Clear Cache
+
+The "Clear Cache" menu action deletes both cache directories under `{dataDir}/cache/` and reloads the webview.
 
 ### Auto-Sync on Startup
 
-The webview is loaded immediately with whatever the snapshot in `data/items.json` contains. `itemStore.rebuildComplete` resolves once the post-startup rebuild finishes; if it produced different items, the webview is reloaded to pick them up. If the snapshot already matched fresh data, no reload happens — cold starts are flicker-free in the common case. Errors during rebuild (e.g. missing Full Disk Access) are logged; the webview keeps serving snapshot data.
+The webview loads immediately with the snapshot from `data/items.json`. When `itemStore.rebuildComplete` resolves with `true`, the webview reloads; otherwise it keeps serving snapshot data. Rebuild errors (e.g. missing Full Disk Access) are logged.
 
 ### iCloud Drive Backup
 
@@ -364,12 +380,6 @@ On startup (production only), the app backs up album data to iCloud Drive at `~/
 - **Incremental mirror**: copies `albums/` to `Karttakuvat/latest/`, skipping files that haven't changed (mtime-based)
 - **Daily snapshots**: creates a dated copy in `Karttakuvat/snapshots/YYYY-MM-DD/` once per day
 - **Pruning**: removes snapshots older than 30 days
-
-### Image Cache
-
-Images are converted on demand from the Apple Photos library using a native ObjC++ dylib (`libkarttakuvat.dylib`) loaded via `bun:ffi`. The dylib uses ImageIO for HEIC/JPEG conversion and thumbnailing, and AVFoundation for video frame extraction — no subprocess spawning or temp directories needed. Full-size and thumbnail images are cached in `{dataDir}/cache/full/` and `{dataDir}/cache/thumb/` respectively, validated by source file mtime. The "Clear Cache" menu action deletes both cache directories and reloads the webview.
-
-Videos in the lightbox are streamed directly from `Photos Library.photoslibrary/originals/` via `GET /video/:uuid` with HTTP range support (seeking). No conversion or caching — the original `.mov`/`.mp4` file is served with `Content-Type: video/quicktime` or `video/mp4`.
 
 ### Window State Persistence
 
@@ -382,10 +392,6 @@ Links with `target="_blank"` and `window.open()` calls are intercepted and opene
 ### Full Disk Access
 
 If the `/api/metadata/:uuid` endpoint returns a 500 error indicating Photos.sqlite can't be read, a one-per-session dialog prompts the user to grant Full Disk Access in System Settings.
-
-### Data Directory
-
-Dev builds use `data/` in the project root. Installed builds use `~/Library/Application Support/Karttakuvat/` (overridable via `KARTTAKUVAT_DATA_DIR` env var). Contains `items.json` (snapshot), `state.json` (settings), `cache/` (image cache), and `albums/` (GPX/markdown files plus `_route.json` and `_files.json` sidecars).
 
 ## Keyboard Shortcuts
 
