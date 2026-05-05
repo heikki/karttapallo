@@ -27,6 +27,9 @@ export default defineConfig({
     url: baseURL,
     reuseExistingServer: process.env.CI === undefined,
     timeout: 30_000,
-    env: { E2E_PORT: String(PORT) }
+    env: {
+      E2E_PORT: String(PORT),
+      KARTTAKUVAT_NO_PHOTOS_WRITES: '1'
+    }
   }
 });

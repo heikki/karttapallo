@@ -22,16 +22,28 @@ import { exifDatePattern } from './date-utils';
 // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports -- CJS interop
 const { find: geoTzFind } = require('geo-tz/all') as typeof import('geo-tz');
 
+// ---------- Test safety latch ----------
+
+function assertWritesAllowed(): void {
+  if (process.env.KARTTAKUVAT_NO_PHOTOS_WRITES === '1') {
+    throw new Error(
+      'Photos.app writes disabled by KARTTAKUVAT_NO_PHOTOS_WRITES=1'
+    );
+  }
+}
+
 // ---------- AppleScript helpers ----------
 
 /** Set location via AppleScript (Photos.app must be running). */
 export function setLocation(uuid: string, lat: number, lon: number): void {
+  assertWritesAllowed();
   const script = `tell application "Photos" to set the location of media item id "${uuid}" to {${lat}, ${lon}}`;
   runAppleScript(script);
 }
 
 /** Set date/time via AppleScript. date: "YYYY-MM-DD", time: "HH:MM:SS" */
 export function setDateTime(uuid: string, date: string, time: string): void {
+  assertWritesAllowed();
   // Build date from components to avoid locale-dependent string parsing.
   // AppleScript's `date "..."` coercion is locale-sensitive and breaks
   // on non-US systems (e.g. Finnish expects "10.12.2014 klo 11.33.29").
@@ -63,6 +75,7 @@ export function setTimezone(
   offsetSeconds: number,
   libraryPath?: string
 ): void {
+  assertWritesAllowed();
   const dbPath = join(
     libraryPath ?? defaultLibraryPath(),
     'database/Photos.sqlite'
@@ -96,6 +109,7 @@ export function setTimezone(
 // ---------- Quit Photos.app ----------
 
 export function quitPhotosApp(): void {
+  assertWritesAllowed();
   runAppleScript('tell application "Photos" to quit');
 }
 
