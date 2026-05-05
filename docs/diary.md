@@ -5,9 +5,9 @@ Geotagged photo map viewer with Apple Photos integration.
 ## Project Stats (as of 05.05.2026)
 
 - **TypeScript files**: 81
-- **Lines of code**: 12,548 (+ 1,481 tests)
-- **Total commits**: 530
-- **Total tokens**: ~1,979M | **Total cost**: ~$1,209
+- **Lines of code**: 12,556 (+ 1,481 tests)
+- **Total commits**: 532
+- **Total tokens**: ~1,987M | **Total cost**: ~$1,213
 
 ## Updating This Diary
 
@@ -36,27 +36,16 @@ git log --pretty=format:"%ad|%s" --date=format:"%Y-%m-%d" | head -50  # Recent c
 
 ## 05.05.2026 — Module consolidation; testing tiers
 
-**Tokens**: 229M | **Cost**: $143
+**Tokens**: 237M | **Cost**: $147
 
-- Internal: layer specs reduced to plain data; per-feature `_LAYER`/`_SOURCE`/`EDIT_IDS` consts removed
-- Internal: helpers re-inlined into their hosts (debug-log, gestures, cascade, popup edits, clipboard, map-utils)
-- Internal: map-view's api/context/feature-element trio collapsed into `api.ts`
-- Internal: init-only modules folded into the elements that owned them; `<album-files-modal>` → `<files-modal>`
-- Internal: popup pair tightened — edit state into `<photo-popup>`, gestures + globe-mask split into self-cleaning `attach(map, popup)` modules, popup ops renamed open/move/fly
-- Internal: URL-backed signals expressed via a `urlSignal(key, decode, encode)` primitive; `firstUrlRun` workaround gone
-- Internal: `MapFeatureElement` defaults to shadow DOM; small visible UI lives with its feature (`<map-measure>` overlay, `<placement-panel>` folded into `<map-placement>`)
-- Internal: map features stop reaching out to sibling panels via `document.getElementById`
-- Internal: interaction mode extracted to its own module via `defineMode`/enter/exit/toggle; `map-view/setup` collapsed to one default export
-- Internal: filter verbs, cascade, and URL codec folded into `data.ts`; `<filter-panel>` becomes pure UI
-- Internal: bun:test seeds for signals, server SQLite, and Lit components via happy-dom
-- Internal: Tier 4 smoke loads the native dylib and probes AppleScript via FFI
-- Internal: Playwright WebKit E2E covers /api/items, page mount, and filter-panel collapse
-- Internal: docs/testing.md plus macOS GitHub Actions CI for format/lint/typecheck/test/e2e
-- Internal: bun:test now covers @common data, edits, selection, and url-state — cascade, pending edits, popup gating, URL signals
-- Internal: Playwright adds cascade, filter persistence across reload, full-session journey, and a popup flow with keyboard nav + placement
-- Internal: `KARTTAKUVAT_NO_PHOTOS_WRITES=1` latch guards setLocation/setDateTime/setTimezone/quitPhotosApp so tests can't reach the user's Photos.app
-- Map: cosmic background canvas no longer intercepts clicks (`pointer-events: none`) — surfaced when headless WebKit raced the MapLibre canvas
-- Internal: pin `@types/three` so tsc resolves electrobun's `three` import on CI (electrobun ships raw .ts; skipLibCheck doesn't help)
+- App: keyboard works immediately on launch when `?id=...` pre-selects a photo
+- Map: globe background canvas no longer intercepts clicks
+- Internal: big module-consolidation pass — features encapsulated, helpers re-inlined into their hosts, map-view api/context/feature-element trio collapsed into one
+- Internal: state primitives extracted — `urlSignal()` for URL-backed signals, `defineMode`/enter/exit/toggle for interaction modes, filter verbs+codec folded into `data.ts`
+- Internal: `MapFeatureElement` defaults to shadow DOM; map features no longer reach sibling panels via `document.getElementById`
+- Internal: bun:test covers @common (data, edits, selection, url-state, interaction-mode), server SQLite, components via happy-dom, and a darwin-gated FFI/AppleScript smoke
+- Internal: Playwright WebKit E2E covers page mount, filter-panel collapse, cascade, filter persistence, a full-session journey, and a popup flow with keyboard nav + placement
+- Internal: macOS GitHub Actions CI for format/lint/typecheck/test/e2e; `KARTTAKUVAT_NO_PHOTOS_WRITES` latch keeps tests away from Photos.app
 
 ## 04.05.2026 — Lit elements & actions module
 
