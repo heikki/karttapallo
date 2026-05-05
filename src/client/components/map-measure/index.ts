@@ -1,6 +1,8 @@
+import { SignalWatcher } from '@lit-labs/signals';
 import turfDistance from '@turf/distance';
 import { point } from '@turf/helpers';
-import { customElement } from 'lit/decorators.js';
+import { css, html, nothing } from 'lit';
+import { customElement, state } from 'lit/decorators.js';
 import type {
   GeoJSONSource,
   LayerSpecification,
@@ -66,9 +68,26 @@ function formatDistance(km: number): string {
 }
 
 @customElement('map-measure')
-export class MapMeasure extends MapFeatureElement {
-  private readonly coords: Array<[number, number]> = [];
-  private overlay: HTMLElement | null = null;
+export class MapMeasure extends SignalWatcher(MapFeatureElement) {
+  static override styles = css`
+    .overlay {
+      position: fixed;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(44, 44, 46, 0.92);
+      color: #e5e5e7;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      z-index: 1500;
+      pointer-events: none;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    }
+  `;
+
+  @state() private coords: Array<[number, number]> = [];
   private readonly onMapClick = (e: MapMouseEvent): void => {
     // Click on existing measure point removes it.
     const features = this.api.map.queryRenderedFeatures(e.point, {
@@ -76,15 +95,13 @@ export class MapMeasure extends MapFeatureElement {
     });
     if (features.length > 0) {
       const idx = features[0]!.properties.index as number;
-      this.coords.splice(idx, 1);
-      this.updateSources();
+      this.coords = this.coords.filter((_, i) => i !== idx);
       return;
     }
 
     if (e.defaultPrevented) return;
 
-    this.coords.push([e.lngLat.lng, e.lngLat.lat]);
-    this.updateSources();
+    this.coords = [...this.coords, [e.lngLat.lng, e.lngLat.lat]];
   };
 
   static toggle(): void {
@@ -118,6 +135,23 @@ export class MapMeasure extends MapFeatureElement {
     }
   }
 
+  override updated(changed: Map<string, unknown>): void {
+    if (changed.has('coords')) this.updateSources();
+  }
+
+  override render() {
+    if (!isActive()) return nothing;
+    if (this.coords.length === 0) {
+      return html`<div class="overlay">Click map to add points</div>`;
+    }
+    if (this.coords.length === 1) {
+      return html`<div class="overlay">Click to add more points</div>`;
+    }
+    return html`<div class="overlay">
+      ${formatDistance(computeDistance(this.coords))}
+    </div>`;
+  }
+
   private updateSources(): void {
     const pointSource = this.api.map.getSource<GeoJSONSource>('measure-points');
     if (pointSource !== undefined) {
@@ -143,53 +177,20 @@ export class MapMeasure extends MapFeatureElement {
           : { type: 'FeatureCollection', features: [] }
       );
     }
-
-    this.updateOverlay();
-  }
-
-  private ensureOverlay(): void {
-    if (this.overlay !== null) return;
-    this.overlay = document.createElement('div');
-    this.overlay.className = 'measure-overlay';
-    document.body.appendChild(this.overlay);
-  }
-
-  private updateOverlay(): void {
-    if (this.overlay === null) return;
-    if (this.coords.length < 2) {
-      this.overlay.textContent =
-        this.coords.length === 0
-          ? 'Click map to add points'
-          : 'Click to add more points';
-      return;
-    }
-    this.overlay.textContent = formatDistance(computeDistance(this.coords));
-  }
-
-  private removeOverlay(): void {
-    if (this.overlay !== null) {
-      this.overlay.remove();
-      this.overlay = null;
-    }
   }
 
   private onEnter(): void {
-    this.coords.length = 0;
+    this.coords = [];
     this.api.map.getCanvas().classList.add('crosshair');
     setLayersVisibility(this.api.map, LAYER_IDS, true);
-    this.updateSources();
-    this.ensureOverlay();
-    this.updateOverlay();
     this.api.map.on('click', this.onMapClick);
     document.addEventListener('keydown', onKeyDown);
   }
 
   private onExit(): void {
-    this.coords.length = 0;
+    this.coords = [];
     this.api.map.getCanvas().classList.remove('crosshair');
-    this.updateSources();
     setLayersVisibility(this.api.map, LAYER_IDS, false);
-    this.removeOverlay();
     this.api.map.off('click', this.onMapClick);
     document.removeEventListener('keydown', onKeyDown);
   }

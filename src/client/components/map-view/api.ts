@@ -38,26 +38,24 @@ export const mapContext = createContext<MapApi>(Symbol('map-api'));
 
 /**
  * Base class for `<map-*>` feature elements that live as children of
- * `<map-view>`. Centralises the two pieces every feature shares:
+ * `<map-view>`. Provides the typed map handle every feature needs:
  *
- * - `@consume(mapContext) protected api: MapApi` — the typed handle to
- *   the map and its sibling features.
- * - `createRenderRoot` returning `this` — features are headless effect
- *   hosts: their job is `firstUpdated` lifecycle + signal effects, not
- *   a template. Render root is functionally invisible either way, so
- *   light DOM is the simpler default. When a feature needs visible UI,
- *   split it off as its own shadow-DOM element (e.g. `<photo-popup>`
- *   handed to `<map-popup>`) rather than flipping this base class.
+ *     `@consume(mapContext) protected api: MapApi`
+ *
+ * Most features are headless — their job is `firstUpdated` lifecycle
+ * + signal effects, no template. The default shadow DOM render root
+ * is empty for those and costs nothing. Features with small visible
+ * UI (e.g. `<map-measure>`'s distance overlay) can declare `static
+ * styles` and a `render()` template like any other Lit element. For
+ * substantial UI, prefer splitting into a sibling element (e.g.
+ * `<photo-popup>` paired with `<map-popup>`) so the feature stays
+ * focused on map mechanics.
  *
  * Subclasses define their lifecycle in `firstUpdated` and read state
  * via `this.api`.
  */
-export abstract class MapFeatureElement extends LitElement {
+export class MapFeatureElement extends LitElement {
   @consume({ context: mapContext }) protected api!: MapApi;
-
-  protected override createRenderRoot() {
-    return this;
-  }
 }
 
 /** Set visibility on multiple layers at once. */
