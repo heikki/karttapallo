@@ -60,7 +60,6 @@ export class AppRoot extends LitElement {
       <photo-lightbox id="lightbox"></photo-lightbox>
       <metadata-modal id="metadata-modal"></metadata-modal>
       <files-modal id="files-modal"></files-modal>
-      <placement-panel></placement-panel>
     `;
   }
 }
