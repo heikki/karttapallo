@@ -12,10 +12,14 @@ export default defineConfig({
   use: {
     baseURL,
     trace: 'retain-on-failure',
-    launchOptions:
-      process.env.E2E_SLOW === undefined
-        ? {}
-        : { slowMo: Number(process.env.E2E_SLOW) }
+    launchOptions: {
+      slowMo:
+        process.env.E2E_SLOW === undefined
+          ? process.argv.includes('--headed')
+            ? 700
+            : 0
+          : Number(process.env.E2E_SLOW)
+    }
   },
   projects: [{ name: 'webkit', use: { browserName: 'webkit' } }],
   webServer: {

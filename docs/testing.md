@@ -12,7 +12,7 @@ bun run test         # bun:test only
 bun run test:watch   # bun:test in watch mode
 bun run e2e:install  # one-time WebKit binary download (~75 MB)
 bun run e2e          # Playwright against bun e2e/server.ts (headless)
-bun run e2e:headed   # same, headed — pair with E2E_SLOW=400 to slow it down
+bun run e2e:headed   # same, headed — defaults to slowMo=700ms; override with E2E_SLOW=200
 ```
 
 ## Tiers
