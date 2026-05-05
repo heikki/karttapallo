@@ -15,8 +15,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "test": "bun test src",
-    "test:watch": "bun test src --watch",
+    "test": "bun test src resources/native",
+    "test:watch": "bun test src resources/native --watch",
     "e2e": "playwright test",
     "e2e:install": "playwright install webkit"
   },

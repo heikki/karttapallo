@@ -36,7 +36,9 @@ Lit elements mounted in real WebKit. Verifies shadow-DOM rendering and event han
 
 ### Tier 4 — native smoke (`bun:test`, gated)
 
-Loads `libkarttakuvat.dylib` via `bun:ffi` and runs non-mutating AppleScript (`return 1`). Skipped automatically off macOS so CI on Linux passes; runs on the macOS CI job and locally.
+Loads `libkarttakuvat.dylib` via `bun:ffi` and runs non-mutating AppleScript (`return 1`). Also probes `resizeToJpeg` against a missing input to confirm the error path returns cleanly. Skipped automatically off macOS so CI on other platforms passes. Requires `bun run build:native` first so the dylib exists.
+
+Seed: `resources/native/native-bridge.test.ts`.
 
 ### Tier 5 — end-to-end (Playwright)
 
