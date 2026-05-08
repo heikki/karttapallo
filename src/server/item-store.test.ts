@@ -3,12 +3,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 
-import {
-  openItemStore,
-  type ItemEntry,
-  type ItemStore,
-  type PhotosWriter
-} from './item-store';
+import { openItemStore, type ItemEntry, type ItemStore } from './item-store';
+import type { PhotosWriter } from './photos-edit';
 
 let dataDir = '';
 

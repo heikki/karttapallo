@@ -26,12 +26,7 @@ import {
   tzOffsetHours,
   tzOffsetToSeconds
 } from './date-utils';
-import {
-  quitPhotosApp,
-  setDateTime,
-  setLocation,
-  setTimezone
-} from './photos-edit';
+import { defaultPhotosWriter, type PhotosWriter } from './photos-edit';
 import {
   openPhotosDb,
   queryNotInAlbumUuid,
@@ -161,24 +156,6 @@ export interface EditResults {
   locationResults: EditResult[];
   timeResults: EditResult[];
 }
-
-/**
- * Photos.app writer interface — injected for tests.
- * Production wraps the real photos-edit functions; tests pass a fake.
- */
-export interface PhotosWriter {
-  setLocation: (uuid: string, lat: number, lon: number) => void;
-  setDateTime: (uuid: string, date: string, time: string) => void;
-  setTimezone: (uuid: string, tzName: string, offsetSeconds: number) => void;
-  quitPhotosApp: () => void;
-}
-
-const defaultPhotosWriter: PhotosWriter = {
-  setLocation,
-  setDateTime,
-  setTimezone,
-  quitPhotosApp
-};
 
 export interface ItemStore {
   getAll: () => ItemEntry[];

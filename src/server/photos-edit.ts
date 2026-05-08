@@ -86,3 +86,23 @@ export function setTimezone(
 export function quitPhotosApp(): void {
   runAppleScript('tell application "Photos" to quit');
 }
+
+// ---------- PhotosWriter interface ----------
+
+/**
+ * Write seam used by `item-store.applyEdits`. Production wires the real
+ * AppleScript / SQLite functions above; tests inject a fake.
+ */
+export interface PhotosWriter {
+  setLocation: (uuid: string, lat: number, lon: number) => void;
+  setDateTime: (uuid: string, date: string, time: string) => void;
+  setTimezone: (uuid: string, tzName: string, offsetSeconds: number) => void;
+  quitPhotosApp: () => void;
+}
+
+export const defaultPhotosWriter: PhotosWriter = {
+  setLocation,
+  setDateTime,
+  setTimezone,
+  quitPhotosApp
+};
