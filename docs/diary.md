@@ -2,12 +2,12 @@
 
 Geotagged photo map viewer with Apple Photos integration.
 
-## Project Stats (as of 05.05.2026)
+## Project Stats (as of 08.05.2026)
 
 - **TypeScript files**: 69
-- **Lines of code**: 12,364 (+ 1,783 tests)
-- **Total commits**: 545
-- **Total tokens**: ~2,080M | **Total cost**: ~$1,275
+- **Lines of code**: 12,369 (+ 2,332 tests)
+- **Total commits**: 555
+- **Total tokens**: ~2,150M | **Total cost**: ~$1,317
 
 ## Updating This Diary
 
@@ -33,6 +33,19 @@ git log --pretty=format:"%ad|%s" --date=format:"%Y-%m-%d" | head -50  # Recent c
 - Skip minor tweaks — only significant features and fixes belong in the entry, especially on busy days.
 - State the user-visible change only; skip mechanism and backstory unless that _is_ the change.
 - Describe final outcomes, not reverted intermediate attempts.
+
+## 08.05.2026 — E2E rewrite as user-flow journeys
+
+**Tokens**: 69M | **Cost**: $41
+
+- Internal: E2E suite rewritten as thirteen user-flow journeys driven through the UI, one per `docs/flows.md` section
+- Internal: `tests/server.ts` injects a stub `PhotosLibrary` and no-op `PhotosWriter` so save-edits round-trips without touching Photos.app
+
+## 06.05.2026 — Popup follows pasted location
+
+**Tokens**: 1M | **Cost**: $1
+
+- Pasting a location into the popup now pans the map to keep the popup in view
 
 ## 05.05.2026 — Module consolidation; testing tiers; backend rewrite
 
