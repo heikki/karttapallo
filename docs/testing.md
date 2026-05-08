@@ -45,11 +45,19 @@ Seed: `resources/native/native-bridge.test.ts`.
 
 ### Tier 5 — end-to-end (Playwright)
 
-`tests/server.ts` boots the same `createApiHandler` + routing the production `src/server/web.ts` uses, but against a tempdir (`tests/output/data/`) pre-seeded with fake items — so no Apple Photos library access is required. Playwright drives WebKit against the running server. Catches integration breakage that unit tests miss (HTML routing, static asset serving, native bridge init via the image cache import).
+`tests/server.ts` boots the same `createApiHandler` + `createRequestHandler` the production servers (`src/server/dev.ts`, `src/server/index.ts`) use, but against a tempdir (`tests/output/data/`) pre-seeded with three fake items and a stub `PhotosLibrary` whose `resolveImagePath` points every UUID at a checked-in fixture (`tests/fixtures/sample.jpg`). Playwright drives WebKit against the running server.
 
-Seed: `tests/specs/smoke.e2e.ts` — verifies `/api/items` returns the seeded fixture and `<app-root>` mounts.
+Specs are organised by user journey, not by component. Each one mirrors a flow from `docs/flows.md`:
+
+- `view.e2e.ts` — Browse + Find + View full size + Dismiss (open app → popup → arrow nav → lightbox → Escape).
+- `filter.e2e.ts` — Filter by year/album/camera with cascade, URL persistence, pivot fallback, Reset.
+- `edit-location.e2e.ts` — Set a location by clicking the map + copy/paste between photos + Discard.
+
+**What Tier 5 verifies:** the wired-together server (`createApiHandler` + `createRequestHandler` + Bun routing), the static-asset and image-route paths under WebKit, and the user-driven UI flows end-to-end.
+
+**What Tier 5 does not verify:** the native bridge / image-cache codepath (the fake `PhotosLibrary` returns the fixture path directly, bypassing the dylib), real Apple Photos library reads or writes (the stub returns `null` for video and metadata, and `KARTTAKUVAT_NO_PHOTOS_WRITES=1` short-circuits any save), and the Electrobun launcher (no driver — closest proxy is the WebKit engine in Playwright).
 
 ## What we do not test in CI
 
-- The Electrobun desktop binary itself. No driver exists; closest proxy is Tier 5 against the web build, which shares the WebKit engine.
-- Real Photos.app edits. `photos-edit.ts` writes to the user's library via NSAppleScript and is exercised manually.
+- The Electrobun desktop binary itself.
+- Real Photos.app reads or edits — `photos-edit.ts` writes to the user's library via NSAppleScript and is exercised manually.

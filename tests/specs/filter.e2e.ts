@@ -8,9 +8,7 @@ import { expect, test } from '@playwright/test';
 // Helsinki exists only in 2024 — used to exercise the cascade fallback
 // when the user pivots year while album is set.
 
-test('full session: filter → reload → cascade fallback → reset', async ({
-  page
-}) => {
+test('Filter by year and album', async ({ page }) => {
   await page.goto('/');
 
   const selects = page.locator('filter-panel >> .panel-body select');
@@ -19,7 +17,7 @@ test('full session: filter → reload → cascade fallback → reset', async ({
   const cameraSelect = selects.nth(2);
   await expect(selects).toHaveCount(3);
 
-  // Step 1: drill in to year=2024 + album=Helsinki.
+  // Drill: year=2024 + album=Helsinki.
   await yearSelect.selectOption('2024');
   await albumSelect.selectOption('Helsinki');
 
@@ -30,14 +28,14 @@ test('full session: filter → reload → cascade fallback → reset', async ({
   await expect(page).toHaveURL(/year=2024/);
   await expect(page).toHaveURL(/album=Helsinki/);
 
-  // Step 2: reload — filters survive via the URL codec.
+  // Reload — filters survive via the URL codec.
   await page.reload();
   const afterReload = page.locator('filter-panel >> .panel-body select');
   await expect(afterReload.nth(0)).toHaveValue('2024');
   await expect(afterReload.nth(1)).toHaveValue('Helsinki');
 
-  // Step 3: pivot year=2023. Helsinki doesn't exist that year, so the
-  // cascade falls album back to 'all' rather than orphaning the filter.
+  // Pivot year=2023. Helsinki doesn't exist that year, so the cascade falls
+  // album back to 'all' rather than orphaning the filter.
   await afterReload.nth(0).selectOption('2023');
   await expect(afterReload.nth(1)).toHaveValue('all');
 
@@ -45,7 +43,7 @@ test('full session: filter → reload → cascade fallback → reset', async ({
   await expect(page).toHaveURL(/year=2023/);
   await expect(page).not.toHaveURL(/album=/);
 
-  // Step 4: Reset wipes every filter and clears the URL.
+  // Reset wipes every filter and clears the URL.
   await page
     .locator('filter-panel >> button.view-btn')
     .filter({ hasText: 'Reset' })

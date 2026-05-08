@@ -16,8 +16,8 @@
     "format": "prettier --write .",
     "test": "bun test src resources/native",
     "test:watch": "bun test src resources/native --watch",
-    "e2e": "playwright test",
-    "e2e:headed": "E2E_HEADED=1 playwright test --headed",
+    "e2e": "NODE_NO_WARNINGS=1 playwright test",
+    "e2e:headed": "NODE_NO_WARNINGS=1 E2E_HEADED=1 playwright test --headed",
     "e2e:install": "playwright install webkit"
   },
   "devDependencies": {
