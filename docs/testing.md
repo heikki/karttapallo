@@ -55,6 +55,8 @@ Specs are organised by user journey, not by component. Each one mirrors a flow f
 - `metadata.e2e.ts` — View photo metadata (info button → modal → Escape).
 - `edit-location.e2e.ts` — Set a location by clicking the map + copy/paste between photos + Discard.
 - `edit-date.e2e.ts` — Adjust date/time (±day/hour) + copy/paste date between photos.
+- `map-controls.e2e.ts` — Switch map style + marker style, asserting URL params and active state.
+- `measure.e2e.ts` — Measure distances on the map (click points → distance overlay).
 
 **What Tier 5 verifies:** the wired-together server (`createApiHandler` + `createRequestHandler` + Bun routing), the static-asset and image-route paths under WebKit, and the user-driven UI flows end-to-end.
 

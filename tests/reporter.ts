@@ -38,9 +38,7 @@ export default class ShortListReporter implements Reporter {
     if (ok) this.passed++;
     else this.failed++;
     const mark = ok ? green('✓') : red('✘');
-    const file = dim(
-      shortName(test.location.file).padEnd(this.fileColWidth)
-    );
+    const file = dim(shortName(test.location.file).padEnd(this.fileColWidth));
     const dur = dim(`(${formatDuration(result.duration)})`);
     process.stdout.write(`  ${file} ${mark} ${test.title} ${dur}\n`);
   }

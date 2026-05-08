@@ -9,6 +9,7 @@ export default defineConfig({
   outputDir: 'tests/output/results',
   fullyParallel: false,
   workers: 1,
+  forbidOnly: process.env.CI !== undefined,
   reporter:
     process.env.CI === undefined
       ? './tests/reporter.ts'
