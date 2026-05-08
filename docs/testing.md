@@ -47,21 +47,7 @@ Seed: `resources/native/native-bridge.test.ts`.
 
 `tests/server.ts` boots the same `createApiHandler` + `createRequestHandler` the production servers (`src/server/dev.ts`, `src/server/index.ts`) use, but against a tempdir (`tests/output/data/`) pre-seeded with three fake items and a stub `PhotosLibrary`: `resolveImagePath` points every UUID at a checked-in fixture (`tests/fixtures/sample.jpg`), and `getMetadata` returns a small canned record so the metadata modal renders. Playwright drives WebKit against the running server.
 
-Specs are organised by user journey, not by component. Each one mirrors a flow from `docs/flows.md`:
-
-- `view.e2e.ts` — Browse + Find + View full size + Dismiss (open app → popup → arrow nav → lightbox → Escape).
-- `filter.e2e.ts` — Filter by year/album/camera with cascade, URL persistence, pivot fallback, Reset.
-- `filter-advanced.e2e.ts` — Filter by media type and location precision, single-click vs. double-click solo.
-- `metadata.e2e.ts` — View photo metadata (info button → modal → Escape).
-- `edit-location.e2e.ts` — Set a location by clicking the map + copy/paste between photos + Discard.
-- `edit-date.e2e.ts` — Adjust date/time (±day/hour) + copy/paste date between photos.
-- `map-controls.e2e.ts` — Switch map style + marker style, asserting URL params and active state.
-- `measure.e2e.ts` — Measure distances on the map (click points → distance overlay).
-- `external-maps.e2e.ts` — Open in Apple Maps / Google Maps (`window.open` URL capture).
-- `save-edits.e2e.ts` — Pending edit → Save → server applies → pending section clears.
-- `gpx.e2e.ts` — Album with seeded GPX file → tracks + waypoints land in their MapLibre sources.
-- `files-modal.e2e.ts` — Files button → modal → toggle visibility → close.
-- `routes.e2e.ts` — Route button toggles `photo-route` source population and layer visibility.
+Specs are organised by user journey, not by component. Each one mirrors one or more flows from `docs/flows.md` and is named after its dominant flow; see `tests/specs/` for the current set, with the journey scope documented in each spec's header comment.
 
 **What Tier 5 verifies:** the wired-together server (`createApiHandler` + `createRequestHandler` + Bun routing), the static-asset and image-route paths under WebKit, and the user-driven UI flows end-to-end.
 
