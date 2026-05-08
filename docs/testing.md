@@ -45,17 +45,20 @@ Seed: `resources/native/native-bridge.test.ts`.
 
 ### Tier 5 — end-to-end (Playwright)
 
-`tests/server.ts` boots the same `createApiHandler` + `createRequestHandler` the production servers (`src/server/dev.ts`, `src/server/index.ts`) use, but against a tempdir (`tests/output/data/`) pre-seeded with three fake items and a stub `PhotosLibrary` whose `resolveImagePath` points every UUID at a checked-in fixture (`tests/fixtures/sample.jpg`). Playwright drives WebKit against the running server.
+`tests/server.ts` boots the same `createApiHandler` + `createRequestHandler` the production servers (`src/server/dev.ts`, `src/server/index.ts`) use, but against a tempdir (`tests/output/data/`) pre-seeded with three fake items and a stub `PhotosLibrary`: `resolveImagePath` points every UUID at a checked-in fixture (`tests/fixtures/sample.jpg`), and `getMetadata` returns a small canned record so the metadata modal renders. Playwright drives WebKit against the running server.
 
 Specs are organised by user journey, not by component. Each one mirrors a flow from `docs/flows.md`:
 
 - `view.e2e.ts` — Browse + Find + View full size + Dismiss (open app → popup → arrow nav → lightbox → Escape).
 - `filter.e2e.ts` — Filter by year/album/camera with cascade, URL persistence, pivot fallback, Reset.
+- `filter-advanced.e2e.ts` — Filter by media type and location precision, single-click vs. double-click solo.
+- `metadata.e2e.ts` — View photo metadata (info button → modal → Escape).
 - `edit-location.e2e.ts` — Set a location by clicking the map + copy/paste between photos + Discard.
+- `edit-date.e2e.ts` — Adjust date/time (±day/hour) + copy/paste date between photos.
 
 **What Tier 5 verifies:** the wired-together server (`createApiHandler` + `createRequestHandler` + Bun routing), the static-asset and image-route paths under WebKit, and the user-driven UI flows end-to-end.
 
-**What Tier 5 does not verify:** the native bridge / image-cache codepath (the fake `PhotosLibrary` returns the fixture path directly, bypassing the dylib), real Apple Photos library reads or writes (the stub returns `null` for video and metadata, and `KARTTAKUVAT_NO_PHOTOS_WRITES=1` short-circuits any save), and the Electrobun launcher (no driver — closest proxy is the WebKit engine in Playwright).
+**What Tier 5 does not verify:** the native bridge / image-cache codepath (the fake `PhotosLibrary` returns the fixture path directly, bypassing the dylib), real Apple Photos library reads or writes (the stub returns canned metadata and `null` for video, and `KARTTAKUVAT_NO_PHOTOS_WRITES=1` short-circuits any save), and the Electrobun launcher (no driver — closest proxy is the WebKit engine in Playwright).
 
 ## What we do not test in CI
 

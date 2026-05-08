@@ -95,12 +95,17 @@ itemStore.rebuildComplete.catch(() => {
 });
 
 // Fake Photos library: every UUID resolves to the same fixture JPEG so popup /
-// lightbox <img> tags load real bytes. Video and metadata stay unimplemented
-// until a spec needs them.
+// lightbox <img> tags load real bytes. Metadata returns a small canned record
+// so the metadata modal renders rows; video stays unimplemented.
 const photosLibrary: PhotosLibrary = {
   resolveImagePath: () => fixtureJpeg,
   resolveVideoPath: () => null,
-  getMetadata: () => null
+  getMetadata: (uuid) => ({
+    uuid,
+    filename: `${uuid}.jpg`,
+    camera: 'iPhone',
+    dimensions: '4032x3024'
+  })
 };
 
 const { routeApiRequest } = createApiHandler(dataDir, {
