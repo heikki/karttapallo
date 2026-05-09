@@ -1,5 +1,4 @@
 import type {
-  GeoJSONSource,
   Map as MapGL,
   MapLayerMouseEvent,
   MapMouseEvent
@@ -9,23 +8,27 @@ import * as data from '@common/data';
 import * as edits from '@common/edits';
 import * as interactionMode from '@common/interaction-mode';
 import { effect } from '@common/signals';
-import type { Photo } from '@common/types';
 import { setLayersVisibility } from '@components/map-view/api';
 
-import type { MapRoute } from '.';
 import {
   ALL_EDIT_LAYERS,
-  applySegmentMethod,
-  buildRouteLineFeatures,
-  createSegmentPopup,
-  findNearestSegment,
-  insertWaypointInRoute,
-  removeWaypointFromRoute,
-  rerouteSegment,
+  createEditLayers,
+  raiseEditPoints,
+  setHoverSource,
+  updateEditSources
+} from './edit-display';
+import { findNearestSegment } from './edit-geometry';
+import { createSegmentPopup, showRouteError } from './edit-popup';
+import {
+  buildDefaultRoute,
+  insertWaypoint,
+  removeWaypoint,
+  syncPhotoPoints,
   updateAdjacentSegments
-} from './helpers';
-import { syncPhotoPoints } from './reconcile';
-import type { RouteData } from './types';
+} from './route-data';
+import type { RouteData } from './route-data';
+import { applySegmentMethod, rerouteSegment } from './route-routing';
+import { getRoute, notifyChanged, saveToServer, setRoute } from './route-store';
 
 // ---------- State machine ----------
 
@@ -43,11 +46,12 @@ type InteractionState =
   | { kind: 'dragging'; pointIdx: number };
 
 let map: MapGL | null = null;
-let host: MapRoute | null = null;
 let interaction: InteractionState | null = null;
-let routeData: RouteData | null = null;
 let popupEl: HTMLElement | null = null;
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
+// (album, route) captured at schedule time so a pending save fires the right
+// pair even if the user switches albums or exits edit mode before it fires.
+let saveTarget: { album: string; route: RouteData } | null = null;
 // Set when a segment-hit mousedown both inserted a waypoint and started a
 // drag, so the trailing click event can be ignored. Cleared on the click
 // (via consume) and on enter/exit (so a stale flag from an Escape-during-drag
@@ -92,24 +96,26 @@ function cursorFor(s: InteractionState | null): string | null {
 
 // ---------- Public API ----------
 
-export function initRouteEdit(m: MapGL, h: MapRoute): void {
+export function initRouteEdit(m: MapGL): void {
   map = m;
-  host = h;
+  createEditLayers(m);
 
   interactionMode.defineMode('route-edit', {
-    canEnter: () => (host?.getData() ?? host?.buildDefault() ?? null) !== null,
+    canEnter: () => (getRoute() ?? buildDefaultRoute()) !== null,
     onEnter,
     onExit
   });
 
-  // Sync photo point positions when pending edits change
+  // Sync photo point positions when pending edits change.
   effect(() => {
     edits.pendingCoords.get();
     edits.pendingTimeOffsets.get();
-    if (isActive() && routeData !== null) {
-      syncPhotoPoints(routeData);
-      updateEditSources();
-    }
+    if (!isActive()) return;
+    const route = getRoute();
+    if (route === null) return;
+    syncPhotoPoints(route);
+    notifyChanged();
+    if (map !== null) updateEditSources(map);
   });
 }
 
@@ -117,16 +123,21 @@ export function initRouteEdit(m: MapGL, h: MapRoute): void {
 
 function onEnter(): void {
   if (map === null) return;
-  // The host pushes routeData back through setData on exit; nothing
-  // reads host.getData() between enter and exit so we don't push it now.
-  routeData = host?.getData() ?? host?.buildDefault() ?? null;
-  if (routeData === null) return;
-  syncPhotoPoints(routeData);
+  let route = getRoute();
+  if (route === null) {
+    route = buildDefaultRoute();
+    if (route === null) return;
+    const album = data.filters.get().album;
+    if (album === 'all') return;
+    setRoute(album, route);
+  }
+  syncPhotoPoints(route);
+  notifyChanged();
 
   suppressNextMapClick = false;
   setLayerVisibility(true);
-  raiseEditPoints();
-  updateEditSources();
+  raiseEditPoints(map);
+  updateEditSources(map);
 
   map.on('click', onMapClick);
   map.on('contextmenu', onRightClick);
@@ -143,14 +154,12 @@ function onEnter(): void {
 function onExit(): void {
   if (map === null) return;
 
-  // If a drag was in progress, tear down its mousemove/mouseup handlers.
   if (interaction?.kind === 'dragging') teardownDragListeners();
 
   transition(null);
   suppressNextMapClick = false;
   removePopup();
-  // Restore blue display layers with current edit data
-  if (routeData !== null) host?.setData(routeData);
+  flushPendingSave();
   setLayerVisibility(false);
 
   map.off('click', onMapClick);
@@ -168,75 +177,32 @@ function setLayerVisibility(show: boolean): void {
   setLayersVisibility(map, ALL_EDIT_LAYERS, show);
 }
 
-// ---------- Source updates ----------
-
-function updateEditSources(): void {
-  if (map === null || routeData === null) return;
-
-  const pointsSrc = map.getSource<GeoJSONSource>('route-edit-points');
-  if (pointsSrc !== undefined) {
-    const photoMap = new Map<string, Photo>();
-    for (const p of data.filteredPhotos.get()) photoMap.set(p.uuid, p);
-    pointsSrc.setData({
-      type: 'FeatureCollection',
-      features: routeData.points.map((p, i) => ({
-        type: 'Feature' as const,
-        id: i,
-        geometry: { type: 'Point' as const, coordinates: [p.lon, p.lat] },
-        properties: {
-          index: i,
-          pointType: p.type,
-          uuid: p.uuid ?? '',
-          gps:
-            (p.uuid === undefined ? null : photoMap.get(p.uuid)?.gps) ?? 'none'
-        }
-      }))
-    });
-  }
-
-  const hitSrc = map.getSource<GeoJSONSource>('route-edit-hit');
-  if (hitSrc !== undefined) {
-    hitSrc.setData({
-      type: 'FeatureCollection',
-      features: routeData.segments.map((seg, i) => ({
-        type: 'Feature' as const,
-        geometry: { type: 'LineString' as const, coordinates: seg.geometry },
-        properties: { segIndex: i }
-      }))
-    });
-  }
-
-  updateLineSrc();
-}
-
-/** Bring edit-mode points on top of marker/photo layers added after our edit layers. */
-function raiseEditPoints(): void {
-  if (map === null) return;
-  if (map.getLayer('route-edit-points-outline') !== undefined) {
-    map.moveLayer('route-edit-points-outline');
-  }
-  if (map.getLayer('route-edit-points-layer') !== undefined) {
-    map.moveLayer('route-edit-points-layer');
-  }
-}
-
-function updateLineSrc(): void {
-  if (map === null || routeData === null) return;
-  const src = map.getSource<GeoJSONSource>('route-edit-line');
-  if (src === undefined) return;
-  const features = buildRouteLineFeatures(routeData);
-  src.setData({ type: 'FeatureCollection', features });
+function refreshSources(): void {
+  if (map !== null) updateEditSources(map);
 }
 
 function scheduleAutoSave(): void {
   if (saveTimer !== null) clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => {
+  const album = data.filters.get().album;
+  const route = getRoute();
+  if (album === 'all' || route === null) {
+    saveTarget = null;
+    return;
+  }
+  saveTarget = { album, route };
+  saveTimer = setTimeout(flushPendingSave, 1000);
+}
+
+function flushPendingSave(): void {
+  if (saveTimer !== null) {
+    clearTimeout(saveTimer);
     saveTimer = null;
-    const album = data.filters.get().album;
-    if (album !== 'all' && routeData !== null) {
-      void host?.save(album, routeData);
-    }
-  }, 1000);
+  }
+  if (saveTarget !== null) {
+    const { album, route } = saveTarget;
+    saveTarget = null;
+    void saveToServer(album, route);
+  }
 }
 
 // ---------- Click / right-click ----------
@@ -246,27 +212,31 @@ function firstClickableHit(
   features: Array<{ properties: Record<string, unknown> }> | undefined
 ): number | null {
   if (features === undefined) return null;
+  const route = getRoute();
+  if (route === null) return null;
   for (const f of features) {
     const idx = f.properties.segIndex as number;
-    if (routeData?.segments[idx]?.method !== 'none') return idx;
+    if (route.segments[idx]?.method !== 'none') return idx;
   }
   return null;
 }
 
 function onMapClick(e: MapMouseEvent): void {
-  if (map === null || routeData === null) return;
+  if (map === null) return;
+  const route = getRoute();
+  if (route === null) return;
   if (suppressNextMapClick) {
     suppressNextMapClick = false;
     return;
   }
 
-  // 1. Check if clicking on a route edit point
+  // 1. Clicking on a route edit point
   const pointFeatures = map.queryRenderedFeatures(e.point, {
     layers: ['route-edit-points-layer']
   });
   if (pointFeatures.length > 0) {
     const idx = pointFeatures[0]!.properties.index as number;
-    if (routeData.points[idx]?.type === 'waypoint') removeWaypoint(idx);
+    if (route.points[idx]?.type === 'waypoint') removeWaypointAt(idx);
     return;
   }
 
@@ -282,12 +252,13 @@ function onMapClick(e: MapMouseEvent): void {
   if (hitSegIdx === null) {
     addWaypointAtClick(e.lngLat.lng, e.lngLat.lat);
   } else {
-    insertWaypoint(hitSegIdx, e.lngLat.lng, e.lngLat.lat);
+    insertWaypointAt(hitSegIdx, e.lngLat.lng, e.lngLat.lat);
   }
 }
 
 function onRightClick(e: MapMouseEvent): void {
-  if (map === null || routeData === null) return;
+  if (map === null) return;
+  if (getRoute() === null) return;
   e.preventDefault();
   const hitFeatures = map.queryRenderedFeatures(e.point, {
     layers: ['route-edit-hit-layer']
@@ -299,45 +270,53 @@ function onRightClick(e: MapMouseEvent): void {
 }
 
 function addWaypointAtClick(lon: number, lat: number): void {
-  if (routeData === null || routeData.segments.length === 0 || map === null) {
-    return;
-  }
-  const bestIdx = findNearestSegment(map, routeData, lon, lat);
-  insertWaypoint(bestIdx, lon, lat);
+  if (map === null) return;
+  const route = getRoute();
+  if (route === null || route.segments.length === 0) return;
+  const bestIdx = findNearestSegment(map, route, lon, lat);
+  insertWaypointAt(bestIdx, lon, lat);
 }
 
-function insertWaypoint(segIdx: number, lon: number, lat: number): void {
-  if (routeData === null) return;
+function insertWaypointAt(segIdx: number, lon: number, lat: number): void {
+  const route = getRoute();
+  if (route === null) return;
 
-  const method = routeData.segments[segIdx]?.method ?? 'straight';
+  const method = route.segments[segIdx]?.method ?? 'straight';
   if (method === 'none') return;
-  insertWaypointInRoute(routeData, segIdx, lon, lat);
+  insertWaypoint(route, segIdx, lon, lat);
+  notifyChanged();
 
   if (method !== 'straight') {
     void Promise.all([
-      rerouteSegment(routeData, segIdx),
-      rerouteSegment(routeData, segIdx + 1)
+      rerouteSegment(route, segIdx),
+      rerouteSegment(route, segIdx + 1)
     ]).then(() => {
-      updateEditSources();
+      notifyChanged();
+      refreshSources();
     });
   }
 
-  updateEditSources();
+  refreshSources();
   scheduleAutoSave();
 }
 
-function removeWaypoint(pointIdx: number): void {
-  if (routeData === null) return;
+function removeWaypointAt(pointIdx: number): void {
+  const route = getRoute();
+  if (route === null) return;
 
   const segBefore = pointIdx - 1;
-  const method = removeWaypointFromRoute(routeData, pointIdx);
+  const method = removeWaypoint(route, pointIdx);
   if (method === null) return;
+  notifyChanged();
 
   if (method !== 'straight') {
-    void rerouteSegment(routeData, segBefore);
+    void rerouteSegment(route, segBefore).then(() => {
+      notifyChanged();
+      refreshSources();
+    });
   }
 
-  updateEditSources();
+  refreshSources();
   scheduleAutoSave();
 }
 
@@ -346,18 +325,21 @@ function removeWaypoint(pointIdx: number): void {
 function showSegmentPopup(segIdx: number, lon: number, lat: number): void {
   if (map === null) return;
   removePopup();
+  const route = getRoute();
   popupEl = createSegmentPopup({
     map,
     lngLat: [lon, lat],
-    currentMethod: routeData?.segments[segIdx]?.method ?? 'straight',
+    currentMethod: route?.segments[segIdx]?.method ?? 'straight',
     onSelect: (method) => {
-      if (routeData !== null) {
-        void applySegmentMethod(routeData, segIdx, method).then((ok) => {
-          updateEditSources();
+      const r = getRoute();
+      if (r !== null) {
+        void applySegmentMethod(r, segIdx, method).then((ok) => {
+          notifyChanged();
+          refreshSources();
           if (ok) {
             scheduleAutoSave();
-          } else {
-            showRouteError('Routing failed. Check your API key.');
+          } else if (map !== null) {
+            showRouteError(map, 'Routing failed. Check your API key.');
           }
         });
       }
@@ -374,27 +356,11 @@ function removePopup(): void {
   }
 }
 
-function showRouteError(msg: string): void {
-  if (map === null) return;
-  const el = document.createElement('div');
-  el.textContent = msg;
-  el.style.cssText =
-    'position:absolute;top:12px;left:50%;transform:translateX(-50%);' +
-    'background:rgba(220,38,38,0.9);color:#fff;padding:8px 16px;border-radius:8px;' +
-    'font:13px/1.4 -apple-system,sans-serif;z-index:1500;pointer-events:none;' +
-    'box-shadow:0 4px 12px rgba(0,0,0,0.3)';
-  map.getContainer().appendChild(el);
-  setTimeout(() => {
-    el.remove();
-  }, 3000);
-}
-
 // ---------- Drag ----------
 
 function onPointMouseDown(e: MapLayerMouseEvent): void {
-  if (map === null || routeData === null || e.originalEvent.button !== 0) {
-    return;
-  }
+  if (map === null || e.originalEvent.button !== 0) return;
+  if (getRoute() === null) return;
   const feature = e.features?.[0];
   if (feature === undefined) return;
   const idx = feature.properties.index as number;
@@ -402,9 +368,9 @@ function onPointMouseDown(e: MapLayerMouseEvent): void {
 }
 
 function onSegmentMouseDown(e: MapLayerMouseEvent): void {
-  if (map === null || routeData === null || e.originalEvent.button !== 0) {
-    return;
-  }
+  if (map === null || e.originalEvent.button !== 0) return;
+  const route = getRoute();
+  if (route === null) return;
   // Don't start segment drag if also on a point
   const pointFeatures = map.queryRenderedFeatures(e.point, {
     layers: ['route-edit-points-layer']
@@ -413,8 +379,9 @@ function onSegmentMouseDown(e: MapLayerMouseEvent): void {
 
   const segIdx = firstClickableHit(e.features);
   if (segIdx === null) return;
-  insertWaypointInRoute(routeData, segIdx, e.lngLat.lng, e.lngLat.lat);
-  updateEditSources();
+  insertWaypoint(route, segIdx, e.lngLat.lng, e.lngLat.lat);
+  notifyChanged();
+  refreshSources();
 
   // The new waypoint is at segIdx + 1; suppress the trailing click.
   suppressNextMapClick = true;
@@ -434,18 +401,21 @@ function startDrag(idx: number, e: MapMouseEvent): void {
 }
 
 function onDragMove(e: MapMouseEvent): void {
-  if (routeData === null || interaction?.kind !== 'dragging') return;
+  if (interaction?.kind !== 'dragging') return;
+  const route = getRoute();
+  if (route === null) return;
   updateAdjacentSegments(
-    routeData,
+    route,
     interaction.pointIdx,
     e.lngLat.lng,
     e.lngLat.lat
   );
-  updateEditSources();
+  notifyChanged();
+  refreshSources();
 }
 
 function onDragEnd(): void {
-  if (routeData === null || interaction?.kind !== 'dragging') return;
+  if (interaction?.kind !== 'dragging') return;
   const idx = interaction.pointIdx;
   teardownDragListeners();
   transition({ kind: 'idle' });
@@ -453,22 +423,24 @@ function onDragEnd(): void {
 }
 
 function rerouteAfterDrag(pointIdx: number): void {
-  if (routeData === null) return;
+  const route = getRoute();
+  if (route === null) return;
   const segBefore = pointIdx - 1;
   const segAfter = pointIdx;
   const promises: Array<Promise<void>> = [];
-  if (segBefore >= 0 && routeData.segments[segBefore]?.method !== 'straight') {
-    promises.push(rerouteSegment(routeData, segBefore));
+  if (segBefore >= 0 && route.segments[segBefore]?.method !== 'straight') {
+    promises.push(rerouteSegment(route, segBefore));
   }
   if (
-    segAfter < routeData.segments.length &&
-    routeData.segments[segAfter]?.method !== 'straight'
+    segAfter < route.segments.length &&
+    route.segments[segAfter]?.method !== 'straight'
   ) {
-    promises.push(rerouteSegment(routeData, segAfter));
+    promises.push(rerouteSegment(route, segAfter));
   }
   if (promises.length > 0) {
     void Promise.all(promises).then(() => {
-      updateEditSources();
+      notifyChanged();
+      refreshSources();
       scheduleAutoSave();
     });
   } else {
@@ -495,17 +467,13 @@ function setCursorClass(cls: string | null): void {
   if (cls !== null) canvas.classList.add(cls);
 }
 
-function setHoverSource(geojson: object): void {
-  if (map === null) return;
-  const src = map.getSource<GeoJSONSource>('route-edit-hover');
-  src?.setData(geojson as GeoJSON.GeoJSON);
-}
-
 function showHoverHighlight(segIdx: number): void {
-  if (routeData === null) return;
-  const seg = routeData.segments[segIdx];
+  if (map === null) return;
+  const route = getRoute();
+  if (route === null) return;
+  const seg = route.segments[segIdx];
   if (seg === undefined) return;
-  setHoverSource({
+  setHoverSource(map, {
     type: 'Feature',
     geometry: { type: 'LineString', coordinates: seg.geometry },
     properties: {}
@@ -513,7 +481,8 @@ function showHoverHighlight(segIdx: number): void {
 }
 
 function clearHoverHighlight(): void {
-  setHoverSource({ type: 'FeatureCollection', features: [] });
+  if (map === null) return;
+  setHoverSource(map, { type: 'FeatureCollection', features: [] });
 }
 
 // ---------- Hover handlers ----------
@@ -527,13 +496,13 @@ function onSegmentLeave(): void {
 function onSegmentMove(e: MapLayerMouseEvent): void {
   if (
     map === null ||
-    routeData === null ||
     interaction === null ||
     interaction.kind === 'dragging' ||
     interaction.kind === 'hoveringPoint'
   ) {
     return;
   }
+  if (getRoute() === null) return;
   const segIdx = firstClickableHit(e.features);
   if (segIdx === null) {
     if (interaction.kind === 'hoveringSegment') {

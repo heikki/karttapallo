@@ -3,7 +3,7 @@
  * `{dataDir}/albums/{album}/`: GPX/markdown files (upload, list, delete), the
  * `_files.json` visibility sidecar, and the `_route.json` route file. Route
  * data passes through as bytes; the route shape is owned client-side in
- * `map-route/types.ts`.
+ * `map-route/route-data.ts`.
  *
  * Album and file names are validated at the seam to prevent path traversal.
  */

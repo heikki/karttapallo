@@ -335,7 +335,7 @@ Settings (`view`, `window`, `ors_api_key`) live in `{dataDir}/state.json`, re-re
 
 ### Album Store
 
-`AlbumStore` (`src/server/album-store.ts`) owns the per-album filesystem subtree at `{dataDir}/albums/{album}/`: GPX/markdown files (with a hard-coded `.gpx`/`.md` allowlist), the `_files.json` visibility sidecar, and the `_route.json` route file. Route content passes through as opaque bytes — the route shape is owned client-side in `map-route/types.ts`. File and route deletes are idempotent.
+`AlbumStore` (`src/server/album-store.ts`) owns the per-album filesystem subtree at `{dataDir}/albums/{album}/`: GPX/markdown files (with a hard-coded `.gpx`/`.md` allowlist), the `_files.json` visibility sidecar, and the `_route.json` route file. Route content passes through as opaque bytes — the route shape is owned client-side in `map-route/route-data.ts`. File and route deletes are idempotent.
 
 Album and file names are validated at every entry; bad names (empty, `.`, `..`, or anything containing `/`, `\`, or NUL) throw `InvalidNameError`, which the router maps to a 400. Path traversal is blocked at the seam, so the router never builds paths from request strings directly.
 
