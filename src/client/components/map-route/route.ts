@@ -1,10 +1,36 @@
 import { signal, type Signal } from '@lit-labs/signals';
 
+import { HAS_ROUTING } from '@common/features';
 import type { Photo } from '@common/types';
 
 import * as routeData from './data';
 import type { RouteData, SegMethod } from './data';
-import { fetchRouteGeometry } from './routing';
+
+type FetchResult =
+  | { ok: true; coords: Array<[number, number]> }
+  | { ok: false };
+
+async function fetchRouteGeometry(
+  start: [number, number],
+  end: [number, number],
+  profile: string
+): Promise<FetchResult> {
+  if (!HAS_ROUTING) return { ok: false };
+  try {
+    const resp = await fetch('/api/route', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ coordinates: [start, end], profile })
+    });
+    if (!resp.ok) return { ok: false };
+    const data = (await resp.json()) as {
+      geometry: { coordinates: Array<[number, number]> };
+    };
+    return { ok: true, coords: data.geometry.coordinates };
+  } catch {
+    return { ok: false };
+  }
+}
 
 // The Photo Route — one route, one album. Album+data live in the signal as
 // a single atomic value so subscribers can never observe a mid-update where
