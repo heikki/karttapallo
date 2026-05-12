@@ -18,18 +18,10 @@ import {
 } from '@components/map-view/api';
 
 import { initRouteEdit } from './edit';
-import { reconcileRouteWithAlbum } from './reconcile';
-import { buildDefaultRoute, buildRouteLineFeatures } from './route-data';
+import { reconcileWithAlbum } from './reconcile';
+import * as route from './route';
+import { buildDefault, buildLineFeatures } from './route-data';
 import type { RouteData } from './route-data';
-import {
-  clearRoute,
-  getRoute,
-  getRouteAlbum,
-  loadFromServer,
-  notifyChanged,
-  saveToServer,
-  setRoute
-} from './route-store';
 
 const lineLayout = {
   'visibility': 'none' as const,
@@ -64,12 +56,12 @@ const loadAlbum = computed<string | null>(() => {
   return album;
 });
 
-function applyDisplaySource(map: MapGL, route: RouteData | null): void {
+function applyDisplaySource(map: MapGL, r: RouteData | null): void {
   const src = map.getSource<GeoJSONSource>('photo-route');
   if (src === undefined) return;
   src.setData({
     type: 'FeatureCollection',
-    features: route === null ? [] : buildRouteLineFeatures(route)
+    features: r === null ? [] : buildLineFeatures(r)
   });
 }
 
@@ -97,24 +89,28 @@ export class MapRoute extends MapFeatureElement {
     // Token guards against stale fetches resolving after a later album switch.
     // Route is cleared synchronously so the reconcile effect doesn't mutate
     // the previous album's route against the new album's photos. The clear
-    // is unconditional — reading getRoute() here would subscribe this effect
-    // to the revision signal and create a load → setRoute → reload loop.
+    // is unconditional — reading route.current.get() here would subscribe
+    // this effect to the signal and create a load → setRoute → reload loop.
     let loadToken = 0;
     effect(() => {
       const album = loadAlbum.get();
-      clearRoute();
+      route.clear();
       if (album === null) return;
       const myToken = ++loadToken;
       void (async () => {
-        const saved = await loadFromServer(album);
+        const saved = await route.loadFromServer(album);
         if (myToken !== loadToken) return;
-        const route: RouteData | null = saved ?? buildDefaultRoute();
-        if (route === null) return;
-        const changed = reconcileRouteWithAlbum(route, albumPhotosFor(album));
+        const initial: RouteData | null =
+          saved ?? buildDefault(albumPhotosFor(album));
+        if (initial === null) return;
+        const { route: reconciled, changed } = reconcileWithAlbum(
+          initial,
+          albumPhotosFor(album)
+        );
+        route.setRoute(album, reconciled);
         if ((saved === null || changed) && edits.editCount.get() === 0) {
-          void saveToServer(album, route);
+          void route.saveToServer(album, reconciled);
         }
-        setRoute(album, route);
       })();
     });
 
@@ -130,25 +126,27 @@ export class MapRoute extends MapFeatureElement {
       const album = loadAlbum.get();
       if (album === null) return;
 
-      const route = getRoute();
-      if (route === null) return;
-      if (getRouteAlbum() !== album) return;
-      const changed = reconcileRouteWithAlbum(route, albumPhotosFor(album));
+      const cur = route.current.get();
+      if (cur?.album !== album) return;
+      const { route: reconciled, changed } = reconcileWithAlbum(
+        cur.data,
+        albumPhotosFor(album)
+      );
       if (!changed) return;
-      notifyChanged();
+      route.setRoute(album, reconciled);
       if (edits.editCount.get() === 0) {
-        void saveToServer(album, route);
+        void route.saveToServer(album, reconciled);
       }
     });
 
     // Display: layer visibility + source data.
     effect(() => {
-      const route = getRoute();
+      const cur = route.current.get();
       const visible = viewState.routeVisible.get();
       const editing = interactionMode.current.get() === 'route-edit';
       const show = visible && !editing;
       setLayersVisibility(map, LAYER_IDS, show);
-      if (show) applyDisplaySource(map, route);
+      if (show) applyDisplaySource(map, cur?.data ?? null);
     });
   }
 }

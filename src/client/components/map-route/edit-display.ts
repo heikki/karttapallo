@@ -7,8 +7,8 @@ import type {
 import * as data from '@common/data';
 import type { Photo } from '@common/types';
 
-import { buildRouteLineFeatures } from './route-data';
-import { getRoute } from './route-store';
+import { buildLineFeatures } from './route-data';
+import type { RouteData } from './route-data';
 
 const EDIT_SOURCES = [
   'route-edit-line',
@@ -136,28 +136,23 @@ export function raiseEditPoints(map: MapGL): void {
   }
 }
 
-function updateLineSrc(map: MapGL): void {
-  const route = getRoute();
-  if (route === null) return;
+function updateLineSrc(map: MapGL, r: RouteData): void {
   const src = map.getSource<GeoJSONSource>('route-edit-line');
   if (src === undefined) return;
   src.setData({
     type: 'FeatureCollection',
-    features: buildRouteLineFeatures(route)
+    features: buildLineFeatures(r)
   });
 }
 
-export function updateEditSources(map: MapGL): void {
-  const route = getRoute();
-  if (route === null) return;
-
+export function updateEditSources(map: MapGL, r: RouteData): void {
   const pointsSrc = map.getSource<GeoJSONSource>('route-edit-points');
   if (pointsSrc !== undefined) {
     const photoMap = new Map<string, Photo>();
     for (const p of data.filteredPhotos.get()) photoMap.set(p.uuid, p);
     pointsSrc.setData({
       type: 'FeatureCollection',
-      features: route.points.map((p, i) => ({
+      features: r.points.map((p, i) => ({
         type: 'Feature' as const,
         id: i,
         geometry: { type: 'Point' as const, coordinates: [p.lon, p.lat] },
@@ -176,7 +171,7 @@ export function updateEditSources(map: MapGL): void {
   if (hitSrc !== undefined) {
     hitSrc.setData({
       type: 'FeatureCollection',
-      features: route.segments.map((seg, i) => ({
+      features: r.segments.map((seg, i) => ({
         type: 'Feature' as const,
         geometry: { type: 'LineString' as const, coordinates: seg.geometry },
         properties: { segIndex: i }
@@ -184,7 +179,7 @@ export function updateEditSources(map: MapGL): void {
     });
   }
 
-  updateLineSrc(map);
+  updateLineSrc(map, r);
 }
 
 export function setHoverSource(map: MapGL, geojson: object): void {

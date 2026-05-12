@@ -262,7 +262,10 @@ function extractUrl(event: ElectrobunEvent): string {
   if (typeof detail === 'string') {
     if (detail.startsWith('{')) {
       try {
-        const parsed = JSON.parse(detail) as { url?: string; allowed?: boolean };
+        const parsed = JSON.parse(detail) as {
+          url?: string;
+          allowed?: boolean;
+        };
         // allowed=true means electrobun will navigate the webview internally;
         // we have nothing to open in the system browser.
         if (parsed.allowed === true) return '';

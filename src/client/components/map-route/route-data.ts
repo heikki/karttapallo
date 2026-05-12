@@ -1,6 +1,5 @@
 import type { Feature, LineString } from 'geojson';
 
-import * as data from '@common/data';
 import * as edits from '@common/edits';
 import type { Photo } from '@common/types';
 import { toUtcSortKey } from '@common/utils';
@@ -12,8 +11,16 @@ export interface RoutePoint {
   lat: number;
 }
 
+export type SegMethod =
+  | 'straight'
+  | 'driving'
+  | 'walking'
+  | 'hiking'
+  | 'cycling'
+  | 'none';
+
 export interface RouteSegment {
-  method: 'straight' | 'driving' | 'walking' | 'hiking' | 'cycling' | 'none';
+  method: SegMethod;
   geometry: Array<[number, number]>;
 }
 
@@ -22,7 +29,7 @@ export interface RouteData {
   segments: RouteSegment[];
 }
 
-// ---------- Internal helpers ----------
+// ---------- Construction ----------
 
 export function makeStraightSegment(
   from: RoutePoint,
@@ -37,41 +44,57 @@ export function makeStraightSegment(
   };
 }
 
-/** Remove point at index k, merging the surrounding segments into a straight line. */
-export function removePointAt(route: RouteData, k: number): void {
-  const { points, segments } = route;
+/** Replace a segment at segIdx. Returns a new RouteData. */
+export function withSegment(
+  r: RouteData,
+  segIdx: number,
+  seg: RouteSegment
+): RouteData {
+  const segments = r.segments.slice();
+  segments[segIdx] = seg;
+  return { points: r.points, segments };
+}
+
+// ---------- Point insertion / removal ----------
+
+/** Remove the point at index k, merging surrounding segments into a straight line. */
+export function removePoint(r: RouteData, k: number): RouteData {
+  const points = r.points.slice();
+  const segments = r.segments.slice();
   if (k === points.length - 1) {
     points.splice(k, 1);
     segments.splice(k - 1, 1);
-    return;
+    return { points, segments };
   }
   points.splice(k, 1);
   segments.splice(k, 1);
   if (k > 0) {
     segments[k - 1] = makeStraightSegment(points[k - 1]!, points[k]!);
   }
+  return { points, segments };
 }
 
-/** Insert a point at index k, building straight-line segments to neighbors. */
-export function insertPointAt(
-  route: RouteData,
+/** Insert a point at index k, building straight-line segments to neighbours. */
+export function insertPoint(
+  r: RouteData,
   k: number,
   pt: RoutePoint
-): void {
-  const { points, segments } = route;
+): RouteData {
+  const points = r.points.slice();
+  const segments = r.segments.slice();
   if (points.length === 0) {
     points.push(pt);
-    return;
+    return { points, segments };
   }
   if (k <= 0) {
     segments.unshift(makeStraightSegment(pt, points[0]!));
     points.unshift(pt);
-    return;
+    return { points, segments };
   }
   if (k >= points.length) {
     segments.push(makeStraightSegment(points[points.length - 1]!, pt));
     points.push(pt);
-    return;
+    return { points, segments };
   }
   const prev = points[k - 1]!;
   const next = points[k]!;
@@ -82,31 +105,139 @@ export function insertPointAt(
     makeStraightSegment(prev, pt),
     makeStraightSegment(pt, next)
   );
+  return { points, segments };
 }
 
 /**
- * Splice waypoints immediately adjacent to the point at idx (likely stale
- * after a coord change). Returns the new index of the original point and
- * whether any waypoint was removed.
+ * Drop waypoints immediately adjacent to the point at idx (likely stale
+ * after a coord change). Returns the new RouteData, the new index of the
+ * original point, and whether any waypoint was removed.
  */
-function removeAdjacentWaypoints(
-  route: RouteData,
+function withoutAdjacentWaypoints(
+  r: RouteData,
   idx: number
-): { idx: number; removed: boolean } {
-  const { points } = route;
-  let cur = idx;
+): { route: RouteData; idx: number; removed: boolean } {
+  let cur = r;
+  let i = idx;
   let removed = false;
-  if (cur + 1 < points.length && points[cur + 1]!.type === 'waypoint') {
-    removePointAt(route, cur + 1);
+  if (i + 1 < cur.points.length && cur.points[i + 1]!.type === 'waypoint') {
+    cur = removePoint(cur, i + 1);
     removed = true;
   }
-  if (cur > 0 && points[cur - 1]!.type === 'waypoint') {
-    removePointAt(route, cur - 1);
-    cur -= 1;
+  if (i > 0 && cur.points[i - 1]!.type === 'waypoint') {
+    cur = removePoint(cur, i - 1);
+    i -= 1;
     removed = true;
   }
-  return { idx: cur, removed };
+  return { route: cur, idx: i, removed };
 }
+
+// ---------- Waypoint edit verbs ----------
+
+/** Insert a waypoint into segment segIdx, splitting it into two with the same method. */
+export function insertWaypoint(
+  r: RouteData,
+  segIdx: number,
+  lon: number,
+  lat: number
+): RouteData {
+  const newPoint: RoutePoint = { type: 'waypoint', lon, lat };
+  const points = r.points.slice();
+  points.splice(segIdx + 1, 0, newPoint);
+
+  const oldSeg = r.segments[segIdx]!;
+  const prevPt = r.points[segIdx]!;
+  const nextPt = r.points[segIdx + 1]!;
+  const seg1: RouteSegment = {
+    method: oldSeg.method,
+    geometry: [
+      [prevPt.lon, prevPt.lat],
+      [lon, lat]
+    ]
+  };
+  const seg2: RouteSegment = {
+    method: oldSeg.method,
+    geometry: [
+      [lon, lat],
+      [nextPt.lon, nextPt.lat]
+    ]
+  };
+  const segments = r.segments.slice();
+  segments.splice(segIdx, 1, seg1, seg2);
+  return { points, segments };
+}
+
+/** Remove a waypoint, merging adjacent segments. Returns null if the point isn't a waypoint. */
+export function removeWaypoint(
+  r: RouteData,
+  pointIdx: number
+): { route: RouteData; method: SegMethod } | null {
+  if (r.points[pointIdx]?.type !== 'waypoint') return null;
+
+  const segBefore = pointIdx - 1;
+  const prevPt = r.points[pointIdx - 1]!;
+  const nextPt = r.points[pointIdx + 1]!;
+  const method = r.segments[segBefore]?.method ?? 'straight';
+
+  const points = r.points.slice();
+  points.splice(pointIdx, 1);
+  const merged: RouteSegment = {
+    method,
+    geometry: [
+      [prevPt.lon, prevPt.lat],
+      [nextPt.lon, nextPt.lat]
+    ]
+  };
+  const segments = r.segments.slice();
+  segments.splice(segBefore, 2, merged);
+  return { route: { points, segments }, method };
+}
+
+/** Update a point's position and adjacent segment endpoints (for drag). */
+export function updateAdjacentSegments(
+  r: RouteData,
+  pointIdx: number,
+  lon: number,
+  lat: number
+): RouteData {
+  const pt = r.points[pointIdx];
+  if (pt === undefined) return r;
+  const points = r.points.slice();
+  points[pointIdx] = { ...pt, lon, lat };
+
+  const segments = r.segments.slice();
+  const before = pointIdx - 1;
+  if (before >= 0) {
+    const seg = segments[before];
+    if (seg !== undefined) {
+      const prev = points[pointIdx - 1]!;
+      segments[before] = {
+        ...seg,
+        geometry: [
+          [prev.lon, prev.lat],
+          [lon, lat]
+        ]
+      };
+    }
+  }
+  const after = pointIdx;
+  if (after < segments.length) {
+    const seg = segments[after];
+    if (seg !== undefined) {
+      const next = points[pointIdx + 1]!;
+      segments[after] = {
+        ...seg,
+        geometry: [
+          [lon, lat],
+          [next.lon, next.lat]
+        ]
+      };
+    }
+  }
+  return { points, segments };
+}
+
+// ---------- Photo-driven reconciliation ----------
 
 function buildPhotoLocationMap(
   photos: Photo[]
@@ -129,6 +260,72 @@ function getMovedPhotoLocation(
     return null;
   }
   return loc;
+}
+
+/**
+ * Sync photo point coordinates with current effective locations. Drops
+ * waypoints adjacent to points whose coords moved (likely stale).
+ */
+export function syncPhotoPoints(
+  r: RouteData,
+  photos: Photo[]
+): { route: RouteData; changed: boolean } {
+  const locMap = buildPhotoLocationMap(photos);
+  let cur = r;
+  let changed = false;
+  let removed = false;
+  let i = 0;
+  while (i < cur.points.length) {
+    const loc = getMovedPhotoLocation(cur.points[i]!, locMap);
+    if (loc === null) {
+      i++;
+      continue;
+    }
+    const pt = cur.points[i]!;
+    const newCoord: [number, number] = [loc.lon, loc.lat];
+
+    const points = cur.points.slice();
+    points[i] = { ...pt, lon: loc.lon, lat: loc.lat };
+    const segments = cur.segments.slice();
+
+    const before = segments[i - 1];
+    if (before !== undefined) {
+      if (before.method === 'straight') {
+        segments[i - 1] = {
+          ...before,
+          geometry: [...before.geometry.slice(0, -1), newCoord]
+        };
+      } else {
+        const prev = points[i - 1]!;
+        segments[i - 1] = {
+          method: 'straight',
+          geometry: [[prev.lon, prev.lat], newCoord]
+        };
+      }
+    }
+    const after = segments[i];
+    if (after !== undefined) {
+      if (after.method === 'straight') {
+        segments[i] = {
+          ...after,
+          geometry: [newCoord, ...after.geometry.slice(1)]
+        };
+      } else {
+        const next = points[i + 1]!;
+        segments[i] = {
+          method: 'straight',
+          geometry: [newCoord, [next.lon, next.lat]]
+        };
+      }
+    }
+    cur = { points, segments };
+    changed = true;
+    const result = withoutAdjacentWaypoints(cur, i);
+    cur = result.route;
+    if (result.removed) removed = true;
+    i = result.idx + 1;
+  }
+  return { route: cur, changed: changed || removed };
 }
 
 function buildPhotoSortKeys(photos: Photo[]): Map<string, string> {
@@ -178,182 +375,43 @@ function snapshotPointsByUuid(
   return m;
 }
 
-function resetSegmentsAroundIndex(
-  route: RouteData,
+function withSegmentsResetAround(
+  r: RouteData,
   idx: number,
   pt: RoutePoint
-): void {
-  const { points, segments } = route;
+): RouteData {
+  const segments = r.segments.slice();
   if (idx > 0 && idx - 1 < segments.length) {
-    segments[idx - 1] = makeStraightSegment(points[idx - 1]!, pt);
+    segments[idx - 1] = makeStraightSegment(r.points[idx - 1]!, pt);
   }
-  const next = points[idx + 1];
+  const next = r.points[idx + 1];
   if (idx < segments.length && next !== undefined) {
     segments[idx] = makeStraightSegment(pt, next);
   }
-}
-
-// ---------- Public algebra ----------
-
-/** Insert a waypoint at the given segment, splitting it into two with the same method. */
-export function insertWaypoint(
-  route: RouteData,
-  segIdx: number,
-  lon: number,
-  lat: number
-): void {
-  const newPoint: RoutePoint = { type: 'waypoint', lon, lat };
-  route.points.splice(segIdx + 1, 0, newPoint);
-
-  const oldSeg = route.segments[segIdx]!;
-  const prevPt = route.points[segIdx]!;
-  const nextPt = route.points[segIdx + 2]!;
-  const seg1: RouteSegment = {
-    method: oldSeg.method,
-    geometry: [
-      [prevPt.lon, prevPt.lat],
-      [lon, lat]
-    ]
-  };
-  const seg2: RouteSegment = {
-    method: oldSeg.method,
-    geometry: [
-      [lon, lat],
-      [nextPt.lon, nextPt.lat]
-    ]
-  };
-  route.segments.splice(segIdx, 1, seg1, seg2);
-}
-
-/** Remove a waypoint, merging adjacent segments. Returns the merged method, or null. */
-export function removeWaypoint(
-  route: RouteData,
-  pointIdx: number
-): RouteSegment['method'] | null {
-  if (route.points[pointIdx]?.type !== 'waypoint') return null;
-
-  const segBefore = pointIdx - 1;
-  const prevPt = route.points[pointIdx - 1]!;
-  const nextPt = route.points[pointIdx + 1]!;
-  const method = route.segments[segBefore]?.method ?? 'straight';
-
-  route.points.splice(pointIdx, 1);
-  const merged: RouteSegment = {
-    method,
-    geometry: [
-      [prevPt.lon, prevPt.lat],
-      [nextPt.lon, nextPt.lat]
-    ]
-  };
-  route.segments.splice(segBefore, 2, merged);
-  return method;
-}
-
-/** Update adjacent segment endpoints when a point is dragged. */
-export function updateAdjacentSegments(
-  route: RouteData,
-  pointIdx: number,
-  lon: number,
-  lat: number
-): void {
-  const pt = route.points[pointIdx];
-  if (pt === undefined) return;
-  pt.lon = lon;
-  pt.lat = lat;
-  const before = pointIdx - 1;
-  const after = pointIdx;
-  const segBefore = before >= 0 ? route.segments[before] : undefined;
-  if (segBefore !== undefined) {
-    const prev = route.points[pointIdx - 1]!;
-    segBefore.geometry = [
-      [prev.lon, prev.lat],
-      [lon, lat]
-    ];
-  }
-  const segAfter =
-    after < route.segments.length ? route.segments[after] : undefined;
-  if (segAfter !== undefined) {
-    const next = route.points[pointIdx + 1]!;
-    segAfter.geometry = [
-      [lon, lat],
-      [next.lon, next.lat]
-    ];
-  }
+  return { points: r.points, segments };
 }
 
 /**
- * Sync photo point coordinates with current effective locations. Splices
- * waypoints adjacent to points whose coords moved (likely stale). Returns
- * true if any waypoint was removed.
+ * Reorder photo points to match current chronological order. Segments
+ * around moved points reset to straight; adjacent waypoints are dropped.
  */
-export function syncPhotoPoints(
-  route: RouteData,
-  photos: Photo[] = data.filteredPhotos.get()
-): boolean {
-  const locMap = buildPhotoLocationMap(photos);
-  const { points, segments } = route;
-  let removed = false;
-  let i = 0;
-  while (i < points.length) {
-    const loc = getMovedPhotoLocation(points[i]!, locMap);
-    if (loc === null) {
-      i++;
-      continue;
-    }
-    const pt = points[i]!;
-    pt.lon = loc.lon;
-    pt.lat = loc.lat;
-    const coord: [number, number] = [loc.lon, loc.lat];
-    const before = segments[i - 1];
-    if (before !== undefined) {
-      if (before.method === 'straight') {
-        before.geometry.splice(-1, 1, coord);
-      } else {
-        const prev = points[i - 1]!;
-        segments[i - 1] = {
-          method: 'straight',
-          geometry: [[prev.lon, prev.lat], coord]
-        };
-      }
-    }
-    const after = segments[i];
-    if (after !== undefined) {
-      if (after.method === 'straight') {
-        after.geometry.splice(0, 1, coord);
-      } else {
-        const next = points[i + 1]!;
-        segments[i] = {
-          method: 'straight',
-          geometry: [coord, [next.lon, next.lat]]
-        };
-      }
-    }
-    const result = removeAdjacentWaypoints(route, i);
-    if (result.removed) removed = true;
-    i = result.idx + 1;
-  }
-  return removed;
-}
-
-/**
- * Reorder photo points to match current chronological order. Segments around
- * moved points reset to straight; adjacent waypoints are spliced. Returns
- * true if any reordering occurred.
- */
-export function reorderRoutePhotoPoints(
-  route: RouteData,
-  photos: Photo[] = data.filteredPhotos.get()
-): boolean {
+export function reorderPhotoPoints(
+  r: RouteData,
+  photos: Photo[]
+): { route: RouteData; changed: boolean } {
   const sortKeys = buildPhotoSortKeys(photos);
-  const { points } = route;
-  const photoIndices = collectSortablePhotoIndices(points, sortKeys);
-  if (photoIndices.length < 2) return false;
+  const photoIndices = collectSortablePhotoIndices(r.points, sortKeys);
+  if (photoIndices.length < 2) return { route: r, changed: false };
 
-  const currentUuids = photoIndices.map((i) => points[i]!.uuid!);
+  const currentUuids = photoIndices.map((i) => r.points[i]!.uuid!);
   const sortedUuids = computeSortedUuids(currentUuids, sortKeys);
-  if (currentUuids.every((uuid, i) => uuid === sortedUuids[i])) return false;
+  if (currentUuids.every((uuid, i) => uuid === sortedUuids[i])) {
+    return { route: r, changed: false };
+  }
 
-  const uuidToPoint = snapshotPointsByUuid(points, photoIndices);
+  const uuidToPoint = snapshotPointsByUuid(r.points, photoIndices);
+  let cur = r;
+  const points = cur.points.slice();
 
   const movedIndices: number[] = [];
   for (let i = 0; i < photoIndices.length; i++) {
@@ -361,24 +419,28 @@ export function reorderRoutePhotoPoints(
     if (currentUuids[i] === sortedUuids[i]) continue;
     const newPt = { ...uuidToPoint.get(sortedUuids[i]!)! };
     points[idx] = newPt;
-    resetSegmentsAroundIndex(route, idx, newPt);
     movedIndices.push(idx);
+  }
+  cur = { points, segments: cur.segments };
+  for (const idx of movedIndices) {
+    cur = withSegmentsResetAround(cur, idx, cur.points[idx]!);
   }
 
   for (let i = movedIndices.length - 1; i >= 0; i--) {
-    removeAdjacentWaypoints(route, movedIndices[i]!);
+    const result = withoutAdjacentWaypoints(cur, movedIndices[i]!);
+    cur = result.route;
   }
 
-  return true;
+  return { route: cur, changed: true };
 }
 
+// ---------- Display projections ----------
+
 /** Build display line features from route segments, breaking at 'none' segments. */
-export function buildRouteLineFeatures(
-  route: RouteData
-): Array<Feature<LineString>> {
+export function buildLineFeatures(r: RouteData): Array<Feature<LineString>> {
   const features: Array<Feature<LineString>> = [];
   let current: Array<[number, number]> = [];
-  for (const seg of route.segments) {
+  for (const seg of r.segments) {
     if (seg.method === 'none') {
       if (current.length >= 2) {
         features.push({
@@ -409,9 +471,7 @@ export function buildRouteLineFeatures(
  * Build a default straight-line route from chronologically sorted, located
  * photos. Returns null if there are fewer than two eligible photos.
  */
-export function buildDefaultRoute(
-  photos: Photo[] = data.filteredPhotos.get()
-): RouteData | null {
+export function buildDefault(photos: Photo[]): RouteData | null {
   const located: Array<{
     uuid: string;
     lon: number;

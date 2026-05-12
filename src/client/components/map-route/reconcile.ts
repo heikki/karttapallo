@@ -3,30 +3,31 @@ import type { Photo } from '@common/types';
 import { toUtcSortKey } from '@common/utils';
 
 import {
-  insertPointAt,
-  removePointAt,
-  reorderRoutePhotoPoints,
+  insertPoint,
+  removePoint,
+  reorderPhotoPoints,
   syncPhotoPoints
 } from './route-data';
 import type { RouteData, RoutePoint } from './route-data';
 
 function dropOrphanPhotoPoints(
-  route: RouteData,
+  r: RouteData,
   eligibleUuids: Set<string>
-): boolean {
+): { route: RouteData; changed: boolean } {
+  let cur = r;
   let changed = false;
-  for (let i = route.points.length - 1; i >= 0; i--) {
-    const pt = route.points[i]!;
+  for (let i = cur.points.length - 1; i >= 0; i--) {
+    const pt = cur.points[i]!;
     if (
       pt.type === 'photo' &&
       pt.uuid !== undefined &&
       !eligibleUuids.has(pt.uuid)
     ) {
-      removePointAt(route, i);
+      cur = removePoint(cur, i);
       changed = true;
     }
   }
-  return changed;
+  return { route: cur, changed };
 }
 
 interface InsertPlan {
@@ -40,21 +41,21 @@ interface Anchor {
   sortKey: string;
 }
 
-function findMissingPhotos(route: RouteData, eligible: Photo[]): Photo[] {
+function findMissingPhotos(r: RouteData, eligible: Photo[]): Photo[] {
   const inRoute = new Set<string>();
-  for (const pt of route.points) {
+  for (const pt of r.points) {
     if (pt.type === 'photo' && pt.uuid !== undefined) inRoute.add(pt.uuid);
   }
   return eligible.filter((p) => !inRoute.has(p.uuid));
 }
 
 function buildAnchorList(
-  route: RouteData,
+  r: RouteData,
   sortKeyByUuid: Map<string, string>
 ): Anchor[] {
   const anchors: Anchor[] = [];
-  for (let i = 0; i < route.points.length; i++) {
-    const pt = route.points[i]!;
+  for (let i = 0; i < r.points.length; i++) {
+    const pt = r.points[i]!;
     if (pt.type === 'photo' && pt.uuid !== undefined) {
       const sk = sortKeyByUuid.get(pt.uuid);
       if (sk !== undefined) anchors.push({ index: i, sortKey: sk });
@@ -64,7 +65,7 @@ function buildAnchorList(
 }
 
 function planInsertions(
-  route: RouteData,
+  r: RouteData,
   missing: Photo[],
   anchors: Anchor[],
   sortKeyByUuid: Map<string, string>
@@ -73,7 +74,7 @@ function planInsertions(
     const sk = sortKeyByUuid.get(m.uuid)!;
     const loc = edits.getEffectiveLocation(m)!;
     const next = anchors.find((a) => a.sortKey >= sk);
-    const atIndex = next === undefined ? route.points.length : next.index;
+    const atIndex = next === undefined ? r.points.length : next.index;
     return {
       atIndex,
       pt: { type: 'photo', uuid: m.uuid, lon: loc.lon, lat: loc.lat },
@@ -90,43 +91,58 @@ function planInsertions(
 }
 
 function insertMissingPhotoPoints(
-  route: RouteData,
+  r: RouteData,
   eligible: Photo[]
-): boolean {
-  if (eligible.length === 0) return false;
-  const missing = findMissingPhotos(route, eligible);
-  if (missing.length === 0) return false;
+): { route: RouteData; changed: boolean } {
+  if (eligible.length === 0) return { route: r, changed: false };
+  const missing = findMissingPhotos(r, eligible);
+  if (missing.length === 0) return { route: r, changed: false };
 
   const sortKeyByUuid = new Map<string, string>();
   for (const p of eligible) {
     sortKeyByUuid.set(p.uuid, toUtcSortKey(edits.getEffectiveDate(p), p.tz));
   }
-  const anchors = buildAnchorList(route, sortKeyByUuid);
-  const plans = planInsertions(route, missing, anchors, sortKeyByUuid);
+  const anchors = buildAnchorList(r, sortKeyByUuid);
+  const plans = planInsertions(r, missing, anchors, sortKeyByUuid);
+  let cur = r;
   for (const plan of plans) {
-    insertPointAt(route, plan.atIndex, plan.pt);
+    cur = insertPoint(cur, plan.atIndex, plan.pt);
   }
-  return true;
+  return { route: cur, changed: true };
 }
 
 /**
  * Reconcile a saved route against an album: drop orphan photo points,
  * sync existing photo coordinates, insert newly eligible photos, reorder
- * by date. Returns true if the route's structure changed.
+ * by date. Returns the new RouteData and whether structure changed.
  */
-export function reconcileRouteWithAlbum(
-  route: RouteData,
+export function reconcileWithAlbum(
+  r: RouteData,
   albumPhotos: Photo[]
-): boolean {
+): { route: RouteData; changed: boolean } {
   const eligible = albumPhotos.filter(
     (p) => edits.getEffectiveLocation(p) !== null && p.date !== ''
   );
   const eligibleUuids = new Set(eligible.map((p) => p.uuid));
 
+  let cur = r;
   let changed = false;
-  if (dropOrphanPhotoPoints(route, eligibleUuids)) changed = true;
-  if (syncPhotoPoints(route, eligible)) changed = true;
-  if (insertMissingPhotoPoints(route, eligible)) changed = true;
-  if (reorderRoutePhotoPoints(route, eligible)) changed = true;
-  return changed;
+
+  const dropped = dropOrphanPhotoPoints(cur, eligibleUuids);
+  cur = dropped.route;
+  if (dropped.changed) changed = true;
+
+  const synced = syncPhotoPoints(cur, eligible);
+  cur = synced.route;
+  if (synced.changed) changed = true;
+
+  const inserted = insertMissingPhotoPoints(cur, eligible);
+  cur = inserted.route;
+  if (inserted.changed) changed = true;
+
+  const reordered = reorderPhotoPoints(cur, eligible);
+  cur = reordered.route;
+  if (reordered.changed) changed = true;
+
+  return { route: cur, changed };
 }
