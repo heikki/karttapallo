@@ -369,6 +369,16 @@ Dev builds use `.data/` in the project root. Installed builds use `~/Library/App
 
 The app is packaged as a native macOS desktop app using Electrobun (Bun + system webview).
 
+### Version pin: electrobun 1.16.0
+
+**Do not upgrade past 1.16.0** until Bun fixes its bundler-side decorator regression.
+
+Electrobun's `electrobun build` bundles client and server code through `Bun.build()` (the programmatic bundler API). Bun 1.3.10 introduced TC39-stage-3 decorator lowering (PR [oven-sh/bun#26436](https://github.com/oven-sh/bun/pull/26436)) and starting with the Bun shipped in electrobun 1.18.1 (Bun 1.3.13), the bundler emits `__decorateElement` (TC39 standard) and **no longer respects `experimentalDecorators: true`** — not via `tsconfig.json` auto-discovery, not via the explicit `tsconfig` option, not even as an inline `TSConfig` object passed to `Bun.build`. The `TSConfig` type for the bundler API doesn't expose the flag at all. Tracking: [oven-sh/bun#30477](https://github.com/oven-sh/bun/issues/30477), fix in [PR #30478](https://github.com/oven-sh/bun/pull/30478) (awaiting merge).
+
+This breaks Lit's legacy `@property`/`@state`/`@query`/`@consume` decorators at runtime (`Unsupported decorator location: field`, plus assorted `Cannot read from private field` errors). Migrating to TC39 standard decorators requires adding the `accessor` keyword to every decorated field and untangles `@query` cache semantics and `@consume` initialization order in non-obvious ways; attempted once, reverted.
+
+`bun run dev` (the web entry) works on any modern Bun because that path uses Bun's runtime transpiler, which still honors `experimentalDecorators`. Only `Bun.build` is affected. Re-evaluate the upgrade once PR #30478 lands in a Bun release that ships with electrobun.
+
 ### Application Menu
 
 - **Karttakuvat**: About Karttakuvat, Quit (Cmd+Q)
