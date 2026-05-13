@@ -5,9 +5,9 @@ Geotagged photo map viewer with Apple Photos integration.
 ## Project Stats (as of 13.05.2026)
 
 - **TypeScript files**: 76
-- **Lines of code**: 12,898 (+ 3,300 tests)
-- **Total commits**: 574
-- **Total tokens**: ~2,324M | **Total cost**: ~$1,446
+- **Lines of code**: 12,907 (+ 3,271 tests)
+- **Total commits**: 583
+- **Total tokens**: ~2,374M | **Total cost**: ~$1,478
 
 ## Updating This Diary
 
@@ -37,11 +37,14 @@ git log --pretty=format:"%ad|%s" --date=format:"%Y-%m-%d" | head -50  # Recent c
 - Describe final outcomes, not reverted intermediate attempts.
 - Flat list, no sub-bullets or prose.
 
-## 13.05.2026 — Map route cleanup
+## 13.05.2026 — Dependency refresh; desktop bundler version pin
 
-**Tokens**: 7M | **Cost**: $6
+**Tokens**: 57M | **Cost**: $38
 
 - Internal: trimmed dead code from the map route module
+- Internal: bumped TypeScript to 6 and ESLint to 10 alongside the routine patch and minor refreshes
+- Internal: pinned the desktop bundler version after a newer release silently dropped legacy decorator support; documented the upstream bug so future upgrades don't relitigate
+- Internal: fixed a date-pattern regex that Bun's stricter regex flag started rejecting
 
 ## 12.05.2026 — Map route shape refactor
 
