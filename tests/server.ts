@@ -134,7 +134,10 @@ const { routeApiRequest } = createApiHandler(dataDir, {
 
 const fetch = createRequestHandler({
   routeApi: routeApiRequest,
-  staticRoots: [dataDir, 'src/client']
+  staticRoots: [dataDir, 'src/client'],
+  vendorFiles: {
+    '/maplibre-gl.css': 'node_modules/maplibre-gl/dist/maplibre-gl.css'
+  }
 });
 
 serve({
