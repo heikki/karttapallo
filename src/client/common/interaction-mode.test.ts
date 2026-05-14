@@ -112,4 +112,19 @@ describe('interaction-mode', () => {
     expect(placement.onExit).not.toHaveBeenCalled();
     expect(measure.onExit).not.toHaveBeenCalled();
   });
+
+  test('mode entered before defineMode runs onEnter via catch-up', async () => {
+    // Synthetic mode name: bun:test shares module state across files, and
+    // sibling unit tests pre-register all three real modes, defeating the
+    // "def missing at enter time" precondition.
+    const fakeMode = 'fake-test-mode' as 'measure';
+    const fake = newSpies();
+    enter(fakeMode);
+    await flush();
+    expect(fake.onEnter).not.toHaveBeenCalled();
+
+    defineMode(fakeMode, { onEnter: fake.onEnter, onExit: fake.onExit });
+    expect(fake.onEnter).toHaveBeenCalledTimes(1);
+    expect(current.get()).toBe(fakeMode);
+  });
 });

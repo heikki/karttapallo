@@ -47,6 +47,16 @@ effect(() => {
   const next = _current.get();
   if (next === _entered) return;
   if (_entered !== null) _defs.get(_entered)?.onExit();
+  if (next === null) {
+    _entered = null;
+    return;
+  }
+  const def = _defs.get(next);
+  if (def === undefined) {
+    // Feature not mounted yet; defineMode's catch-up will fire onEnter.
+    _entered = null;
+    return;
+  }
   _entered = next;
-  if (next !== null) _defs.get(next)?.onEnter();
+  def.onEnter();
 });
