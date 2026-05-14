@@ -2,12 +2,12 @@
 
 Geotagged photo map viewer with Apple Photos integration.
 
-## Project Stats (as of 13.05.2026)
+## Project Stats (as of 14.05.2026)
 
 - **TypeScript files**: 76
-- **Lines of code**: 12,907 (+ 3,271 tests)
-- **Total commits**: 583
-- **Total tokens**: ~2,374M | **Total cost**: ~$1,478
+- **Lines of code**: 12,925 (+ 3,271 tests)
+- **Total commits**: 586
+- **Total tokens**: ~2,386M | **Total cost**: ~$1,487
 
 ## Updating This Diary
 
@@ -36,6 +36,13 @@ git log --pretty=format:"%ad|%s" --date=format:"%Y-%m-%d" | head -50  # Recent c
 - Skip minor tweaks — only significant features and fixes belong, especially on busy days.
 - Describe final outcomes, not reverted intermediate attempts.
 - Flat list, no sub-bullets or prose.
+
+## 14.05.2026 — Documentation restructure
+
+**Tokens**: 12M | **Cost**: $9
+
+- Internal: moved project-knowledge gotchas out of agent memory and into the repo, as a docs file plus inline comments at the relevant call sites
+- Internal: restructured docs around one-purpose-per-file — added a glossary and a directory of one-paragraph decision records; thinned the architecture and user-flows docs to indexes that defer detail to code
 
 ## 13.05.2026 — Dependency refresh; desktop bundler version pin
 
