@@ -1,5 +1,5 @@
 /**
- * Tier 4 smoke test: load libkarttakuvat.dylib and exercise a non-mutating
+ * Tier 4 smoke test: load libkarttapallo.dylib and exercise a non-mutating
  * AppleScript via the FFI bridge. Skipped automatically off macOS so CI on
  * other platforms passes; runs on the macOS CI job and locally.
  *

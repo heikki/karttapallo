@@ -59,7 +59,7 @@ function readSnapshot(): ItemEntry[] {
 }
 
 beforeEach(() => {
-  dataDir = mkdtempSync(join(tmpdir(), 'karttakuvat-itemstore-'));
+  dataDir = mkdtempSync(join(tmpdir(), 'karttapallo-itemstore-'));
 });
 
 afterEach(() => {

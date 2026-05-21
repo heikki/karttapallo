@@ -38,10 +38,10 @@ const projectRoot = findProjectRoot();
 
 function findDataDir(): string {
   if (
-    process.env.KARTTAKUVAT_DATA_DIR !== undefined &&
-    process.env.KARTTAKUVAT_DATA_DIR !== ''
+    process.env.KARTTAPALLO_DATA_DIR !== undefined &&
+    process.env.KARTTAPALLO_DATA_DIR !== ''
   ) {
-    return resolve(process.env.KARTTAKUVAT_DATA_DIR);
+    return resolve(process.env.KARTTAPALLO_DATA_DIR);
   }
 
   if (projectRoot !== null) {
@@ -51,7 +51,7 @@ function findDataDir(): string {
     }
   }
 
-  return join(process.env.HOME!, 'Library/Application Support/Karttakuvat');
+  return join(process.env.HOME!, 'Library/Application Support/Karttapallo');
 }
 
 const dataDir = findDataDir();
@@ -77,16 +77,16 @@ const viewsDir = join(appDir, 'views', 'app');
 // App menu
 ApplicationMenu.setApplicationMenu([
   {
-    label: 'Karttakuvat',
+    label: 'Karttapallo',
     submenu: [
-      { label: 'About Karttakuvat', action: 'about' },
+      { label: 'About Karttapallo', action: 'about' },
       { type: 'divider' },
       { role: 'hide', accelerator: 'CmdOrCtrl+H' },
       { role: 'hideOthers', accelerator: 'Alt+CmdOrCtrl+H' },
       { role: 'showAll' },
       { type: 'divider' },
       {
-        label: 'Quit Karttakuvat',
+        label: 'Quit Karttapallo',
         action: 'quit',
         accelerator: 'CmdOrCtrl+Q'
       }
@@ -117,9 +117,9 @@ function showFullDiskAccessDialog() {
     type: 'warning',
     title: 'Full Disk Access Required',
     message:
-      'Karttakuvat needs Full Disk Access to read photo metadata from Photos.sqlite.',
+      'Karttapallo needs Full Disk Access to read photo metadata from Photos.sqlite.',
     detail:
-      'Open System Settings > Privacy & Security > Full Disk Access, then enable access for Karttakuvat.\n\nRestart the app after granting access.',
+      'Open System Settings > Privacy & Security > Full Disk Access, then enable access for Karttapallo.\n\nRestart the app after granting access.',
     buttons: ['Open System Settings', 'OK']
   }).then(({ response }: { response: number }) => {
     if (response === 0) {
@@ -226,7 +226,7 @@ function buildViewUrl(): string {
 }
 
 const win = new BrowserWindow<typeof rpc>({
-  title: 'Karttakuvat',
+  title: 'Karttapallo',
   url: 'about:blank',
   frame: savedFrame,
   rpc
@@ -304,7 +304,7 @@ async function syncPhotos() {
     return;
   }
   syncing = true;
-  win.setTitle('Karttakuvat — Syncing…');
+  win.setTitle('Karttapallo — Syncing…');
   try {
     const changed = await itemStore.rebuild();
     if (changed) win.webview.loadURL(buildViewUrl());
@@ -325,7 +325,7 @@ async function syncPhotos() {
     });
   } finally {
     syncing = false; // eslint-disable-line require-atomic-updates -- intentional sequential reset
-    win.setTitle('Karttakuvat');
+    win.setTitle('Karttapallo');
   }
 }
 

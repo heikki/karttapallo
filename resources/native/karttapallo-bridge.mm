@@ -1,5 +1,5 @@
 /**
- * Native image processing bridge for Karttakuvat.
+ * Native image processing bridge for Karttapallo.
  *
  * Provides HEIC→JPEG conversion, thumbnail generation, and video frame
  * extraction via ImageIO and AVFoundation — replacing sips/qlmanage subprocesses.
@@ -8,7 +8,7 @@
  *   clang++ -shared -fPIC -O2 -fobjc-arc \
  *     -framework Foundation -framework ImageIO \
  *     -framework AVFoundation -framework CoreGraphics \
- *     -o native/libkarttakuvat.dylib native/karttakuvat-bridge.mm
+ *     -o native/libkarttapallo.dylib native/karttapallo-bridge.mm
  */
 
 #import <Foundation/Foundation.h>

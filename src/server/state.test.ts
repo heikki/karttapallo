@@ -8,7 +8,7 @@ import { getSetting, setSetting } from './state';
 let dataDir = '';
 
 beforeEach(() => {
-  dataDir = mkdtempSync(join(tmpdir(), 'karttakuvat-state-'));
+  dataDir = mkdtempSync(join(tmpdir(), 'karttapallo-state-'));
 });
 
 afterEach(() => {

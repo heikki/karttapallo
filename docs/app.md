@@ -36,7 +36,7 @@ The desktop entry lives at `src/server/index.ts` (the name is required because E
 
 ## Native
 
-`resources/native/karttakuvat-bridge.mm` — ObjC++ over ImageIO (HEIC→JPEG, thumbnailing), AVFoundation (video frame extraction), and NSAppleScript (Photos edits). Compiled to `libkarttakuvat.dylib` by `bun run build:native` and loaded via `bun:ffi` from `resources/native/native-bridge.ts`. Replaces an earlier subprocess pipeline — see [ADR-0002](adr/0002-native-dylib-via-bun-ffi.md). NSAppleScript main-thread requirement is documented in the source.
+`resources/native/karttapallo-bridge.mm` — ObjC++ over ImageIO (HEIC→JPEG, thumbnailing), AVFoundation (video frame extraction), and NSAppleScript (Photos edits). Compiled to `libkarttapallo.dylib` by `bun run build:native` and loaded via `bun:ffi` from `resources/native/native-bridge.ts`. Replaces an earlier subprocess pipeline — see [ADR-0002](adr/0002-native-dylib-via-bun-ffi.md). NSAppleScript main-thread requirement is documented in the source.
 
 ## Desktop app (Electrobun)
 

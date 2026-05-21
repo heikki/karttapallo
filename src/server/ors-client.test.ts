@@ -13,7 +13,7 @@ const ORIGINAL_ENV = {
 let dataDir = '';
 
 beforeEach(() => {
-  dataDir = mkdtempSync(join(tmpdir(), 'karttakuvat-ors-'));
+  dataDir = mkdtempSync(join(tmpdir(), 'karttapallo-ors-'));
   delete process.env.PUBLIC_ORS_API_KEY;
   delete process.env.ORS_API_KEY;
 });

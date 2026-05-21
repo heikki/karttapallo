@@ -1,5 +1,5 @@
 /**
- * TypeScript FFI wrapper for libkarttakuvat.dylib.
+ * TypeScript FFI wrapper for libkarttapallo.dylib.
  *
  * Provides convertToJpeg, resizeToJpeg, and extractVideoFrame as typed
  * functions matching the old subprocess-based signatures.
@@ -12,9 +12,9 @@ function findDylib(): string {
   const argv0Dir = dirname(process.argv[0] ?? '.');
   const candidates = [
     // 1. resources/native/ next to this source file (bun dev from project root)
-    join(dirname(import.meta.path), 'libkarttakuvat.dylib'),
+    join(dirname(import.meta.path), 'libkarttapallo.dylib'),
     // 2. Electrobun installed: Contents/MacOS/../Resources/app/
-    join(argv0Dir, '..', 'Resources', 'app', 'libkarttakuvat.dylib'),
+    join(argv0Dir, '..', 'Resources', 'app', 'libkarttapallo.dylib'),
     // 3. Electrobun dev: Contents/MacOS → up 5 levels → project root/resources/native/
     join(
       argv0Dir,
@@ -25,14 +25,14 @@ function findDylib(): string {
       '..',
       'resources',
       'native',
-      'libkarttakuvat.dylib'
+      'libkarttapallo.dylib'
     )
   ];
   for (const path of candidates) {
     if (existsSync(path)) return path;
   }
   throw new Error(
-    `libkarttakuvat.dylib not found. Searched:\n${candidates.join('\n')}\nRun: bun run build:native`
+    `libkarttapallo.dylib not found. Searched:\n${candidates.join('\n')}\nRun: bun run build:native`
   );
 }
 

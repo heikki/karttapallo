@@ -118,7 +118,7 @@ export class FilterPanel extends SignalWatcher(LitElement) {
             this._collapsed = !this._collapsed;
           }}
         >
-          <h2>Karttakuvat</h2>
+          <h2>Karttapallo</h2>
           <p role="status" aria-label="Photo stats">
             ${FilterPanel._renderStats()}
           </p>

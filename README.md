@@ -1,10 +1,10 @@
-# Karttakuvat
+# Karttapallo
 
 Globe view of an Apple Photos library — fix missing locations and wrong dates or timezones in place.
 
 Photos and videos can be browsed in a built-in full-screen lightbox.
 
-![Karttakuvat](screenshot.png)
+![Karttapallo](screenshot.png)
 
 ## Setup
 

@@ -13,7 +13,7 @@ let dataDir = '';
 let store: AlbumStore = createAlbumStore('');
 
 beforeEach(() => {
-  dataDir = mkdtempSync(join(tmpdir(), 'karttakuvat-albumstore-'));
+  dataDir = mkdtempSync(join(tmpdir(), 'karttapallo-albumstore-'));
   store = createAlbumStore(dataDir);
 });
 

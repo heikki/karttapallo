@@ -101,7 +101,7 @@ export async function backupAlbumsToICloud(dataDir: string): Promise<void> {
   const localAlbums = join(dataDir, 'albums');
   if (!existsSync(localAlbums)) return;
 
-  const backupRoot = join(icloudBase, 'Karttakuvat');
+  const backupRoot = join(icloudBase, 'Karttapallo');
   const latestDir = join(backupRoot, 'latest');
   const snapshotsDir = join(backupRoot, 'snapshots');
   const fs = await import('node:fs/promises');

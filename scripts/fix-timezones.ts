@@ -25,7 +25,7 @@ const libraryPath = join(homedir(), 'Pictures/Photos Library.photoslibrary');
 const photosDbPath = join(libraryPath, 'database/Photos.sqlite');
 const appDbPath = join(
   homedir(),
-  'Library/Application Support/karttakuvat/app.db'
+  'Library/Application Support/Karttapallo/app.db'
 );
 
 const photosDb = new Database(
