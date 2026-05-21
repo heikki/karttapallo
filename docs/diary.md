@@ -2,12 +2,12 @@
 
 Geotagged photo map viewer with Apple Photos integration.
 
-## Project Stats (as of 14.05.2026)
+## Project Stats (as of 21.05.2026)
 
 - **TypeScript files**: 76
 - **Lines of code**: 12,934 (+ 3,286 tests)
-- **Total commits**: 590
-- **Total tokens**: ~2,449M | **Total cost**: ~$1,530
+- **Total commits**: 593
+- **Total tokens**: ~2,456M | **Total cost**: ~$1,537
 
 ## Updating This Diary
 
@@ -36,6 +36,12 @@ git log --pretty=format:"%ad|%s" --date=format:"%Y-%m-%d" | head -50  # Recent c
 - Skip minor tweaks — only significant features and fixes belong, especially on busy days.
 - Describe final outcomes, not reverted intermediate attempts.
 - Flat list, no sub-bullets or prose.
+
+## 21.05.2026 — Renamed to Karttapallo
+
+**Tokens**: 6M | **Cost**: $5
+
+- Renamed the project from Karttakuvat to Karttapallo — "map-ball" (globe) fits the 3D-globe view better than "map images"; bundle id, data dir, iCloud backup folder, and GitHub repo all moved across
 
 ## 14.05.2026 — Documentation restructure; mode-race & route-load fixes
 
