@@ -1,3 +1,5 @@
+import { mkdirSync } from 'node:fs';
+import { join } from 'node:path';
 import indexHtml from '@client/index.html';
 import { serve } from 'bun';
 
@@ -5,14 +7,56 @@ import { createAlbumStore } from './album-store';
 import { createApiHandler, type EditResultEvent } from './api-routes';
 import { openItemStore } from './item-store';
 import { createOrsClient } from './ors-client';
-import { createImageCache, openPhotosLibrary } from './photos-library';
+import { createPhotosWriter } from './photos-edit';
+import {
+  createImageCache,
+  libraryDataDir,
+  markLibraryDir,
+  openPhotosLibrary,
+  resolveLibrary
+} from './photos-library';
 import { createRequestHandler } from './request-handler';
 
 const dataDir = '.data';
-const imageCache = createImageCache({ cacheDir: `${dataDir}/cache` });
-const photosLibrary = openPhotosLibrary({ imageCache });
-const itemStore = openItemStore({ dataDir, imageCache });
-const albumStore = createAlbumStore(dataDir);
+
+// Resolve the active Photos library, failing loud (ADR 0012) — the dev server
+// has no UI to recover, so a clear message + non-zero exit is the right move.
+const resolved = resolveLibrary();
+if (!resolved.ok) {
+  if (resolved.error === 'fda') {
+    console.error(
+      `[main] Cannot read Photos library: ${resolved.message}\n` +
+        '       Grant Full Disk Access to your terminal and retry.'
+    );
+  } else {
+    const where = resolved.volume ?? 'an unavailable location';
+    console.error(
+      `[main] Photos library not available — it lives on ${where}.\n` +
+        `       (${resolved.libraryPath})\n` +
+        '       Connect the drive and retry.'
+    );
+  }
+  process.exit(1);
+}
+const libraryPath = resolved.path;
+const libDir = libraryDataDir(dataDir, libraryPath);
+mkdirSync(libDir, { recursive: true });
+markLibraryDir(libDir, libraryPath);
+console.log(`[main] Library: ${libraryPath}`);
+console.log(`[main] Library data: ${libDir}`);
+
+const imageCache = createImageCache({
+  cacheDir: join(libDir, 'cache'),
+  libraryPath
+});
+const photosLibrary = openPhotosLibrary({ imageCache, libraryPath });
+const itemStore = openItemStore({
+  dataDir: libDir,
+  imageCache,
+  libraryPath,
+  photosWriter: createPhotosWriter(libraryPath)
+});
+const albumStore = createAlbumStore(libDir);
 const orsClient = createOrsClient(dataDir);
 
 function logEditResult(event: EditResultEvent): void {
@@ -73,7 +117,7 @@ function logRequest(
 
 const fetch = createRequestHandler({
   routeApi: routeApiRequest,
-  staticRoots: [dataDir, 'src/client'],
+  staticRoots: [libDir, 'src/client'],
   vendorFiles: {
     '/maplibre-gl.css': 'node_modules/maplibre-gl/dist/maplibre-gl.css'
   },

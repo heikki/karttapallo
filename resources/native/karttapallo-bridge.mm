@@ -185,3 +185,56 @@ extern "C" int runAppleScript(const char* script, char* errBuf, int errBufLen) {
     }
     return result;
 }
+
+// ---------- resolveActiveLibraryPath ----------
+//
+// Resolves the path of the Photos library that Photos.app currently treats as
+// active, by decoding the `IPXDefaultLibraryURLBookmark` security-scoped
+// bookmark stored in the Photos container preferences. Reading the container
+// requires Full Disk Access.
+//
+// Return codes:
+//   0  outBuf = POSIX path of the active library
+//   1  no bookmark found (prefs unreadable-because-absent or key missing) —
+//      caller should fall back to the system library at ~/Pictures
+//   2  prefs exist but could not be read (Full Disk Access not granted) —
+//      errBuf holds a message
+extern "C" int resolveActiveLibraryPath(char* outBuf, int outLen, char* errBuf, int errLen) {
+    @autoreleasepool {
+        NSString* home = NSHomeDirectory();
+        NSString* prefsPath = [home stringByAppendingPathComponent:
+            @"Library/Containers/com.apple.Photos/Data/Library/Preferences/com.apple.Photos.plist"];
+        NSURL* prefsURL = [NSURL fileURLWithPath:prefsPath];
+
+        NSError* readErr = nil;
+        NSDictionary* prefs = [NSDictionary dictionaryWithContentsOfURL:prefsURL error:&readErr];
+        if (prefs == nil) {
+            // Distinguish "no prefs at all" (fresh install → fall back) from
+            // "prefs are there but we can't read them" (Full Disk Access).
+            if ([[NSFileManager defaultManager] fileExistsAtPath:prefsPath]) {
+                NSString* msg = [readErr localizedDescription] ?: @"cannot read Photos preferences";
+                strlcpy(errBuf, [msg UTF8String], errLen);
+                return 2;
+            }
+            return 1;
+        }
+
+        NSData* bookmark = prefs[@"IPXDefaultLibraryURLBookmark"];
+        if (![bookmark isKindOfClass:[NSData class]]) {
+            return 1;
+        }
+
+        BOOL stale = NO;
+        NSError* resolveErr = nil;
+        NSURL* libURL = [NSURL URLByResolvingBookmarkData:bookmark
+                                                  options:NSURLBookmarkResolutionWithoutUI
+                                            relativeToURL:nil
+                                      bookmarkDataIsStale:&stale
+                                                    error:&resolveErr];
+        if (libURL == nil || [libURL path] == nil) {
+            return 1;
+        }
+        strlcpy(outBuf, [[libURL path] UTF8String], outLen);
+        return 0;
+    }
+}

@@ -8,8 +8,14 @@ const { createAlbumStore } = await import('./album-store');
 const { createApiHandler } = await import('./api-routes');
 const { openItemStore } = await import('./item-store');
 const { createOrsClient } = await import('./ors-client');
-const { createImageCache, openPhotosLibrary } =
-  await import('./photos-library');
+const {
+  createImageCache,
+  openPhotosLibrary,
+  resolveLibrary,
+  libraryDataDir,
+  markLibraryDir
+} = await import('./photos-library');
+const { createPhotosWriter } = await import('./photos-edit');
 const { createRequestHandler } = await import('./request-handler');
 const { getSetting, setSetting } = await import('./state');
 
@@ -58,10 +64,68 @@ const dataDir = findDataDir();
 console.log(`[main] Data directory: ${dataDir}`);
 
 mkdirSync(dataDir, { recursive: true });
-const imageCache = createImageCache({ cacheDir: join(dataDir, 'cache') });
-const photosLibrary = openPhotosLibrary({ imageCache });
-const itemStore = openItemStore({ dataDir, imageCache });
-const albumStore = createAlbumStore(dataDir);
+
+// Resolve the active Photos library, failing loud (ADR 0012). Never silently
+// fall back to a different library — show the user why and let them recover.
+async function resolveLibraryOrExit(): Promise<string> {
+  for (;;) {
+    const r = resolveLibrary();
+    if (r.ok) return r.path;
+
+    if (r.error === 'fda') {
+      // eslint-disable-next-line no-await-in-loop -- modal retry loop is inherently sequential
+      const { response } = await Utils.showMessageBox({
+        type: 'warning',
+        title: 'Full Disk Access Required',
+        message:
+          'Karttapallo needs Full Disk Access to find your Photos library.',
+        detail:
+          'Open System Settings > Privacy & Security > Full Disk Access, enable Karttapallo, then click Retry.',
+        buttons: ['Open System Settings', 'Retry', 'Quit']
+      });
+      if (response === 0) {
+        Bun.spawn([
+          'open',
+          'x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles'
+        ]);
+      } else if (response === 2) {
+        process.exit(1);
+      }
+    } else {
+      const where =
+        r.volume === null ? 'at its saved path' : `on the volume "${r.volume}"`;
+      // eslint-disable-next-line no-await-in-loop -- modal retry loop is inherently sequential
+      const { response } = await Utils.showMessageBox({
+        type: 'warning',
+        title: 'Photos Library Unavailable',
+        message: `Your Photos library isn't available — it lives ${where}.`,
+        detail: `${r.libraryPath}\n\nConnect the drive, then click Retry.`,
+        buttons: ['Retry', 'Quit']
+      });
+      if (response === 1) process.exit(1);
+    }
+  }
+}
+
+const libraryPath = await resolveLibraryOrExit();
+const libDir = libraryDataDir(dataDir, libraryPath);
+mkdirSync(libDir, { recursive: true });
+markLibraryDir(libDir, libraryPath);
+console.log(`[main] Library: ${libraryPath}`);
+console.log(`[main] Library data: ${libDir}`);
+
+const imageCache = createImageCache({
+  cacheDir: join(libDir, 'cache'),
+  libraryPath
+});
+const photosLibrary = openPhotosLibrary({ imageCache, libraryPath });
+const itemStore = openItemStore({
+  dataDir: libDir,
+  imageCache,
+  libraryPath,
+  photosWriter: createPhotosWriter(libraryPath)
+});
+const albumStore = createAlbumStore(libDir);
 const orsClient = createOrsClient(dataDir);
 const { routeApiRequest } = createApiHandler(dataDir, {
   itemStore,
@@ -146,7 +210,7 @@ async function checkFullDiskAccess(response: Response, pathname: string) {
 
 const fetch = createRequestHandler({
   routeApi: routeApiRequest,
-  staticRoots: [viewsDir, dataDir],
+  staticRoots: [viewsDir, libDir],
   onResponse: async (req, res, pathname) => {
     if (pathname.startsWith('/api/')) {
       await checkFullDiskAccess(res, pathname);

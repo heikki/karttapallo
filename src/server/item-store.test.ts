@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 
 import { openItemStore, type ItemEntry, type ItemStore } from './item-store';
 import type { PhotosWriter } from './photos-edit';
+import type { LibraryResolution } from './photos-library';
 
 let dataDir = '';
 
@@ -250,5 +251,66 @@ describe('item-store applyEdits', () => {
     expect(result.timeResults).toEqual([
       { uuid: 'ZZZZ', ok: false, error: 'Item not found' }
     ]);
+  });
+});
+
+describe('item-store write-time library guard', () => {
+  const lib = '/Volumes/A/Photos Library.photoslibrary';
+
+  async function openGuarded(
+    active: LibraryResolution,
+    writer: PhotosWriter
+  ): Promise<ItemStore> {
+    const store = openItemStore({
+      dataDir,
+      libraryPath: lib,
+      photosWriter: writer,
+      buildFreshItems: () => [sampleItem({ uuid: 'AAAA', lat: 0, lon: 0 })],
+      resolveActiveLibrary: () => active
+    });
+    await store.rebuildComplete;
+    return store;
+  }
+
+  test('refuses edits when the active library no longer matches', async () => {
+    const writer = recordingWriter();
+    const store = await openGuarded(
+      { ok: true, path: '/Volumes/B/Photos Library.photoslibrary' },
+      writer
+    );
+    expect(() =>
+      store.applyEdits({
+        locationEdits: [{ uuid: 'AAAA', lat: 1, lon: 2 }],
+        timeEdits: []
+      })
+    ).toThrow('different library');
+    // Nothing should have been written.
+    expect(writer.calls).toEqual([]);
+  });
+
+  test('allows edits when the active library matches', async () => {
+    const writer = recordingWriter();
+    const store = await openGuarded({ ok: true, path: lib }, writer);
+    const result = store.applyEdits({
+      locationEdits: [{ uuid: 'AAAA', lat: 60.17, lon: 24.94 }],
+      timeEdits: []
+    });
+    expect(result.locationResults).toEqual([{ uuid: 'AAAA', ok: true }]);
+    expect(writer.calls.some((c) => c.startsWith('setLocation AAAA'))).toBe(
+      true
+    );
+  });
+
+  test('proceeds when the active library cannot be resolved', async () => {
+    const writer = recordingWriter();
+    const store = await openGuarded(
+      { ok: false, error: 'unavailable', libraryPath: lib, volume: 'A' },
+      writer
+    );
+    const result = store.applyEdits({
+      locationEdits: [{ uuid: 'AAAA', lat: 60.17, lon: 24.94 }],
+      timeEdits: []
+    });
+    expect(result.locationResults).toEqual([{ uuid: 'AAAA', ok: true }]);
   });
 });

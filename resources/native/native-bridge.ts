@@ -56,6 +56,10 @@ const lib = dlopen(findDylib(), {
   runAppleScript: {
     args: [FFIType.ptr, FFIType.ptr, FFIType.i32],
     returns: FFIType.i32
+  },
+  resolveActiveLibraryPath: {
+    args: [FFIType.ptr, FFIType.i32, FFIType.ptr, FFIType.i32],
+    returns: FFIType.i32
   }
 });
 
@@ -99,6 +103,48 @@ export function runAppleScript(script: string): void {
     );
     throw new Error(`AppleScript failed: ${msg}`);
   }
+}
+
+/**
+ * Resolves the path of the Photos library Photos.app currently treats as
+ * active, decoded from the `IPXDefaultLibraryURLBookmark` bookmark in the
+ * Photos container preferences (requires Full Disk Access).
+ *
+ * - `{ status: 'ok', path }` — the active library path
+ * - `{ status: 'no-bookmark' }` — no bookmark exists; caller falls back to the
+ *   system library at ~/Pictures
+ * - `{ status: 'denied', message }` — prefs exist but couldn't be read (FDA)
+ */
+export type ActiveLibraryResult =
+  | { status: 'ok'; path: string }
+  | { status: 'no-bookmark' }
+  | { status: 'denied'; message: string };
+
+const PATH_BUF_LEN = 4096;
+
+export function resolveActiveLibraryPath(): ActiveLibraryResult {
+  const outBuf = new Uint8Array(PATH_BUF_LEN);
+  const errBuf = new Uint8Array(ERR_BUF_LEN);
+  const rc = lib.symbols.resolveActiveLibraryPath(
+    ptr(outBuf),
+    PATH_BUF_LEN,
+    ptr(errBuf),
+    ERR_BUF_LEN
+  );
+  if (rc === 0) {
+    return { status: 'ok', path: decodeCString(outBuf) };
+  }
+  if (rc === 2) {
+    return { status: 'denied', message: decodeCString(errBuf) };
+  }
+  return { status: 'no-bookmark' };
+}
+
+function decodeCString(buf: Uint8Array): string {
+  const nullIdx = buf.indexOf(0);
+  return new TextDecoder().decode(
+    buf.subarray(0, nullIdx === -1 ? undefined : nullIdx)
+  );
 }
 
 export function extractVideoFrame(

@@ -15,6 +15,10 @@ _Avoid_: Item (client-side).
 **Media**:
 Photos plus videos collectively, in contexts where the distinction matters (e.g. the Media filter toggle).
 
+**Library**:
+The Apple Photos `.photoslibrary` bundle the app reads from. Always the **active library** — the one Photos.app currently has open — auto-detected from the container bookmark (`IPXDefaultLibraryURLBookmark`), not hardcoded or user-picked. Because the app tracks the active library, AppleScript writes always target the same Library it reads. Each Library gets its own namespaced data subtree (`data/libraries/{key}/`) for cache, item snapshot, and album sidecars, since UUIDs and album names are not stable across Libraries.
+_Avoid_: Photos DB, catalog.
+
 **Album**:
 An Apple Photos album. Read-only on the client; on the server (`AlbumStore`), the same name keys an augmented filesystem subtree under `data/albums/{album}/` containing GPX/markdown files, per-file visibility (`_files.json`), and a saved route (`_route.json`). Server **Album** = Photos album + sidecar data.
 

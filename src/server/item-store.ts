@@ -32,7 +32,9 @@ import {
   queryNotInAlbumUuid,
   queryPhotos,
   queryVideos,
+  resolveLibrary,
   type ImageCache,
+  type LibraryResolution,
   type PhotoRecord
 } from './photos-library';
 import {
@@ -167,7 +169,7 @@ export interface ItemStore {
    * Resolves to true when the post-startup rebuild swaps in items that differ
    * from the snapshot, false when the snapshot already matched fresh data.
    * Change detection lets the launcher skip the webview reload when nothing
-   * changed — see docs/app.md "Data Storage".
+   * changed — see docs/app.md "Data layout".
    */
   rebuildComplete: Promise<boolean>;
   /** Trigger a manual rebuild (e.g. "Sync Photos" menu action). */
@@ -178,8 +180,12 @@ interface OpenItemStoreOptions {
   dataDir: string;
   imageCache?: ImageCache;
   photosWriter?: PhotosWriter;
+  /** Library to read items from; defaults to the resolver in openPhotosDb. */
+  libraryPath?: string;
   /** Override for tests — defaults to reading Photos.sqlite. */
   buildFreshItems?: () => ItemEntry[];
+  /** Write-time active-library guard seam; defaults to the real resolver. */
+  resolveActiveLibrary?: () => LibraryResolution;
 }
 
 const SNAPSHOT_NAME = 'items.json';
@@ -197,8 +203,8 @@ function loadSnapshot(snapshotPath: string): {
   }
 }
 
-function buildFromPhotosDb(): ItemEntry[] {
-  const db = openPhotosDb();
+function buildFromPhotosDb(libraryPath?: string): ItemEntry[] {
+  const db = openPhotosDb(libraryPath);
   try {
     const notInAlbumUuid = queryNotInAlbumUuid(db);
     const records = [...queryPhotos(db), ...queryVideos(db)];
@@ -236,7 +242,10 @@ function evictOrphanedCacheFiles(
 export function openItemStore(options: OpenItemStoreOptions): ItemStore {
   const { dataDir, imageCache } = options;
   const writer = options.photosWriter ?? defaultPhotosWriter;
-  const buildFresh = options.buildFreshItems ?? buildFromPhotosDb;
+  const loadedLibraryPath = options.libraryPath;
+  const resolveActive = options.resolveActiveLibrary ?? resolveLibrary;
+  const buildFresh =
+    options.buildFreshItems ?? (() => buildFromPhotosDb(options.libraryPath));
   const snapshotPath = join(dataDir, SNAPSHOT_NAME);
   const cacheDir = join(dataDir, 'cache');
 
@@ -267,6 +276,23 @@ export function openItemStore(options: OpenItemStoreOptions): ItemStore {
     locationEdits: LocationEdit[];
     timeEdits: TimeEdit[];
   }): EditResults {
+    // Guard against a mid-session library switch: AppleScript writes hit
+    // whichever library Photos.app currently has open, but our items came from
+    // the library resolved at startup. If they no longer match, refuse rather
+    // than write edits into the wrong library (ADR 0012). Detection is ~0.1ms,
+    // and Save is a human-cadence action, so this is effectively free. Only a
+    // confirmed mismatch blocks — if the active library can't be resolved we
+    // let the write proceed and let AppleScript surface any failure.
+    if (loadedLibraryPath !== undefined) {
+      const active = resolveActive();
+      if (active.ok && active.path !== loadedLibraryPath) {
+        throw new Error(
+          'Photos is now showing a different library — relaunch Karttapallo ' +
+            `to edit it.\nExpected: ${loadedLibraryPath}\nActive: ${active.path}`
+        );
+      }
+    }
+
     const tzResults = new Map<string, string | null>();
     const locationResults = writeLocationEdits(
       edits.locationEdits,

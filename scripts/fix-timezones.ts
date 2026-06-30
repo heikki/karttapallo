@@ -11,6 +11,7 @@
 
 import { homedir } from 'node:os';
 import { join } from 'node:path';
+import { resolveLibrary } from '@server/photos-library';
 import { Database } from 'bun:sqlite';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports -- geo-tz CJS interop required for Bun bundler
@@ -21,7 +22,17 @@ const FIX = process.argv.includes('--fix');
 const ALBUM_FILTER =
   process.argv.find((a) => a.startsWith('--album='))?.slice(8) ?? null;
 
-const libraryPath = join(homedir(), 'Pictures/Photos Library.photoslibrary');
+// Operate on the active Photos library (ADR 0012), not a hardcoded path.
+const resolved = resolveLibrary();
+if (!resolved.ok) {
+  console.error(
+    resolved.error === 'fda'
+      ? `Cannot read Photos library (Full Disk Access): ${resolved.message}`
+      : `Photos library not available: ${resolved.libraryPath}`
+  );
+  process.exit(1);
+}
+const libraryPath = resolved.path;
 const photosDbPath = join(libraryPath, 'database/Photos.sqlite');
 const appDbPath = join(
   homedir(),

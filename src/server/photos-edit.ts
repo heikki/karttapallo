@@ -106,3 +106,20 @@ export const defaultPhotosWriter: PhotosWriter = {
   setTimezone,
   quitPhotosApp
 };
+
+/**
+ * Writer bound to a specific library. Location and date go through AppleScript,
+ * which always targets the active library (the one we read — see ADR 0012), so
+ * they need no path; the timezone write is direct SQLite and must be pointed at
+ * the resolved library.
+ */
+export function createPhotosWriter(libraryPath: string): PhotosWriter {
+  return {
+    setLocation,
+    setDateTime,
+    setTimezone: (uuid, tzName, offsetSeconds) => {
+      setTimezone(uuid, tzName, offsetSeconds, libraryPath);
+    },
+    quitPhotosApp
+  };
+}

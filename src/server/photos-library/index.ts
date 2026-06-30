@@ -19,3 +19,10 @@ export { createImageCache } from './image-cache';
 export type { ImageCache } from './image-cache';
 export { openPhotosLibrary } from './library';
 export type { PhotosLibrary } from './library';
+export {
+  resolveLibrary,
+  libraryDataDir,
+  markLibraryDir,
+  volumeOf
+} from './resolve-library';
+export type { LibraryResolution } from './resolve-library';
