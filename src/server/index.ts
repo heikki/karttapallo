@@ -398,8 +398,8 @@ async function syncPhotos() {
 
 /** Delete cached images and reload webview. */
 function clearCache() {
-  const cacheFullDir = join(dataDir, 'cache', 'full');
-  const cacheThumbDir = join(dataDir, 'cache', 'thumb');
+  const cacheFullDir = join(libDir, 'cache', 'full');
+  const cacheThumbDir = join(libDir, 'cache', 'thumb');
 
   if (existsSync(cacheFullDir)) rmSync(cacheFullDir, { recursive: true });
   if (existsSync(cacheThumbDir)) rmSync(cacheThumbDir, { recursive: true });
@@ -438,7 +438,7 @@ ApplicationMenu.on('application-menu-clicked', (event: unknown) => {
 const { backupAlbumsToICloud } = await import('./icloud-backup');
 
 if (!isDev) {
-  backupAlbumsToICloud(dataDir).catch((err: unknown) => {
+  backupAlbumsToICloud(libDir).catch((err: unknown) => {
     console.log(
       '[main] iCloud backup skipped:',
       err instanceof Error ? err.message : String(err)
