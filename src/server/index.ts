@@ -292,9 +292,14 @@ function buildViewUrl(): string {
   }
 }
 
+// Create the webview already pointing at the app URL. Electrobun passes the
+// constructor `url` to the native webview at creation (see BrowserView.init),
+// so this is race-free. Do NOT switch back to `about:blank` + a later
+// `win.webview.loadURL()` — that second load races webview creation and gets
+// dropped (window stays blank) unless something happens to yield a tick first.
 const win = new BrowserWindow<typeof rpc>({
   title: 'Karttapallo',
-  url: 'about:blank',
+  url: buildViewUrl(),
   frame: savedFrame,
   rpc
 });
@@ -435,11 +440,11 @@ ApplicationMenu.on('application-menu-clicked', (event: unknown) => {
   }
 });
 
-// Load the webview immediately with snapshot data, then reload only if the
-// post-startup rebuild detected actual changes. The change-detection skips
-// the reload when the snapshot already matched fresh data — keeps cold starts
-// flicker-free in the common case.
-win.webview.loadURL(buildViewUrl());
+// The webview already loaded the snapshot view at construction (above). Reload
+// only if the post-startup rebuild detected actual changes. The change
+// detection skips the reload when the snapshot already matched fresh data —
+// keeps cold starts flicker-free in the common case. By now the webview is
+// fully initialized, so this later loadURL is safe.
 itemStore.rebuildComplete
   .then((changed) => {
     if (changed) win.webview.loadURL(buildViewUrl());
