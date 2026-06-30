@@ -1,10 +1,12 @@
 /**
  * Generic key-value settings backed by `state.json` inside the data dir.
  *
- * Replaces the SQLite `settings` table. Used for the `view`, `window`, and
- * `ors_api_key` keys. Re-reads the file on each call — the data is tiny and
- * call frequency is debounced (~once per second at peak), so caching the
- * parsed object would buy nothing.
+ * Replaces the SQLite `settings` table. Keyed by which dir is passed in:
+ * global keys (`window`, `ors_api_key`) use the top-level data dir; the `view`
+ * key is per-library and uses `data/libraries/{key}/` so map center, filters,
+ * and the selected photo UUID restore against the right library (ADR 0012).
+ * Re-reads the file on each call — the data is tiny and call frequency is
+ * debounced (~once per second at peak), so caching would buy nothing.
  */
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';

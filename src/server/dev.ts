@@ -83,7 +83,7 @@ itemStore.rebuildComplete
     console.error('[item-store] Rebuild failed:', err);
   });
 
-const { routeApiRequest } = createApiHandler(dataDir, {
+const { routeApiRequest } = createApiHandler(libDir, {
   itemStore,
   photosLibrary,
   albumStore,

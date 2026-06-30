@@ -27,7 +27,7 @@ Module set under `src/server/`:
 - **`item-store.ts`** — `Item` records in memory, built from `Photos.sqlite` + `geo-tz`. Persists a snapshot to `data/libraries/{key}/items.json` so cold starts serve immediately while the post-startup rebuild refreshes. `applyEdits` re-resolves the active library first and refuses the batch if it no longer matches the one loaded at startup — see [ADR-0012](adr/0012-track-active-photos-library.md).
 - **`album-store.ts`** — per-album subtree at `data/libraries/{key}/albums/{album}/` with a hard-coded `.gpx`/`.md` allowlist, `_files.json` visibility sidecar, and `_route.json`. Path-traversal is blocked at this seam; the router never builds paths from request strings.
 - **`ors-client.ts`** — OpenRouteService proxy for `/api/route`. Owns API-key resolution (env first, then `ors_api_key` setting).
-- **`state.ts`** — generic settings (`view`, `window`, `ors_api_key`) in `data/state.json`. Global, *not* per-library. See [ADR-0006](adr/0006-flat-json-files-not-sqlite.md).
+- **`state.ts`** — generic key-value settings, keyed by which dir is passed in. Global keys `window` and `ors_api_key` live in the top-level `data/state.json`; the per-library `view` key (map center, filters, selected photo UUID) lives in `data/libraries/{key}/state.json`. See [ADR-0006](adr/0006-flat-json-files-not-sqlite.md).
 - **`photos-library/resolve-library.ts`** — resolves which library the app operates on: always the active one, decoded from the Photos container bookmark by the native bridge, failing loud rather than silently using a different library. Owns the per-library data dir (`libraryDataDir`) and its `library.json` marker. See [ADR-0012](adr/0012-track-active-photos-library.md).
 - **`photos-library/image-cache.ts`** — on-demand image conversion via the native dylib, mtime-validated under `data/libraries/{key}/cache/{full,thumb}/`. See [ADR-0010](adr/0010-on-demand-image-cache.md).
 - **`photos-edit.ts`** — write-back to Photos.app via NSAppleScript through the dylib (location/date target the active library; timezone is a direct SQLite write to the resolved library path). `itemStore.applyEdits` quits Photos.app at the end of a batch so the user can't undo writes via the recent-changes view.
@@ -35,7 +35,7 @@ Module set under `src/server/`:
 
 ### Data layout
 
-`data/` holds one global `state.json` plus a per-library subtree `data/libraries/{key}/` (where `key` is a short hash of the resolved library path) containing that library's `items.json`, `cache/`, `albums/`, and a `library.json` marker mapping the hash back to its path. Per-library namespacing is required because Apple Photos UUIDs and album names are not stable across libraries — a shared dir would collide cached images and bleed routes/visibility between libraries. The active library is resolved fresh at each startup, so switching libraries in Photos.app re-points the app at a different subtree on next launch ([ADR-0012](adr/0012-track-active-photos-library.md)).
+`data/` holds a global `state.json` (only the `window` and `ors_api_key` keys) plus a per-library subtree `data/libraries/{key}/` (where `key` is a short hash of the resolved library path) containing that library's `items.json`, `cache/`, `albums/`, its own `state.json` for the per-library `view` key, and a `library.json` marker mapping the hash back to its path. Per-library namespacing is required because Apple Photos UUIDs and album names are not stable across libraries — a shared dir would collide cached images, bleed routes/visibility between libraries, and restore a selected photo / map view that doesn't belong to the active library. The active library is resolved fresh at each startup, so switching libraries in Photos.app re-points the app at a different subtree on next launch ([ADR-0012](adr/0012-track-active-photos-library.md)).
 
 The desktop entry lives at `src/server/index.ts` (the name is required because Electrobun's launcher hardcodes `app/bun/index.js`); the dev entry lives at `src/server/dev.ts`. They differ in static-root order, a per-response hook (request logging vs FDA detection), and how a failed library resolution is surfaced (the desktop app shows a recoverable dialog with Retry; the dev server logs and exits).
 
@@ -57,7 +57,7 @@ App state persists in URL query params, restored on startup:
 - Styles: `style` (basemap), `markers` (marker style)
 - Route: `route` (presence = visible)
 
-Defaults are omitted. The web version mirrors the URL to `localStorage` (`viewState` key); the desktop app debounces a `PUT /api/view-state` to persist under the `view` key in `state.json`.
+Defaults are omitted. The web version mirrors the URL to `localStorage` (`viewState` key); the desktop app debounces a `PUT /api/view-state` to persist under the per-library `view` key (in `data/libraries/{key}/state.json`), so the selected photo and map view restore against the right library.
 
 ## Where things live
 

@@ -42,8 +42,11 @@ interface ApiHandlerOptions {
 }
 
 /**
- * Create API route handler parameterized by data directory.
- * The dataDir should contain `items.json`, `state.json`, `cache/`, `albums/`.
+ * Create API route handler parameterized by the per-library data directory
+ * (`data/libraries/{key}/`) — it owns `items.json`, `cache/`, `albums/`, and
+ * the per-library `view` setting persisted by `PUT /api/view-state`. Global
+ * settings (`window`, `ors_api_key`) live in the top-level `state.json` and are
+ * handled outside this seam.
  */
 export function createApiHandler(dataDir: string, options: ApiHandlerOptions) {
   const { itemStore, photosLibrary, albumStore, orsClient, onEditResult } =

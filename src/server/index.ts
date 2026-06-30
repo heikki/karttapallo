@@ -127,7 +127,7 @@ const itemStore = openItemStore({
 });
 const albumStore = createAlbumStore(libDir);
 const orsClient = createOrsClient(dataDir);
-const { routeApiRequest } = createApiHandler(dataDir, {
+const { routeApiRequest } = createApiHandler(libDir, {
   itemStore,
   photosLibrary,
   albumStore,
@@ -279,7 +279,10 @@ const savedFrame = loadWindowState();
 
 function buildViewUrl(): string {
   try {
-    const raw = getSetting(dataDir, 'view');
+    // `view` is per-library (it carries library-specific state — map center,
+    // filters, and the selected photo UUID), so it lives in libDir, not the
+    // global state.json that holds `window`.
+    const raw = getSetting(libDir, 'view');
     if (raw === null) return baseUrl;
     const obj = JSON.parse(raw) as Record<string, string>;
     const qs = new URLSearchParams(obj).toString();
