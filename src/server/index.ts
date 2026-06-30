@@ -435,17 +435,6 @@ ApplicationMenu.on('application-menu-clicked', (event: unknown) => {
   }
 });
 
-const { backupAlbumsToICloud } = await import('./icloud-backup');
-
-if (!isDev) {
-  backupAlbumsToICloud(libDir).catch((err: unknown) => {
-    console.log(
-      '[main] iCloud backup skipped:',
-      err instanceof Error ? err.message : String(err)
-    );
-  });
-}
-
 // Load the webview immediately with snapshot data, then reload only if the
 // post-startup rebuild detected actual changes. The change-detection skips
 // the reload when the snapshot already matched fresh data — keeps cold starts

@@ -45,7 +45,7 @@ The desktop entry lives at `src/server/index.ts` (the name is required because E
 
 ## Desktop app (Electrobun)
 
-Pinned at 1.16.0 — see [ADR-0001](adr/0001-pin-electrobun-1.16.0.md). The launcher loads `app/bun/index.js`, which is the bundled `src/server/index.ts`. Application menu, sync, cache-clear, iCloud Drive backup, window-state persistence, external-link handling, and the Full Disk Access dialog are all wired in this file.
+Pinned at 1.16.0 — see [ADR-0001](adr/0001-pin-electrobun-1.16.0.md). The launcher loads `app/bun/index.js`, which is the bundled `src/server/index.ts`. Application menu, sync, cache-clear, window-state persistence, external-link handling, and the Full Disk Access dialog are all wired in this file.
 
 ## URL state
 
