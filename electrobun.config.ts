@@ -4,6 +4,13 @@ import type { ElectrobunConfig } from 'electrobun';
 
 const baseDir = resolve('.');
 
+// macOS code-signing identity (create it locally with `bun run cert --create`).
+// Electrobun reads the signing identity from process.env at sign time (lazily,
+// in its codesign step after this config loads — cli/index.ts ~4440), so setting
+// it here is enough. An explicit ELECTROBUN_DEVELOPER_ID already in the
+// environment still wins, e.g. a Developer ID on a release machine.
+process.env.ELECTROBUN_DEVELOPER_ID ??= 'Karttapallo Signing';
+
 // Aliases never include extensions, so we always append one. Listing
 // '/index.ts' as a candidate (rather than relying on directory fall-through)
 // matters because existsSync returns true for directories, which would
@@ -97,7 +104,27 @@ export default {
     mac: {
       icons: 'resources/icon.iconset',
       defaultRenderer: 'native',
-      createDmg: false
+      createDmg: false,
+
+      // Sign with the identity set into process.env above, which Electrobun's
+      // codesign step reads. Only `--env=stable` builds actually
+      // sign — plain `electrobun build` defaults to dev and skips signing — so
+      // the signed path is `bun run install:app`. Signing makes the macOS Full
+      // Disk Access grant persist across launches and shows the app as
+      // "Karttapallo" instead of "launcher" — see docs/gotchas.md and
+      // docs/adr/0012.
+      codesign: true,
+      notarize: false,
+      entitlements: {
+        // Bun's runtime JITs, so the hardened runtime needs both of these or the
+        // signed `bun` process is killed on launch.
+        'com.apple.security.cs.allow-jit': true,
+        'com.apple.security.cs.allow-unsigned-executable-memory': true,
+        // The launcher loads dylibs (libkarttapallo.dylib, libNativeWrapper.dylib,
+        // and Bun's own) that aren't signed with our identity; without this the
+        // hardened runtime refuses to load them.
+        'com.apple.security.cs.disable-library-validation': true
+      }
     }
   }
 } satisfies ElectrobunConfig;

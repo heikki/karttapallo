@@ -16,6 +16,32 @@ Do **not** create the window with `url: 'about:blank'` and then call `win.webvie
 
 Verified 2026-06-30 by bisecting an empty-window regression to the import removal; the browser rendered the identical bundle correctly, isolating it to the WKWebView load timing.
 
+### Ad-hoc signing makes the TCC grant re-prompt every launch
+
+The app reads another app's container at startup to find the active Photos
+library (`resolveActiveLibraryPath` → `com.apple.Photos.plist`; see
+[ADR-0012](adr/0012-track-active-photos-library.md)), which trips the
+`kTCCServiceSystemPolicyAppData` permission ("...wants to access data from other
+apps"). With only an ad-hoc signature macOS has no stable code identity to pin
+the grant to, so it forgets it and re-prompts on every launch — and the app
+shows as "launcher" rather than "Karttapallo". The fix is a stable code signature
+**plus a Full Disk Access grant** (signing alone isn't enough — FDA is what
+persists), not caching the path (ADR-0012 wants the detection to run fresh each
+launch).
+**Setup.** `bun run cert --create` makes a self-signed code-signing cert — it
+need **not** be trusted (`CSSMERR_TP_NOT_TRUSTED` is fine; TCC keys on a stable
+identity, not Gatekeeper trust). The identity is hardcoded in
+`electrobun.config.ts` and only applies to `--env=stable` builds; a plain
+`build:app` is `--env=dev` and never signs. Then `bun run install:app` signs the
+build, and you add the app under System Settings ▸ Full Disk Access — the in-app
+"Salli" prompt does **not** persist, only the explicit FDA entry does.
+
+Don't be alarmed that `codesign --verify --deep --strict` fails afterward ("code
+or signature have been modified"): Electrobun's `--env=stable` bundle is a
+self-extractor that unpacks its payload into `Contents/Resources/app/` on first
+launch, breaking the static seal. TCC validates the live launcher process (which
+extraction doesn't touch), so the FDA grant still holds — no re-signing needed.
+
 ### `electrobun dev` reuses cached binaries
 
 `electrobun dev` may reuse a cached `Resources/app` bundle, so source edits silently don't take effect. To force a clean rebuild, delete `build/dev-macos-arm64/.../Resources/app`, or run `electrobun build` first.

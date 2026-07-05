@@ -11,6 +11,7 @@
     "build:app": "bun run build:native && electrobun build",
     "build:app:stable": "bun run build:native && electrobun build --env=stable",
     "install:app": "bun run build:app:stable && cp -r build/stable-macos-arm64/Karttapallo.app /Applications/",
+    "cert": "bash scripts/cert.sh",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "format": "prettier --write .",
