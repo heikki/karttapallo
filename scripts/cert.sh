@@ -65,19 +65,33 @@ trap 'rm -rf "$TMP"' EXIT
 
 echo "Creating self-signed code-signing certificate \"$NAME\"…"
 
-# 10-year self-signed cert with the codeSigning extended key usage.
+# 10-year self-signed cert. All three extensions matter — without
+# keyUsage=digitalSignature, `codesign` won't recognize the identity and every
+# sign fails with "no identity found" (the codeSigning EKU alone isn't enough).
 openssl req -x509 -newkey rsa:2048 -nodes -days 3650 \
   -subj "/CN=$NAME" \
+  -addext "basicConstraints=critical,CA:false" \
+  -addext "keyUsage=critical,digitalSignature" \
   -addext "extendedKeyUsage=critical,codeSigning" \
   -keyout "$TMP/k.key" -out "$TMP/k.crt" 2>/dev/null
 
 # -legacy + -macalg sha1 + a non-empty password are REQUIRED — OpenSSL 3's
 # defaults produce a PKCS#12 that macOS's `security import` rejects.
+# Name the p12 file after the identity (no extension): macOS labels the imported
+# private key with the p12's basename, and openssl's -name only labels the cert.
+# Without this the key shows in Keychain Access as "k.p12" instead of the name.
 openssl pkcs12 -export -legacy -macalg sha1 -name "$NAME" \
-  -inkey "$TMP/k.key" -in "$TMP/k.crt" -out "$TMP/k.p12" -passout pass:x 2>/dev/null
+  -inkey "$TMP/k.key" -in "$TMP/k.crt" -out "$TMP/$NAME" -passout pass:x 2>/dev/null
 
-security import "$TMP/k.p12" \
+# -A makes the private key usable by any app without an interactive "Always
+# Allow" — required so Electrobun's spawned `codesign` can use it during
+# `install:app` (otherwise every binary fails with "no identity found").
+security import "$TMP/$NAME" -f pkcs12 \
   -k "$HOME/Library/Keychains/login.keychain-db" \
-  -P x -T /usr/bin/codesign >/dev/null
+  -P x -A -T /usr/bin/codesign >/dev/null
+
+# Touch the key once so any first-use keychain dialog happens here, not mid-build.
+cp /bin/echo "$TMP/warmup"
+codesign --force --sign "$NAME" "$TMP/warmup" >/dev/null 2>&1 || true
 
 echo "✓ Imported \"$NAME\" into the login keychain."
