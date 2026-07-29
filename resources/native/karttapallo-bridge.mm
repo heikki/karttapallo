@@ -199,6 +199,16 @@ extern "C" int runAppleScript(const char* script, char* errBuf, int errBufLen) {
 //      caller should fall back to the system library at ~/Pictures
 //   2  prefs exist but could not be read (Full Disk Access not granted) —
 //      errBuf holds a message
+//
+// When a bookmark IS present but its volume is offline (e.g. an external drive
+// that's unmounted or disconnected), we must NOT return 1: that makes the caller
+// silently fall back to the system library and show the wrong photos / write to
+// the wrong library (ADR 0012 forbids this). Instead we still return 0 with the
+// bookmark's intended path — even though it isn't reachable — so the caller's
+// own "does the database exist?" check fires the "Photos Library Unavailable"
+// prompt. The path is decoded WITHOUT mounting (we don't want resolving a
+// bookmark to silently mount a drive) and falls back to the path cached inside
+// the bookmark data, which is readable while the volume is offline.
 extern "C" int resolveActiveLibraryPath(char* outBuf, int outLen, char* errBuf, int errLen) {
     @autoreleasepool {
         NSString* home = NSHomeDirectory();
@@ -227,14 +237,27 @@ extern "C" int resolveActiveLibraryPath(char* outBuf, int outLen, char* errBuf, 
         BOOL stale = NO;
         NSError* resolveErr = nil;
         NSURL* libURL = [NSURL URLByResolvingBookmarkData:bookmark
-                                                  options:NSURLBookmarkResolutionWithoutUI
+                                                  options:NSURLBookmarkResolutionWithoutUI |
+                                                          NSURLBookmarkResolutionWithoutMounting
                                             relativeToURL:nil
                                       bookmarkDataIsStale:&stale
                                                     error:&resolveErr];
-        if (libURL == nil || [libURL path] == nil) {
+
+        NSString* path = [libURL path];
+        if (path == nil) {
+            // Volume offline: resolution can't produce a live URL. Recover the
+            // library's path straight from the bookmark's cached resource values
+            // (available without mounting) so the caller still learns *which*
+            // library is expected and can prompt to reconnect it.
+            NSDictionary* vals = [NSURL resourceValuesForKeys:@[NSURLPathKey]
+                                              fromBookmarkData:bookmark];
+            path = vals[NSURLPathKey];
+        }
+        if (path == nil) {
+            // A present-but-undecodable bookmark is as good as none.
             return 1;
         }
-        strlcpy(outBuf, [[libURL path] UTF8String], outLen);
+        strlcpy(outBuf, [path UTF8String], outLen);
         return 0;
     }
 }
