@@ -473,15 +473,6 @@ function metaSet(
   }
 }
 
-function fmtCoreDataDate(v: unknown): string | null {
-  if (typeof v !== 'number') return null;
-  const d = new Date((v + CORE_DATA_EPOCH) * 1000);
-  return d
-    .toISOString()
-    .replace('T', ' ')
-    .replace(/\.\d+Z$/, '');
-}
-
 function formatDimPair(w: unknown, h: unknown): string | null {
   if (typeof w !== 'number' || typeof h !== 'number') return null;
   if (w <= 0 || h <= 0) return null;
@@ -552,17 +543,54 @@ function formatMetaExposure(row: MetaRow, set: SetFn): void {
   set('flash', row.flash === 1 ? 'Yes' : row.flash === 0 ? 'No' : null);
 }
 
-function formatMetaTimezone(row: MetaRow, set: SetFn): void {
-  if (typeof row.tz_name === 'string' && row.tz_name !== '') {
-    set('timezone', row.tz_name);
-  } else if (typeof row.tz_offset === 'number') {
-    const h = Math.floor(Math.abs(row.tz_offset) / 3600);
-    const m = Math.floor((Math.abs(row.tz_offset) % 3600) / 60);
-    set(
-      'timezone',
-      `UTC${row.tz_offset >= 0 ? '+' : '-'}${h}:${m.toString().padStart(2, '0')}`
-    );
-  }
+/** Zone label for display: the IANA name when Photos stored one, else UTC±HH:MM. */
+function zoneLabel(name: unknown, offsetSeconds: unknown): string | null {
+  if (typeof name === 'string' && name !== '') return name;
+  if (typeof offsetSeconds !== 'number') return null;
+  return `UTC${secondsToTzOffset(offsetSeconds)}`;
+}
+
+/** "2015:02:04 15:11:40 America/Antigua" — wall clock beside its zone. */
+function withZone(local: string, zone: string | null): string | null {
+  if (local === '') return null;
+  return zone === null ? local : `${local} ${zone}`;
+}
+
+function num(v: unknown): number | null {
+  return typeof v === 'number' ? v : null;
+}
+
+/**
+ * Emit `date` and, when it differs, `original_date`.
+ *
+ * The zone rides along with each time rather than sitting in a row of its own,
+ * so the two lines can be read directly against each other:
+ *
+ *   Date           2025:08:31 10:29:51 Atlantic/Reykjavik
+ *   Original date  2025:08:31 17:29:51 Europe/Helsinki
+ *
+ * `original_date` comes from ZEXTENDEDATTRIBUTES, which holds what the camera
+ * recorded and which Photos never rewrites — it is the same value Photos.app
+ * labels "Alkuperäinen" in its Adjust Date & Time sheet. It earns a row only
+ * when the wall clock or the offset actually differs; matching both means only
+ * the label style differs (an IANA name vs Photos' own GMT+nnnn), which is not
+ * a real disagreement and would just be noise on most assets.
+ */
+function formatMetaDates(row: MetaRow, set: SetFn): void {
+  const off = num(row.tz_offset);
+  const exifOff = num(row.exif_tz_offset);
+  const local = formatDate(num(row.date_created), off);
+  const exifLocal = formatDate(num(row.exif_date), exifOff);
+
+  set('date', withZone(local, zoneLabel(row.tz_name, off)));
+
+  const sameMoment = local === exifLocal && off === exifOff;
+  set(
+    'original_date',
+    sameMoment
+      ? null
+      : withZone(exifLocal, zoneLabel(row.exif_tz_name, exifOff))
+  );
 }
 
 function formatMetaGpsAccuracy(row: MetaRow, set: SetFn): void {
@@ -625,8 +653,6 @@ export function queryMetadata(
         aa.ZORIGINALFILENAME AS original_filename,
         a.ZKIND AS kind,
         a.ZDATECREATED AS date_created,
-        a.ZADDEDDATE AS date_added,
-        a.ZMODIFICATIONDATE AS date_modified,
         aa.ZTITLE AS title,
         ad.ZLONGDESCRIPTION AS description,
         a.ZWIDTH AS width,
@@ -653,6 +679,9 @@ export function queryMetadata(
         e.ZFLASHFIRED AS flash,
         aa.ZTIMEZONEOFFSET AS tz_offset,
         aa.ZTIMEZONENAME AS tz_name,
+        e.ZDATECREATED AS exif_date,
+        e.ZTIMEZONEOFFSET AS exif_tz_offset,
+        e.ZTIMEZONENAME AS exif_tz_name,
         aa.ZGPSHORIZONTALACCURACY AS gps_accuracy
       FROM ZASSET a
       LEFT JOIN ZADDITIONALASSETATTRIBUTES aa ON a.Z_PK = aa.ZASSET
@@ -672,15 +701,7 @@ export function queryMetadata(
   set('uuid', row.uuid);
   set('filename', row.filename);
   set('original_filename', row.original_filename);
-  set(
-    'date',
-    formatDate(
-      typeof row.date_created === 'number' ? row.date_created : null,
-      typeof row.tz_offset === 'number' ? row.tz_offset : null
-    )
-  );
-  set('date_added', fmtCoreDataDate(row.date_added));
-  set('date_modified', fmtCoreDataDate(row.date_modified));
+  formatMetaDates(row, set);
   set('title', row.title);
   set('description', row.description);
 
@@ -692,7 +713,6 @@ export function queryMetadata(
   formatMetaFlags(row, set);
   formatMetaCamera(row, set);
   formatMetaExposure(row, set);
-  formatMetaTimezone(row, set);
   formatMetaGpsAccuracy(row, set);
   queryMetaRelations(db, uuid, set);
 
