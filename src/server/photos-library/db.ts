@@ -590,13 +590,28 @@ function num(v: unknown): number | null {
  * would just be noise on most assets.
  */
 /**
- * Whether the asset carries EXIF the camera itself wrote. Make and model are
- * the tells: a file with neither has no EXIF block at all, so whatever date
- * Photos stored for it came from somewhere other than the camera.
+ * Whether the asset carries EXIF the camera itself wrote. Nothing records where
+ * ZEXTENDEDATTRIBUTES.ZDATECREATED came from, so the shooting fields stand in:
+ * if any survived, Photos had an EXIF block to read the date from too.
+ *
+ * Make and model alone are not enough — 21 stills in this library have both
+ * stripped while keeping ISO, aperture and a lens model ("iPhone 5 back camera
+ * 4.12mm f/2.4"), and testing on those two would have called them provenanceless
+ * and blanked a date the camera really did record. Any one field is enough;
+ * requiring several would fail assets whose EXIF is merely sparse.
  */
 function hasExifProvenance(row: MetaRow): boolean {
-  const present = (v: unknown): boolean => typeof v === 'string' && v !== '';
-  return present(row.camera_make) || present(row.camera_model);
+  const present = (v: unknown): boolean =>
+    typeof v === 'number' || (typeof v === 'string' && v !== '');
+  return (
+    present(row.camera_make) ||
+    present(row.camera_model) ||
+    present(row.lens_model) ||
+    present(row.iso) ||
+    present(row.aperture) ||
+    present(row.shutter_speed) ||
+    present(row.focal_length)
+  );
 }
 
 function formatMetaDates(row: MetaRow, set: SetFn, setAlways: SetFn): void {
