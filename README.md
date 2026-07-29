@@ -22,11 +22,6 @@ bun run cert --create   # one-time: create a self-signed code-signing cert
 bun install:app         # build, sign, and copy to /Applications
 ```
 
-Then grant the installed app **Full Disk Access** (System Settings ▸ Privacy &
-Security). Without signing + FDA, macOS re-asks for the "access data from other
-apps" permission on every launch and shows the app as "launcher" — see
-[Gotchas](docs/gotchas.md).
-
 ### Optional API keys
 
 Add either to `.env` to unlock extra features. Both are optional.
