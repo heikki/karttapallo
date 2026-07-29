@@ -123,7 +123,14 @@ export default {
         // The launcher loads dylibs (libkarttapallo.dylib, libNativeWrapper.dylib,
         // and Bun's own) that aren't signed with our identity; without this the
         // hardened runtime refuses to load them.
-        'com.apple.security.cs.disable-library-validation': true
+        'com.apple.security.cs.disable-library-validation': true,
+        // The app drives Photos.app over AppleScript (location/date/timezone
+        // edits — see photos-edit.ts). Under the hardened runtime, sending
+        // Apple Events is BLOCKED outright without this entitlement: macOS
+        // returns errAEEventNotPermitted (-1743) and never even shows the
+        // consent prompt. Adding signing (hardened runtime) without this is
+        // what silently broke every write — see docs/gotchas.md.
+        'com.apple.security.automation.apple-events': true
       }
     }
   }

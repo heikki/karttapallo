@@ -2,8 +2,9 @@
  * Write operations for Apple Photos: location, date/time, timezone.
  *
  * Replaces set_locations.py and set_times.py with native TypeScript.
- * - Location & date: AppleScript via Photos.app
- * - Timezone: direct SQLite write (no Core Data triggers on these columns)
+ * - Location & date: AppleScript via Photos.app — journaled immediately, durable.
+ * - Timezone: direct SQLite write — invisible to Photos, NOT durable on its own.
+ *   See setTimezone below and docs/adr/0013.
  *
  * IANA timezone lookup lives in timezone.ts.
  */
@@ -44,7 +45,20 @@ export function setDateTime(uuid: string, date: string, time: string): void {
 
 // ---------- SQLite timezone write ----------
 
-/** Set timezone via direct SQLite write (safe — no triggers on these columns). */
+/**
+ * Set timezone via direct SQLite write.
+ *
+ * WARNING: this is NOT durable. Photos never journals this write; it only
+ * survives a restore if photolibraryd happens to coalesce the journal
+ * (folding live SQLite back into Asset-snapshot.plj) before the restore —
+ * an opportunistic, unpredictable event. A batch of timezone edits was
+ * silently lost this way. See docs/gotchas.md "Apple Photos library internals".
+ *
+ * Per ADR-0013, Karttapallo does not depend on this value: displayed time is
+ * derived from the (journaled) UTC instant + coordinates. This write exists
+ * only to keep Photos.app and rendered exports showing the same local time,
+ * and can be re-applied at any point by recomputing from coordinates.
+ */
 export function setTimezone(
   uuid: string,
   tzName: string,

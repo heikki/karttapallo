@@ -150,7 +150,11 @@ export function createApiHandler(dataDir: string, options: ApiHandlerOptions) {
       const results = itemStore.applyEdits({ locationEdits, timeEdits });
       emitEditResults(results);
 
-      return Response.json({ ok: true });
+      const failures = [...results.locationResults, ...results.timeResults]
+        .filter((r) => !r.ok)
+        .map((r) => ({ uuid: r.uuid, error: r.error }));
+
+      return Response.json({ ok: failures.length === 0, failures });
     } catch (err) {
       return serverError('handleSaveEdits', err);
     }
