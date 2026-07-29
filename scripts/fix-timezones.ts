@@ -1,15 +1,22 @@
 /**
  * Fix photos where the stored timezone doesn't match the GPS location.
- * Only corrects the timezone metadata — the UTC timestamp (ZDATECREATED) is
- * authoritative and stays unchanged. The displayed local time will shift to
- * match the actual timezone at the photo's coordinates.
+ *
+ * Only the timezone columns are written. The UTC instant (ZDATECREATED) is
+ * authoritative and is never touched, so the local time Photos.app shows will
+ * SHIFT to the true zone at the photo's coordinates — that shift is the point,
+ * not a side effect. This brings Photos.app in line with what Karttapallo
+ * already displays, which derives from the instant plus coordinates (ADR-0013).
+ *
+ * Do NOT reintroduce a "compensating shift" that moves ZDATECREATED to hold the
+ * old wall clock steady. That inverts the fix: it drags the instant to match a
+ * wrong offset, and because Photos journals the instant, the damage is durable
+ * and unrecoverable. It is what produced the ~252 shifted assets in ADR-0013.
  *
  * Usage:
  *   bun scripts/fix-timezones.ts          # dry run
- *   bun scripts/fix-timezones.ts --fix    # write to Photos.sqlite + app.db
+ *   bun scripts/fix-timezones.ts --fix    # write to Photos.sqlite
  */
 
-import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { resolveLibrary } from '@server/photos-library';
 import { Database } from 'bun:sqlite';
@@ -34,10 +41,6 @@ if (!resolved.ok) {
 }
 const libraryPath = resolved.path;
 const photosDbPath = join(libraryPath, 'database/Photos.sqlite');
-const appDbPath = join(
-  homedir(),
-  'Library/Application Support/Karttapallo/app.db'
-);
 
 const photosDb = new Database(
   photosDbPath,
@@ -149,14 +152,6 @@ function formatLocalDate(utcUnix: number, offsetMinutes: number): string {
   return `${d.getUTCFullYear()}:${pad(d.getUTCMonth() + 1)}:${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
 }
 
-function formatTzOffset(minutes: number): string {
-  const sign = minutes >= 0 ? '+' : '-';
-  const abs = Math.abs(minutes);
-  const h = Math.floor(abs / 60);
-  const m = abs % 60;
-  return `${sign}${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-}
-
 const filtered =
   ALBUM_FILTER === null
     ? rows
@@ -171,37 +166,21 @@ console.log(
 
 let fixed = 0;
 
-// Two statements for Photos.sqlite: timezone columns + ZDATECREATED
+// The only statement: the timezone columns. ZDATECREATED is never written —
+// see the header. Photos journals the instant, so a bad write there is durable
+// and unrecoverable, unlike the offset.
 const updateTzStmt = FIX
   ? photosDb.prepare(
       'UPDATE ZADDITIONALASSETATTRIBUTES SET ZTIMEZONEOFFSET = ?, ZTIMEZONENAME = ? WHERE Z_PK = ?'
     )
   : null;
-const updateDateStmt = FIX
-  ? photosDb.prepare('UPDATE ZASSET SET ZDATECREATED = ? WHERE ZUUID = ?')
-  : null;
-
-let appDb: Database | null = null;
-// Only tz changes — displayed local time (date) is kept as-is
-let appUpdateStmt: ReturnType<Database['prepare']> | null = null;
-if (FIX) {
-  try {
-    appDb = new Database(appDbPath, { readwrite: true });
-    appUpdateStmt = appDb.prepare('UPDATE items SET tz = ? WHERE uuid = ?');
-  } catch {
-    console.warn(
-      'Warning: could not open app.db — Photos.sqlite will be fixed but app cache may be stale until next sync'
-    );
-  }
-}
 
 // Collect changes grouped by album for display
 interface Change {
   row: Row;
   expectedTzName: string;
-  expectedOffset: number;
+  /** Hours the local time shown in Photos.app will move. Display only. */
   diffMin: number;
-  newDateCreated: number;
   localDate: string;
   newOffsetSec: number;
 }
@@ -238,7 +217,6 @@ for (const row of filtered) {
     }
   } else {
     const diffMin = storedOffset - expectedOffset;
-    const newDateCreated = row.date_created + diffMin * 60;
     const localDate = formatLocalDate(
       row.date_created + CORE_DATA_EPOCH,
       storedOffset
@@ -248,9 +226,7 @@ for (const row of filtered) {
     byAlbum.get(album)!.push({
       row,
       expectedTzName,
-      expectedOffset,
       diffMin,
-      newDateCreated,
       localDate,
       newOffsetSec
     });
@@ -263,14 +239,14 @@ let fixedName = 0;
 
 for (const [album, changes] of byAlbum) {
   changes.sort((a, b) => a.localDate.localeCompare(b.localDate));
-  console.log(`\n[${album}] — ${changes.length} photos (offset wrong)`);
+  console.log(
+    `\n[${album}] — ${changes.length} photos (offset wrong; shown time moves by the amount at left)`
+  );
   for (const {
     row,
     expectedTzName,
     diffMin,
     localDate,
-    expectedOffset,
-    newDateCreated,
     newOffsetSec
   } of changes) {
     const diffH = diffMin / 60;
@@ -280,8 +256,6 @@ for (const [album, changes] of byAlbum) {
     );
     if (FIX) {
       updateTzStmt!.run(newOffsetSec, expectedTzName, row.pk);
-      updateDateStmt!.run(newDateCreated, row.uuid);
-      appUpdateStmt?.run(formatTzOffset(expectedOffset), row.uuid);
     }
     fixed++;
   }
@@ -296,7 +270,7 @@ for (const [album, changes] of byAlbumName) {
     );
     if (FIX) {
       updateTzStmt!.run(row.tz_offset, expectedTzName, row.pk);
-      // ZDATECREATED and app.db tz unchanged — offset is already correct
+      // ZDATECREATED unchanged — offset is already correct
     }
     fixedName++;
   }
@@ -311,4 +285,3 @@ console.log(
 if (!FIX) console.log('\nRun with --fix to apply changes.');
 
 photosDb.close();
-appDb?.close();
