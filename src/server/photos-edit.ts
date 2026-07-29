@@ -23,15 +23,33 @@ export function setLocation(uuid: string, lat: number, lon: number): void {
   runAppleScript(script);
 }
 
-/** Set date/time via AppleScript. date: "YYYY-MM-DD", time: "HH:MM:SS" */
-export function setDateTime(uuid: string, date: string, time: string): void {
-  // Build date from components to avoid locale-dependent string parsing.
-  // AppleScript's `date "..."` coercion is locale-sensitive and breaks
-  // on non-US systems (e.g. Finnish expects "10.12.2014 klo 11.33.29").
+/**
+ * Build the AppleScript that sets one asset's date. Exported for tests.
+ *
+ * The date is assembled from components rather than parsed from a string:
+ * AppleScript's `date "..."` coercion is locale-sensitive and breaks on
+ * non-US systems (e.g. Finnish expects "10.12.2014 klo 11.33.29").
+ *
+ * `current date` starts at today and every assignment re-normalises the whole
+ * date, so the day must be parked on the 1st before year or month are touched.
+ * Otherwise a day-of-month past the end of the target month rolls the date
+ * forward and the later `set day` cannot undo it: run on 29 July, `set month
+ * of d to 2` turns 29 Feb 2015 into 1 March, and the asset lands a whole month
+ * late. The bug is calendar-dependent — it fires on a handful of days a year —
+ * and it wrote two capture dates 28 days into the future before being caught.
+ *
+ * date: "YYYY-MM-DD", time: "HH:MM:SS"
+ */
+export function buildDateTimeScript(
+  uuid: string,
+  date: string,
+  time: string
+): string {
   const [yr, mo, dy] = date.split('-');
   const [hr, mi, sc] = time.split(':');
-  const script = [
+  return [
     'set d to current date',
+    'set day of d to 1',
     `set year of d to ${yr}`,
     `set month of d to ${mo}`,
     `set day of d to ${dy}`,
@@ -40,7 +58,11 @@ export function setDateTime(uuid: string, date: string, time: string): void {
     `set seconds of d to ${sc}`,
     `tell application "Photos" to set the date of media item id "${uuid}" to d`
   ].join('\n');
-  runAppleScript(script);
+}
+
+/** Set date/time via AppleScript. date: "YYYY-MM-DD", time: "HH:MM:SS" */
+export function setDateTime(uuid: string, date: string, time: string): void {
+  runAppleScript(buildDateTimeScript(uuid, date, time));
 }
 
 // ---------- SQLite timezone write ----------
