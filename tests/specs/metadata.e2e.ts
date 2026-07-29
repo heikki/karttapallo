@@ -1,3 +1,4 @@
+import { setTimeout as sleep } from 'node:timers/promises';
 import { expect, test } from '@playwright/test';
 
 test('View photo metadata', async ({ page }) => {
@@ -26,6 +27,47 @@ test('View photo metadata', async ({ page }) => {
   await expect(popup).toBeVisible();
 });
 
+test('Deselecting the photo takes its metadata away', async ({ page }) => {
+  await page.goto('/?id=e2e-1');
+
+  const popup = page.locator('photo-popup');
+  await expect(popup).toBeVisible();
+  await popup.locator('.overlay-btn.info-btn').click();
+
+  const modal = page.locator('metadata-modal[active]');
+  await expect(modal).toBeVisible();
+
+  // Click empty map, well clear of the panel. That the popup closes at all
+  // proves the click reached the canvas instead of being swallowed — the panel
+  // no longer blocks the map — and the panel must go with it rather than
+  // describing a photo that is no longer selected.
+  const box = await modal.locator('.content').boundingBox();
+  if (box === null) throw new Error('panel not laid out');
+  await page.mouse.click(box.x + 60, box.y + box.height + 120);
+
+  await expect(popup).toHaveCount(0);
+  await expect(modal).toHaveCount(0);
+});
+
+test('A filter that excludes the photo takes its metadata away', async ({
+  page
+}) => {
+  await page.goto('/?id=e2e-1');
+
+  const popup = page.locator('photo-popup');
+  await expect(popup).toBeVisible();
+  await popup.locator('.overlay-btn.info-btn').click();
+  const modal = page.locator('metadata-modal[active]');
+  await expect(modal).toBeVisible();
+
+  // e2e-1 is the only Helsinki photo; switching to Tampere drops it from the
+  // filtered set, which clears the selection underneath the panel.
+  await page.getByLabel('Album').selectOption('Tampere');
+
+  await expect(popup).toHaveCount(0);
+  await expect(modal).toHaveCount(0);
+});
+
 test('The metadata modal stays put as the table grows', async ({ page }) => {
   await page.goto('/?id=e2e-1');
 
@@ -50,6 +92,43 @@ test('The metadata modal stays put as the table grows', async ({ page }) => {
   expect(after.y).toBeCloseTo(before.y, 0);
 });
 
+test('The metadata panel holds its height while the next photo loads', async ({
+  page
+}) => {
+  await page.goto('/?id=e2e-1');
+
+  const popup = page.locator('photo-popup');
+  await expect(popup).toBeVisible();
+  await popup.locator('.overlay-btn.info-btn').click();
+
+  const content = page.locator('metadata-modal[active] .content');
+  const body = content.locator('.body');
+  await expect(body.getByText('e2e-1.jpg', { exact: true })).toBeVisible();
+  const before = await content.boundingBox();
+  if (before === null) throw new Error('panel not laid out');
+
+  // Stall the next read long enough to observe the in-flight state, which a
+  // local metadata read is far too quick for.
+  await page.route('**/api/metadata/e2e-3', async (route) => {
+    await sleep(800);
+    await route.continue();
+  });
+
+  await page.keyboard.press('ArrowRight');
+  await expect(body.getByText('Loading...')).toBeVisible();
+
+  // Same height as the table it replaced, header included.
+  const during = await content.boundingBox();
+  if (during === null) throw new Error('panel vanished while loading');
+  expect(during.height).toBeCloseTo(before.height, 0);
+
+  // Then the new table lands and the panel sizes to it.
+  await expect(body.getByText('Wide', { exact: true })).toBeVisible();
+  const after = await content.boundingBox();
+  if (after === null) throw new Error('panel vanished after loading');
+  expect(after.height).toBeGreaterThan(before.height);
+});
+
 test('Copy selected text out of the metadata modal', async ({ page }) => {
   await page.goto('/?id=e2e-1');
 
@@ -63,9 +142,8 @@ test('Copy selected text out of the metadata modal', async ({ page }) => {
   const box = await cell.boundingBox();
   if (box === null) throw new Error('metadata cell not laid out');
 
-  // Drag-select the value, overshooting the modal on the way out — WebKit
-  // fires a click on the host when a drag crosses out of the box, which must
-  // not be read as a backdrop dismiss.
+  // Drag-select the value, overshooting the panel on the way out: the
+  // selection must survive leaving the box, and so must the panel.
   await page.mouse.move(box.x + 2, box.y + box.height / 2);
   await page.mouse.down();
   await page.mouse.move(box.x + 200, box.y + box.height / 2, { steps: 10 });
@@ -104,27 +182,45 @@ test('Move the metadata modal by its header', async ({ page }) => {
   const grab = await header.boundingBox();
   if (before === null || grab === null) throw new Error('modal not laid out');
 
-  await page.mouse.move(grab.x + grab.width / 2, grab.y + grab.height / 2);
+  // Down and to the right: the panel parks at the top-left corner, so there is
+  // only the 10px inset of room above it.
+  const grabX = grab.x + grab.width / 2;
+  const grabY = grab.y + grab.height / 2;
+  await page.mouse.move(grabX, grabY);
   await page.mouse.down();
-  await page.mouse.move(
-    grab.x + grab.width / 2 + 120,
-    grab.y + grab.height / 2 - 60,
-    { steps: 8 }
-  );
+  await page.mouse.move(grabX + 120, grabY + 80, { steps: 8 });
   await page.mouse.up();
 
   const after = await content.boundingBox();
   if (after === null) throw new Error('modal vanished mid-drag');
   expect(after.x - before.x).toBeCloseTo(120, 0);
-  expect(after.y - before.y).toBeCloseTo(-60, 0);
-  // Releasing the drag is not a backdrop dismiss.
+  expect(after.y - before.y).toBeCloseTo(80, 0);
+  // Releasing the drag outside the box doesn't dismiss the panel.
   await expect(content).toBeVisible();
+
+  // Dragging far past the top edge stops at it instead of leaving the viewport.
+  await page.mouse.move(grabX + 120, grabY + 80);
+  await page.mouse.down();
+  await page.mouse.move(grabX + 120, grabY - 400, { steps: 8 });
+  await page.mouse.up();
+  const clamped = await content.boundingBox();
+  if (clamped === null) throw new Error('modal vanished mid-drag');
+  expect(clamped.y).toBeCloseTo(0, 0);
 
   // The moved modal still tracks arrow-key navigation.
   await page.keyboard.press('ArrowRight');
   await expect(
     content.locator('.body').getByText('e2e-3.jpg', { exact: true })
   ).toBeVisible();
+
+  // Closing forgets where it was dragged: the next open is back in the corner.
+  await page.keyboard.press('Escape');
+  await expect(page.locator('metadata-modal[active]')).toHaveCount(0);
+  await popup.locator('.overlay-btn.info-btn').click();
+  const reopened = await content.boundingBox();
+  if (reopened === null) throw new Error('modal did not reopen');
+  expect(reopened.x).toBeCloseTo(before.x, 0);
+  expect(reopened.y).toBeCloseTo(before.y, 0);
 });
 
 test('Browse photos with the metadata modal open', async ({ page }) => {
@@ -145,14 +241,44 @@ test('Browse photos with the metadata modal open', async ({ page }) => {
   await expect(popup).toBeVisible();
   await expect(body.getByText('e2e-3.jpg', { exact: true })).toBeVisible();
 
-  // Same from the lightbox: Space opens it over the modal-driving popup.
-  await page.keyboard.press('Escape');
+  // Same from the lightbox, which Space opens without dismissing the modal.
   await page.keyboard.press('Space');
-  const lightbox = page.locator('photo-lightbox[active]');
-  await expect(lightbox).toBeVisible();
-  await lightbox.locator('.overlay-btn.info-btn').click();
+  await expect(page.locator('photo-lightbox[active]')).toBeVisible();
   await expect(body.getByText('e2e-3.jpg', { exact: true })).toBeVisible();
 
   await page.keyboard.press('ArrowLeft');
   await expect(body.getByText('e2e-1.jpg', { exact: true })).toBeVisible();
+});
+
+test('Toggle the lightbox with Space while the modal is open', async ({
+  page
+}) => {
+  await page.goto('/?id=e2e-1');
+
+  const popup = page.locator('photo-popup');
+  await expect(popup).toBeVisible();
+  await popup.locator('.overlay-btn.info-btn').click();
+
+  const modal = page.locator('metadata-modal[active]');
+  const lightbox = page.locator('photo-lightbox[active]');
+  await expect(modal).toBeVisible();
+  await expect(lightbox).toHaveCount(0);
+
+  // Space in: the lightbox opens underneath the modal, which stays put.
+  await page.keyboard.press('Space');
+  await expect(lightbox).toBeVisible();
+  await expect(modal).toBeVisible();
+
+  // Space out: the lightbox closes, the modal is still there on the same photo.
+  await page.keyboard.press('Space');
+  await expect(lightbox).toHaveCount(0);
+  await expect(modal).toBeVisible();
+  await expect(
+    modal.locator('.body').getByText('e2e-1.jpg', { exact: true })
+  ).toBeVisible();
+
+  // Escape still closes the modal rather than leaking through to the popup.
+  await page.keyboard.press('Escape');
+  await expect(modal).toHaveCount(0);
+  await expect(popup).toBeVisible();
 });

@@ -1,5 +1,10 @@
-import { css, html, LitElement, nothing } from 'lit';
+import { SignalWatcher } from '@lit-labs/signals';
+import { html, LitElement, nothing } from 'lit';
 import { customElement, state as litState, property } from 'lit/decorators.js';
+
+import selection from '@common/selection';
+
+import { styles } from './styles';
 
 export function showMetadata(uuid: string) {
   document.querySelector<MetadataModal>('metadata-modal')?.loadMetadata(uuid);
@@ -93,6 +98,9 @@ const METADATA_FIELDS: Array<[string, string]> = [
  */
 const ALWAYS_SHOWN = new Set(['original_date']);
 
+/** How long a metadata read may take before the panel says it's loading. */
+const LOADING_ANNOUNCE_MS = 200;
+
 function isEmptyValue(val: unknown) {
   return (
     val === null ||
@@ -114,7 +122,7 @@ function onCopyUuid(uuid: string, e: Event) {
 }
 
 @customElement('metadata-modal')
-export class MetadataModal extends LitElement {
+export class MetadataModal extends SignalWatcher(LitElement) {
   @property({ type: Boolean, reflect: true }) active = false;
   @litState() private _data: Record<string, unknown> | null = null;
   @litState() private _loading = false;
@@ -125,11 +133,13 @@ export class MetadataModal extends LitElement {
   // Bumped per load so a slow response for a photo the user has already
   // navigated past can't overwrite the current one.
   private _loadSeq = 0;
+  private _loadingTimer: ReturnType<typeof setTimeout> | null = null;
 
-  // Header-drag offset from the centered resting spot, in CSS px. Written
+  // Header-drag offset from the top-left resting spot, in CSS px. Written
   // straight to .content's transform rather than through a reactive property:
   // a pointermove per frame shouldn't cost a render, and the element survives
-  // re-renders so the position sticks across photo navigation and reopening.
+  // re-renders, so a dragged panel stays put while the user browses photos.
+  // Closing forgets it — see _close().
   private _offsetX = 0;
   private _offsetY = 0;
   private _dragStart: {
@@ -139,132 +149,19 @@ export class MetadataModal extends LitElement {
     offsetY: number;
     base: { left: number; top: number; width: number } | null;
   } | null = null;
-  // Whether the press that a pending click belongs to started on the backdrop.
-  private _pressedBackdrop = false;
 
-  static override styles = css`
-    *,
-    *::before,
-    *::after {
-      box-sizing: border-box;
-    }
-    :host {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.6);
-      z-index: 3000;
-      justify-content: center;
-      /* Top-anchored, not centred: the row count differs per photo and the
-         table blanks while the next one loads, and a centred box would slide
-         up and down under the cursor as that height changes. The top inset
-         lives on .content because the universal padding reset in styles.css
-         outranks a :host rule. */
-      align-items: flex-start;
-    }
-    :host([active]) {
-      display: flex;
-    }
-    .content {
-      background: #1c1c1e;
-      color: #e5e5e7;
-      border-radius: 12px;
-      max-width: 600px;
-      width: 90%;
-      margin-top: 10vh;
-      max-height: 80vh;
-      display: flex;
-      flex-direction: column;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
-    }
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 16px;
-      border-bottom: 1px solid #333;
-      font-weight: 600;
-      font-size: 14px;
-      cursor: move;
-      /* Prefixed only — this WKWebView drops the unprefixed form (gotchas.md). */
-      -webkit-user-select: none;
-      /* Keep a touch drag from scrolling the page instead of moving us. */
-      touch-action: none;
-    }
-    .close {
-      font-size: 24px;
-      cursor: pointer;
-      color: #888;
-      line-height: 1;
-    }
-    .close:hover {
-      color: #ccc;
-    }
-    .body {
-      padding: 12px 16px;
-      overflow-y: auto;
-      font-size: 12px;
-      line-height: 1.5;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    td {
-      padding: 3px 8px 3px 0;
-      vertical-align: top;
-      border-bottom: 1px solid #2c2c2e;
-    }
-    td:first-child {
-      font-weight: 600;
-      color: #98989d;
-      white-space: nowrap;
-      width: 140px;
-    }
-    td:last-child {
-      color: #e5e5e7;
-      word-break: break-all;
-    }
-    .loading {
-      text-align: center;
-      padding: 24px;
-      color: #888;
-    }
-    details {
-      margin: 4px 0;
-    }
-    summary {
-      cursor: pointer;
-      color: #0a84ff;
-      font-size: 11px;
-    }
-    .copy-btn {
-      margin-left: 6px;
-      padding: 2px;
-      background: none;
-      color: #98989d;
-      border: none;
-      cursor: pointer;
-      vertical-align: middle;
-      line-height: 1;
-    }
-    .copy-btn:hover {
-      color: #0a84ff;
-    }
-    .copy-btn.copied {
-      color: #30d158;
-    }
-  `;
+  static override styles = styles;
 
   loadMetadata(uuid: string) {
     const seq = ++this._loadSeq;
     this.shownUuid = uuid;
+    // Hold the height the outgoing table had, before dropping its rows: a
+    // photo change would otherwise collapse the panel to a "Loading…" stub and
+    // pop back out, twice per arrow key.
+    this._holdBodyHeight();
     this._data = null;
-    this._loading = true;
     this._error = null;
+    this._startLoading();
     this.active = true;
 
     void fetch(`/api/metadata/${uuid}`)
@@ -275,60 +172,98 @@ export class MetadataModal extends LitElement {
       .then((data) => {
         if (seq !== this._loadSeq) return;
         this._data = data;
-        this._loading = false;
+        this._settleLoading();
       })
       .catch((err: unknown) => {
         if (seq !== this._loadSeq) return;
-        this._loading = false;
         this._error = err instanceof Error ? err.message : String(err);
+        this._settleLoading();
       });
+  }
+
+  /**
+   * A local metadata read is usually a few milliseconds, so showing "Loading…"
+   * straight away only flashes text at the user on every arrow key. Announce
+   * the wait only once it's long enough to be worth admitting to.
+   */
+  private _startLoading() {
+    this._clearLoadingTimer();
+    this._loadingTimer = setTimeout(() => {
+      this._loadingTimer = null;
+      this._loading = true;
+    }, LOADING_ANNOUNCE_MS);
+  }
+
+  private _settleLoading() {
+    this._clearLoadingTimer();
+    this._loading = false;
+    this._releaseBodyHeight();
+  }
+
+  private _clearLoadingTimer() {
+    if (this._loadingTimer === null) return;
+    clearTimeout(this._loadingTimer);
+    this._loadingTimer = null;
+  }
+
+  private get _bodyEl(): HTMLElement | null {
+    return this.shadowRoot?.querySelector<HTMLElement>('.body') ?? null;
+  }
+
+  private _holdBodyHeight() {
+    const body = this._bodyEl;
+    if (body === null) return;
+    const height = body.offsetHeight;
+    // 0 while closed or in a layout-less test DOM: nothing to hold onto.
+    if (height === 0) return;
+    body.style.minHeight = `${height}px`;
+  }
+
+  private _releaseBodyHeight() {
+    const body = this._bodyEl;
+    if (body === null) return;
+    body.style.minHeight = '';
   }
 
   private _close() {
     this.active = false;
     this.shownUuid = null;
+    this._clearLoadingTimer();
+    this._loading = false;
+    this._releaseBodyHeight();
+    // Back to the corner: a panel dragged aside for one photo shouldn't decide
+    // where the next open appears, half a session later.
+    this._offsetX = 0;
+    this._offsetY = 0;
+    this._applyOffset();
   }
 
   override connectedCallback() {
     super.connectedCallback();
-    this.addEventListener('pointerdown', this._onHostPointerDown);
-    this.addEventListener('click', this._onHostClick);
     document.addEventListener('keydown', this._onKeydown, true);
     document.addEventListener('copy', this._onCopy);
     window.addEventListener('resize', this._onResize);
   }
 
+  override firstUpdated() {
+    // The panel describes one photo, so it can't outlive the selection of it:
+    // an empty-map click, a filter that excludes it, Reset. Covers every path
+    // that lands on a null uuid, which pushing from the popup would not — the
+    // popup is torn down rather than re-rendered when it closes.
+    this.updateEffect(() => {
+      const uuid = selection.selectedPhotoUuid.get();
+      if (!this.active) return;
+      if (uuid === null) this._close();
+    });
+  }
+
   override disconnectedCallback() {
     super.disconnectedCallback();
-    this.removeEventListener('pointerdown', this._onHostPointerDown);
-    this.removeEventListener('click', this._onHostClick);
     document.removeEventListener('keydown', this._onKeydown, true);
     document.removeEventListener('copy', this._onCopy);
     window.removeEventListener('resize', this._onResize);
     this._endDrag();
-  }
-
-  // composedPath()[0] rather than e.target: events from inside the shadow tree
-  // are retargeted to the host, so target alone can't tell a backdrop press
-  // from a press on the table.
-  private readonly _onHostPointerDown = (e: PointerEvent) => {
-    this._pressedBackdrop = e.composedPath()[0] === this;
-  };
-
-  private readonly _onHostClick = (e: Event) => {
-    // Dismiss only when the press *and* the release landed on the backdrop.
-    // A header drag or a text selection dragged past the edge of the box also
-    // ends in a click on the host, and neither of those means "close".
-    if (e.target === this && this._pressedBackdrop) {
-      this._close();
-    }
-  };
-
-  override updated(changed: Map<string, unknown>) {
-    // The window may have been resized while we were closed, leaving a
-    // remembered position off-screen.
-    if (!changed.has('active')) return;
-    this._onResize();
+    this._clearLoadingTimer();
   }
 
   private get _contentEl(): HTMLElement | null {
@@ -481,21 +416,20 @@ export class MetadataModal extends LitElement {
       this._close();
       return;
     }
-    // Arrow keys fall through to the lightbox / map popup so the user can keep
-    // browsing photos with the modal open; those navigators call back into
-    // refreshMetadata() to pull the modal along.
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') return;
+    // Browsing keys fall through to the lightbox / map popup so the modal can
+    // stay open while the user works: arrows cycle photos (those navigators
+    // call back into refreshMetadata() to pull the modal along), Space toggles
+    // between the popup and the lightbox — or plays/pauses a video, whichever
+    // the lightbox decides. Same photo either way, so nothing to refresh.
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === ' ') {
+      return;
+    }
     e.stopImmediatePropagation();
   };
 
   override render() {
     return html`
-      <div
-        class="content"
-        @click=${(e: Event) => {
-          e.stopPropagation();
-        }}
-      >
+      <div class="content">
         <div
           class="header"
           title="Drag to move"

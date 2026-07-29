@@ -6,13 +6,7 @@ import * as actions from '@common/actions';
 import * as data from '@common/data';
 import * as edits from '@common/edits';
 import type { Photo } from '@common/types';
-import {
-  formatCoords,
-  formatDate,
-  getFullUrl,
-  getVideoUrl,
-  isVideo
-} from '@common/utils';
+import { formatDate, getFullUrl, getVideoUrl, isVideo } from '@common/utils';
 
 function stopPropagation(e: Event) {
   e.stopPropagation();
@@ -187,9 +181,6 @@ export class PhotoLightbox extends SignalWatcher(LitElement) {
     video::-webkit-media-controls-overlay-enclosure {
       display: none !important;
     }
-    .info {
-      color: white;
-    }
     .overlay-buttons {
       position: absolute;
       top: 10px;
@@ -221,6 +212,10 @@ export class PhotoLightbox extends SignalWatcher(LitElement) {
     .info-btn {
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' y1='16' x2='12' y2='12'/%3E%3Cline x1='12' y1='8' x2='12.01' y2='8'/%3E%3C/svg%3E");
     }
+    /* Date only. Camera and coordinates are rows in <metadata-modal>, which
+       stays open over the lightbox now, so repeating them here just covered
+       up the photo. The date earns its place: it reflects pending time
+       offsets, which the panel's stored values don't. */
     .top-left {
       position: absolute;
       top: 10px;
@@ -232,14 +227,6 @@ export class PhotoLightbox extends SignalWatcher(LitElement) {
       border-radius: 6px;
       z-index: 5;
       pointer-events: none;
-    }
-    .camera-overlay {
-      display: none;
-      font-weight: 500;
-      margin-bottom: 2px;
-    }
-    .camera-overlay.visible {
-      display: block;
     }
   `;
 
@@ -311,7 +298,6 @@ export class PhotoLightbox extends SignalWatcher(LitElement) {
     if (this.photo === null) return nothing;
     const photo = this.photo;
     const effectiveDate = edits.getEffectiveDate(photo);
-    const loc = edits.getEffectiveLocation(photo);
 
     return html`
       <div class="image-wrap" @click=${stopPropagation}>
@@ -330,14 +316,7 @@ export class PhotoLightbox extends SignalWatcher(LitElement) {
               .muted=${this._videoMuted}
             ></video>`
           : html`<img src=${getFullUrl(photo)} alt="" />`}
-        <div class="top-left">
-          <div class="camera-overlay ${photo.camera === null ? '' : 'visible'}">
-            ${photo.camera ?? ''}
-          </div>
-          <div class="info">
-            ${formatDate(effectiveDate, photo.tz)}<br />${formatCoords(loc)}
-          </div>
-        </div>
+        <div class="top-left">${formatDate(effectiveDate, photo.tz)}</div>
         <div class="overlay-buttons">
           <button
             class="overlay-btn info-btn"

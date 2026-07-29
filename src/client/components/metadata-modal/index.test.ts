@@ -1,5 +1,8 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 
+import * as data from '@common/data';
+import selection from '@common/selection';
+
 import { MetadataModal, refreshMetadata } from './index';
 
 const sampleData = {
@@ -46,12 +49,6 @@ function dragHeader(el: MetadataModal, dx: number, dy: number) {
     })
   );
   window.dispatchEvent(new PointerEvent('pointerup', {}));
-}
-
-/** Press and release on the backdrop, as a browser would report it. */
-function backdropClick(el: MetadataModal) {
-  el.dispatchEvent(new PointerEvent('pointerdown', { button: 0 }));
-  el.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 }
 
 describe('<metadata-modal>', () => {
@@ -173,7 +170,42 @@ describe('<metadata-modal> photo navigation', () => {
     el.remove();
   });
 
-  test('arrow keys reach navigators underneath, other keys do not', async () => {
+  test('closes when the photo it describes is deselected', async () => {
+    const el = await mount();
+    // The photo has to be in the filtered set, or selection's own auto-clear
+    // effect nulls the uuid before the panel ever opens.
+    data.resetFilters();
+    data.photos.set([
+      {
+        uuid: 'p1',
+        type: 'photo',
+        full: 'full/p1.jpg',
+        thumb: 'thumb/p1.jpg',
+        lat: 60.17,
+        lon: 24.94,
+        date: '2024:06:01 12:00:00',
+        tz: '+03:00',
+        camera: 'iPhone 15',
+        gps: 'exif',
+        albums: ['Helsinki']
+      }
+    ]);
+    await Bun.sleep(0);
+    selection.selectPhoto('p1');
+    el.loadMetadata('p1');
+    await el.updateComplete;
+    expect(el.active).toBe(true);
+
+    selection.closePopup();
+    await Bun.sleep(0);
+
+    expect(el.active).toBe(false);
+    expect(el.shownUuid).toBe(null);
+    data.photos.set([]);
+    el.remove();
+  });
+
+  test('browsing keys reach navigators underneath, other keys do not', async () => {
     const el = await mount();
     el.loadMetadata('first-uuid');
     const seen: string[] = [];
@@ -182,12 +214,12 @@ describe('<metadata-modal> photo navigation', () => {
     }
     document.addEventListener('keydown', listener);
 
-    for (const key of ['ArrowRight', 'ArrowLeft', ' ']) {
+    for (const key of ['ArrowRight', 'ArrowLeft', ' ', 'Enter', 'd']) {
       document.dispatchEvent(new KeyboardEvent('keydown', { key }));
     }
 
     document.removeEventListener('keydown', listener);
-    expect(seen).toEqual(['ArrowRight', 'ArrowLeft']);
+    expect(seen).toEqual(['ArrowRight', 'ArrowLeft', ' ']);
     el.remove();
   });
 });
@@ -220,6 +252,23 @@ describe('<metadata-modal> header drag', () => {
     el.remove();
   });
 
+  test('closing forgets the position', async () => {
+    const el = await mount();
+    el.active = true;
+    await el.updateComplete;
+    dragHeader(el, 60, 40);
+    expect(query(el, '.content').style.transform).toBe('translate(60px, 40px)');
+
+    query(el, '.close').dispatchEvent(
+      new MouseEvent('click', { bubbles: true })
+    );
+    await el.updateComplete;
+
+    expect(el.active).toBe(false);
+    expect(query(el, '.content').style.transform).toBe('');
+    el.remove();
+  });
+
   test('the position survives a photo change', async () => {
     const el = await mount();
     el.active = true;
@@ -231,36 +280,6 @@ describe('<metadata-modal> header drag', () => {
     await el.updateComplete;
 
     expect(query(el, '.content').style.transform).toBe('translate(30px, 30px)');
-    el.remove();
-  });
-
-  test('a press that starts on the box never dismisses on release', async () => {
-    const el = await mount();
-    el.active = true;
-    await el.updateComplete;
-
-    // A header drag, and a text-selection drag out of the body, both end in a
-    // click on the host once the pointer leaves the box.
-    dragHeader(el, 80, 80);
-    el.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    expect(el.active).toBe(true);
-
-    query(el, '.body').dispatchEvent(
-      new PointerEvent('pointerdown', { bubbles: true, button: 0 })
-    );
-    el.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    expect(el.active).toBe(true);
-    el.remove();
-  });
-
-  test('a backdrop press and release still closes the modal', async () => {
-    const el = await mount();
-    el.active = true;
-    await el.updateComplete;
-
-    backdropClick(el);
-
-    expect(el.active).toBe(false);
     el.remove();
   });
 });
