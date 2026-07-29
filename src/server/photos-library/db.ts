@@ -569,20 +569,48 @@ function num(v: unknown): number | null {
  *   Date           2025:08:31 10:29:51 Atlantic/Reykjavik
  *   Original date  2025:08:31 17:29:51 Europe/Helsinki
  *
- * `original_date` comes from ZEXTENDEDATTRIBUTES, which holds what the camera
- * recorded and which Photos never rewrites — it is the same value Photos.app
- * labels "Alkuperäinen" in its Adjust Date & Time sheet. It earns a row only
- * when the wall clock or the offset actually differs; matching both means only
- * the label style differs (an IANA name vs Photos' own GMT+nnnn), which is not
- * a real disagreement and would just be noise on most assets.
+ * `original_date` comes from ZEXTENDEDATTRIBUTES — the value Photos.app labels
+ * "Alkuperäinen" in its Adjust Date & Time sheet. Photos writes that row once
+ * at import and never saves it again (every row in this library is still at
+ * Z_OPT 1 while ZASSET runs into the teens), so no later date edit touches it,
+ * ours or Photos' own.
+ *
+ * It is not an EXIF table, though. ZDATECREATED, ZTIMEZONEOFFSET and
+ * ZTIMEZONENAME are the only columns Photos fills for every asset, so a file
+ * carrying no EXIF at all — video from a camera that writes none — still gets a
+ * date, from whatever Photos could find. That can be an import artifact with no
+ * bearing on when the thing was shot, so assets with no EXIF provenance keep
+ * the row but leave it empty rather than dress the artifact up as the camera's
+ * own record. An empty row says "nothing the camera recorded"; a missing row
+ * would read as "not looked at".
+ *
+ * Given provenance, the row earns a value only when the wall clock or the
+ * offset actually differs; matching both means only the label style differs (an
+ * IANA name vs Photos' own GMT+nnnn), which is not a real disagreement and
+ * would just be noise on most assets.
  */
-function formatMetaDates(row: MetaRow, set: SetFn): void {
+/**
+ * Whether the asset carries EXIF the camera itself wrote. Make and model are
+ * the tells: a file with neither has no EXIF block at all, so whatever date
+ * Photos stored for it came from somewhere other than the camera.
+ */
+function hasExifProvenance(row: MetaRow): boolean {
+  const present = (v: unknown): boolean => typeof v === 'string' && v !== '';
+  return present(row.camera_make) || present(row.camera_model);
+}
+
+function formatMetaDates(row: MetaRow, set: SetFn, setAlways: SetFn): void {
   const off = num(row.tz_offset);
   const exifOff = num(row.exif_tz_offset);
   const local = formatDate(num(row.date_created), off);
   const exifLocal = formatDate(num(row.exif_date), exifOff);
 
   set('date', withZone(local, zoneLabel(row.tz_name, off)));
+
+  if (!hasExifProvenance(row)) {
+    setAlways('original_date', null);
+    return;
+  }
 
   const sameMoment = local === exifLocal && off === exifOff;
   set(
@@ -697,11 +725,16 @@ export function queryMetadata(
   const set: SetFn = (key, val) => {
     metaSet(result, key, val);
   };
+  // Emits the key even with no value, so the field keeps its row instead of
+  // vanishing. Only for fields whose emptiness is itself worth showing.
+  const setAlways: SetFn = (key, val) => {
+    result[key] = val ?? null;
+  };
 
   set('uuid', row.uuid);
   set('filename', row.filename);
   set('original_filename', row.original_filename);
-  formatMetaDates(row, set);
+  formatMetaDates(row, set, setAlways);
   set('title', row.title);
   set('description', row.description);
 

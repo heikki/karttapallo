@@ -71,6 +71,15 @@ const METADATA_FIELDS: Array<[string, string]> = [
   ['uuid', 'UUID']
 ];
 
+/**
+ * Fields that keep their row when the server sends no value, rendering as "—".
+ * `original_date` is one: for an asset with no EXIF there is nothing the camera
+ * recorded, and an empty row states that, where a missing row would read as
+ * "not looked at". The server omits the key entirely when the row genuinely has
+ * nothing to add, so an absent key still drops the row.
+ */
+const ALWAYS_SHOWN = new Set(['original_date']);
+
 function isEmptyValue(val: unknown): boolean {
   return (
     val === null ||
@@ -298,7 +307,7 @@ export class MetadataModal extends LitElement {
     for (const [key, label] of METADATA_FIELDS) {
       if (!(key in this._data)) continue;
       const val = this._data[key];
-      if (isEmptyValue(val)) continue;
+      if (isEmptyValue(val) && !ALWAYS_SHOWN.has(key)) continue;
       if (key === 'uuid') {
         const uuid = typeof val === 'string' ? val : '';
         rows.push(
