@@ -119,7 +119,18 @@ const photosLibrary: PhotosLibrary = {
     uuid,
     filename: `${uuid}.jpg`,
     camera: 'iPhone',
-    dimensions: '4032x3024'
+    dimensions: '4032x3024',
+    // e2e-3 carries extra rows so a spec can navigate between two photos whose
+    // tables differ in height.
+    ...(uuid === 'e2e-3'
+      ? {
+          lens: 'Wide',
+          aperture: 'f/1.8',
+          iso: 100,
+          focal_length: '26mm',
+          title: 'Tampere rooftops'
+        }
+      : {})
   })
 };
 

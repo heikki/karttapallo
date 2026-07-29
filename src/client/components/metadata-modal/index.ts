@@ -5,6 +5,19 @@ export function showMetadata(uuid: string): void {
   document.querySelector<MetadataModal>('metadata-modal')?.loadMetadata(uuid);
 }
 
+/**
+ * Follow photo navigation that happened underneath an open modal. A no-op
+ * when the modal is closed or already showing `uuid`, so navigators can call
+ * it unconditionally — and so the lightbox and the popup both pushing the
+ * same uuid on one arrow key costs a single fetch.
+ */
+export function refreshMetadata(uuid: string): void {
+  const modal = document.querySelector<MetadataModal>('metadata-modal');
+  if (modal === null) return;
+  if (!modal.active || modal.shownUuid === uuid) return;
+  modal.loadMetadata(uuid);
+}
+
 function escapeHtml(s: string): string {
   return s.replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
@@ -107,6 +120,28 @@ export class MetadataModal extends LitElement {
   @litState() private _loading = false;
   @litState() private _error: string | null = null;
 
+  /** Photo the modal is showing (or loading). */
+  shownUuid: string | null = null;
+  // Bumped per load so a slow response for a photo the user has already
+  // navigated past can't overwrite the current one.
+  private _loadSeq = 0;
+
+  // Header-drag offset from the centered resting spot, in CSS px. Written
+  // straight to .content's transform rather than through a reactive property:
+  // a pointermove per frame shouldn't cost a render, and the element survives
+  // re-renders so the position sticks across photo navigation and reopening.
+  private _offsetX = 0;
+  private _offsetY = 0;
+  private _dragStart: {
+    pointerX: number;
+    pointerY: number;
+    offsetX: number;
+    offsetY: number;
+    base: { left: number; top: number; width: number } | null;
+  } | null = null;
+  // Whether the press that a pending click belongs to started on the backdrop.
+  private _pressedBackdrop = false;
+
   static override styles = css`
     *,
     *::before,
@@ -123,7 +158,12 @@ export class MetadataModal extends LitElement {
       background: rgba(0, 0, 0, 0.6);
       z-index: 3000;
       justify-content: center;
-      align-items: center;
+      /* Top-anchored, not centred: the row count differs per photo and the
+         table blanks while the next one loads, and a centred box would slide
+         up and down under the cursor as that height changes. The top inset
+         lives on .content because the universal padding reset in styles.css
+         outranks a :host rule. */
+      align-items: flex-start;
     }
     :host([active]) {
       display: flex;
@@ -134,6 +174,7 @@ export class MetadataModal extends LitElement {
       border-radius: 12px;
       max-width: 600px;
       width: 90%;
+      margin-top: 10vh;
       max-height: 80vh;
       display: flex;
       flex-direction: column;
@@ -147,6 +188,11 @@ export class MetadataModal extends LitElement {
       border-bottom: 1px solid #333;
       font-weight: 600;
       font-size: 14px;
+      cursor: move;
+      /* Prefixed only — this WKWebView drops the unprefixed form (gotchas.md). */
+      -webkit-user-select: none;
+      /* Keep a touch drag from scrolling the page instead of moving us. */
+      touch-action: none;
     }
     .close {
       font-size: 24px;
@@ -214,6 +260,8 @@ export class MetadataModal extends LitElement {
   `;
 
   loadMetadata(uuid: string) {
+    const seq = ++this._loadSeq;
+    this.shownUuid = uuid;
     this._data = null;
     this._loading = true;
     this._error = null;
@@ -225,10 +273,12 @@ export class MetadataModal extends LitElement {
         return r.json() as Promise<Record<string, unknown>>;
       })
       .then((data) => {
+        if (seq !== this._loadSeq) return;
         this._data = data;
         this._loading = false;
       })
       .catch((err: unknown) => {
+        if (seq !== this._loadSeq) return;
         this._loading = false;
         this._error = err instanceof Error ? err.message : String(err);
       });
@@ -236,25 +286,191 @@ export class MetadataModal extends LitElement {
 
   private _close() {
     this.active = false;
+    this.shownUuid = null;
   }
 
   override connectedCallback() {
     super.connectedCallback();
+    this.addEventListener('pointerdown', this._onHostPointerDown);
     this.addEventListener('click', this._onHostClick);
     document.addEventListener('keydown', this._onKeydown, true);
+    document.addEventListener('copy', this._onCopy);
+    window.addEventListener('resize', this._onResize);
   }
 
   override disconnectedCallback() {
     super.disconnectedCallback();
+    this.removeEventListener('pointerdown', this._onHostPointerDown);
     this.removeEventListener('click', this._onHostClick);
     document.removeEventListener('keydown', this._onKeydown, true);
+    document.removeEventListener('copy', this._onCopy);
+    window.removeEventListener('resize', this._onResize);
+    this._endDrag();
   }
 
+  // composedPath()[0] rather than e.target: events from inside the shadow tree
+  // are retargeted to the host, so target alone can't tell a backdrop press
+  // from a press on the table.
+  private readonly _onHostPointerDown = (e: PointerEvent) => {
+    this._pressedBackdrop = e.composedPath()[0] === this;
+  };
+
   private readonly _onHostClick = (e: Event) => {
-    // Backdrop click: if click is directly on the host element
-    if (e.target === this) {
+    // Dismiss only when the press *and* the release landed on the backdrop.
+    // A header drag or a text selection dragged past the edge of the box also
+    // ends in a click on the host, and neither of those means "close".
+    if (e.target === this && this._pressedBackdrop) {
       this._close();
     }
+  };
+
+  override updated(changed: Map<string, unknown>) {
+    // The window may have been resized while we were closed, leaving a
+    // remembered position off-screen.
+    if (!changed.has('active')) return;
+    this._onResize();
+  }
+
+  private get _contentEl(): HTMLElement | null {
+    return this.shadowRoot?.querySelector<HTMLElement>('.content') ?? null;
+  }
+
+  private _applyOffset() {
+    const content = this._contentEl;
+    if (content === null) return;
+    content.style.transform =
+      this._offsetX === 0 && this._offsetY === 0
+        ? ''
+        : `translate(${this._offsetX}px, ${this._offsetY}px)`;
+  }
+
+  /**
+   * Where the box sits with no offset applied. Derived from the live rect,
+   * which already includes the applied transform — so this is only correct
+   * while `_offsetX/_offsetY` and that transform agree, i.e. not mid-drag.
+   * Returns null when the box has no layout to measure (closed, or happy-dom).
+   */
+  private _baseBox(): { left: number; top: number; width: number } | null {
+    const content = this._contentEl;
+    if (content === null) return null;
+    const rect = content.getBoundingClientRect();
+    if (rect.width === 0 && rect.height === 0) return null;
+    return {
+      left: rect.left - this._offsetX,
+      top: rect.top - this._offsetY,
+      width: rect.width
+    };
+  }
+
+  /**
+   * Keep the modal grabbable: the header can't leave the top of the viewport,
+   * and a strip of the box always stays inside the other three edges.
+   */
+  private _clampOffset(base: { left: number; top: number; width: number }) {
+    const edge = 60;
+    this._offsetX = Math.min(
+      window.innerWidth - edge - base.left,
+      Math.max(edge - base.width - base.left, this._offsetX)
+    );
+    this._offsetY = Math.min(
+      window.innerHeight - edge - base.top,
+      Math.max(-base.top, this._offsetY)
+    );
+  }
+
+  private readonly _onResize = () => {
+    if (!this.active) return;
+    if (this._offsetX === 0 && this._offsetY === 0) return;
+    const base = this._baseBox();
+    if (base === null) return;
+    this._clampOffset(base);
+    this._applyOffset();
+  };
+
+  private readonly _onHeaderPointerDown = (e: PointerEvent) => {
+    if (e.button !== 0) return;
+    // Let the close button have its click.
+    if (
+      (e.target as HTMLElement | null)?.classList.contains('close') === true
+    ) {
+      return;
+    }
+    e.preventDefault();
+    this._dragStart = {
+      pointerX: e.clientX,
+      pointerY: e.clientY,
+      offsetX: this._offsetX,
+      offsetY: this._offsetY,
+      // Measured once, here: mid-drag the rect lags a frame behind the offset
+      // fields, which would drift the clamp bounds by a step each move.
+      base: this._baseBox()
+    };
+    // On window, not the header: the pointer routinely outruns the box.
+    window.addEventListener('pointermove', this._onDragMove);
+    window.addEventListener('pointerup', this._onDragEnd);
+    window.addEventListener('pointercancel', this._onDragEnd);
+  };
+
+  private readonly _onDragMove = (e: PointerEvent) => {
+    const start = this._dragStart;
+    if (start === null) return;
+    const dx = e.clientX - start.pointerX;
+    const dy = e.clientY - start.pointerY;
+    this._offsetX = start.offsetX + dx;
+    this._offsetY = start.offsetY + dy;
+    if (start.base !== null) this._clampOffset(start.base);
+    this._applyOffset();
+  };
+
+  private readonly _onDragEnd = () => {
+    this._endDrag();
+  };
+
+  private _endDrag() {
+    this._dragStart = null;
+    window.removeEventListener('pointermove', this._onDragMove);
+    window.removeEventListener('pointerup', this._onDragEnd);
+    window.removeEventListener('pointercancel', this._onDragEnd);
+  }
+
+  /**
+   * The text currently selected inside this modal, or '' if the selection is
+   * empty or lives elsewhere on the page.
+   */
+  private _selectedText(): string {
+    const shadow = this.shadowRoot;
+    const selection = window.getSelection();
+    if (shadow === null || selection === null) return '';
+    // Shadow-crossing ranges: in the DOM types, but still absent from older
+    // engines (and from happy-dom), where Selection.toString() is the best
+    // available read.
+    const reader: Partial<Selection> = selection;
+    if (reader.getComposedRanges === undefined) return selection.toString();
+    const staticRange = reader.getComposedRanges.call(selection, {
+      shadowRoots: [shadow]
+    })[0];
+    if (staticRange === undefined) return '';
+    if (staticRange.startContainer.getRootNode() !== shadow) return '';
+    const range = document.createRange();
+    range.setStart(staticRange.startContainer, staticRange.startOffset);
+    range.setEnd(staticRange.endContainer, staticRange.endOffset);
+    return range.toString();
+  }
+
+  /**
+   * WebKit dispatches `copy` for a selection inside a shadow root but leaves
+   * the clipboard payload empty, so Cmd+C over the metadata table copies
+   * nothing. Fill it in ourselves from the selection we can read.
+   */
+  private readonly _onCopy = (e: ClipboardEvent) => {
+    if (!this.active) return;
+    if (e.clipboardData === null) return;
+    // Non-empty already means the engine handled it; don't second-guess it.
+    if (e.clipboardData.getData('text/plain') !== '') return;
+    const text = this._selectedText();
+    if (text === '') return;
+    e.clipboardData.setData('text/plain', text);
+    e.preventDefault();
   };
 
   private readonly _onKeydown = (e: KeyboardEvent) => {
@@ -265,6 +481,10 @@ export class MetadataModal extends LitElement {
       this._close();
       return;
     }
+    // Arrow keys fall through to the lightbox / map popup so the user can keep
+    // browsing photos with the modal open; those navigators call back into
+    // refreshMetadata() to pull the modal along.
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') return;
     e.stopImmediatePropagation();
   };
 
@@ -276,7 +496,11 @@ export class MetadataModal extends LitElement {
           e.stopPropagation();
         }}
       >
-        <div class="header">
+        <div
+          class="header"
+          title="Drag to move"
+          @pointerdown=${this._onHeaderPointerDown}
+        >
           <span>Metadata</span>
           <span
             class="close"

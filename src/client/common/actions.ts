@@ -1,10 +1,10 @@
 import { showAlbumFiles } from '@components/files-modal';
-import { showMetadata } from '@components/metadata-modal';
+import { refreshMetadata, showMetadata } from '@components/metadata-modal';
 import { showLightbox } from '@components/photo-lightbox';
 
 import { saveEdits as saveEditsImpl } from '../save';
 
-export { showAlbumFiles, showLightbox, showMetadata };
+export { refreshMetadata, showAlbumFiles, showLightbox, showMetadata };
 
 function getMapView(): HTMLElementTagNameMap['map-view'] | null {
   return document.querySelector('map-view');

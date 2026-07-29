@@ -66,6 +66,28 @@ This app's WKWebView is older than Safari 17.4 and silently drops unprefixed `us
 
 Verified 2026-05-09 by inspecting the rendered shadow-DOM `:host` rule for `<filter-panel>`.
 
+## Shadow DOM in WebKit
+
+### Cmd+C over a selection inside a shadow root copies nothing
+
+WebKit highlights the selection and dispatches a `copy` event, but hands it an
+**empty** `clipboardData` when the selected text lives in a shadow tree — so the
+clipboard silently keeps whatever it held before. Any component with selectable
+text inside its shadow root has to fill the payload in itself: listen for `copy`,
+read the selection, `clipboardData.setData('text/plain', …)`, `preventDefault()`.
+See `_onCopy` in `src/client/components/metadata-modal/index.ts`.
+
+Reading the selection needs care too. `document.getSelection()` reports a
+collapsed caret retargeted to the light-DOM host (`APP-ROOT` here), so it can't
+locate the range; `ShadowRoot.getSelection()` is Chrome-only. What works is
+`Selection.getComposedRanges({ shadowRoots: [root] })` (WebKit 17+), whose
+`StaticRange` can be copied into a live `Range` to read `toString()` — and it
+also tells you whether the selection is inside your root at all, which
+`Selection.toString()` cannot.
+
+Verified 2026-07-30 in Playwright WebKit against the metadata modal: the `copy`
+event arrived with `''` while `getComposedRanges` returned the right text.
+
 ## MapLibre basemap swap
 
 The basemap swap in `src/client/components/map-view/setup.ts` uses `setStyle(next, { transformStyle })`, where `transformStyle` carries app-owned sources and layers from `previousStyle` into the merged result by subtracting all basemap-config IDs.

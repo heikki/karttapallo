@@ -8,7 +8,7 @@ Canonical inventory of user-visible flows. Each Tier 5 e2e spec maps to one or m
 - **Find a photo on the map** — click marker → popup; arrow keys cycle filtered items; Space or thumbnail click → lightbox.
 - **View a photo full size** — lightbox shows date/timezone/coords/camera; arrows cycle; Escape/Space/backdrop closes; trackpad pinch zooms.
 - **Watch a video** — videos play inline in lightbox; native controls auto-hide; Space toggles play/pause; mute persists across videos.
-- **View photo metadata** — info button → modal with all fields from `Photos.sqlite`; UUID has copy button; close with X / backdrop / Escape.
+- **View photo metadata** — info button → modal with all fields from `Photos.sqlite`; UUID has copy button; arrows keep cycling photos with the modal open and the modal follows; drag the header to move it out of the way; close with X / backdrop / Escape.
 
 ## Filter
 
