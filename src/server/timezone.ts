@@ -30,19 +30,10 @@ export function tzNameFromCoords(lat: number, lon: number): string | null {
   return results[0] ?? null;
 }
 
-/**
- * Get UTC offset string (e.g. "+03:00") from coordinates and local date.
- * Accounts for DST at the given date.
- */
-export function tzOffsetFromCoords(
-  lat: number,
-  lon: number,
-  dateStr: string
-): string | null {
-  if (dateStr === '') return null;
-  const tzName = tzNameFromCoords(lat, lon);
-  if (tzName === null) return null;
-  return tzOffsetFromTzName(tzName, dateStr);
+/** A local wall clock ("YYYY:MM:DD HH:MM:SS") paired with its UTC offset. */
+export interface LocalTime {
+  date: string;
+  tz: string;
 }
 
 /**
@@ -91,7 +82,7 @@ export function localizeInstant(
   lat: number,
   lon: number,
   instantSec: number
-): { date: string; tz: string } | null {
+): LocalTime | null {
   const tzName = tzNameFromCoords(lat, lon);
   if (tzName === null) return null;
   const offsetSec = tzOffsetSecondsAtInstant(tzName, instantSec);

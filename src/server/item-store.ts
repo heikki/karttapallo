@@ -22,6 +22,7 @@ import { join } from 'node:path';
 import {
   applyHourOffset,
   dateToUtc,
+  localEpochFromExif,
   systemTzOffsetHours,
   tzOffsetHours,
   tzOffsetToSeconds
@@ -40,8 +41,8 @@ import {
 import {
   localizeInstant,
   tzNameFromCoords,
-  tzOffsetFromCoords,
-  tzOffsetFromTzName
+  tzOffsetFromTzName,
+  type LocalTime
 } from './timezone';
 
 export interface ItemEntry {
@@ -310,7 +311,7 @@ export function openItemStore(options: OpenItemStoreOptions): ItemStore {
       }
     }
 
-    const tzResults = new Map<string, string | null>();
+    const tzResults = new Map<string, LocalTime | null>();
     const locationResults = writeLocationEdits(
       edits.locationEdits,
       items,
@@ -360,26 +361,47 @@ export function openItemStore(options: OpenItemStoreOptions): ItemStore {
 
 // ---------- Edit pipeline helpers ----------
 
+/**
+ * Recover the UTC instant behind an item's displayed (date, tz) pair.
+ *
+ * buildItemEntry produces the two together via localizeInstant, so this is an
+ * exact inverse — not a re-derivation. A location edit never touches
+ * ZDATECREATED, so the instant it returns stays valid across the edit.
+ */
+function instantOf(item: ItemEntry): number | null {
+  if (item.tz === null) return null;
+  const localEpoch = localEpochFromExif(item.date);
+  if (localEpoch === null) return null;
+  return localEpoch - tzOffsetToSeconds(item.tz);
+}
+
 // eslint-disable-next-line complexity -- sequential edits with tz lookup
 function writeLocationEdits(
   edits: LocationEdit[],
   items: ItemEntry[],
   writer: PhotosWriter,
-  tzResults: Map<string, string | null>
+  tzResults: Map<string, LocalTime | null>
 ): EditResult[] {
   const results: EditResult[] = [];
   for (const edit of edits) {
     try {
       writer.setLocation(edit.uuid, edit.lat, edit.lon);
       const item = items.find((i) => i.uuid === edit.uuid);
-      const dateStr = item?.date ?? '';
       const oldTz = item?.tz ?? null;
       const tzName = tzNameFromCoords(edit.lat, edit.lon);
-      const newTz = tzOffsetFromCoords(edit.lat, edit.lon, dateStr);
-      if (tzName !== null && newTz !== null && newTz !== oldTz) {
-        writer.setTimezone(edit.uuid, tzName, tzOffsetToSeconds(newTz));
+      // Re-localize through the same durable pair the display path uses (UTC
+      // instant + coordinates), so the offset is resolved AT THE INSTANT. The
+      // old wall-clock-as-UTC lookup disagreed by an hour inside a DST
+      // transition window, which fired even for a nudge that never left the
+      // zone: it wrote a wrong offset to Photos and shifted the shown time
+      // until the next rebuild silently reverted it.
+      const instant = item === undefined ? null : instantOf(item);
+      const local =
+        instant === null ? null : localizeInstant(edit.lat, edit.lon, instant);
+      if (tzName !== null && local !== null && local.tz !== oldTz) {
+        writer.setTimezone(edit.uuid, tzName, tzOffsetToSeconds(local.tz));
       }
-      tzResults.set(edit.uuid, newTz);
+      tzResults.set(edit.uuid, local);
       results.push({ uuid: edit.uuid, ok: true });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -437,7 +459,7 @@ function writeTimeEdits(
 function mutateLocations(
   items: ItemEntry[],
   edits: LocationEdit[],
-  tzResults: Map<string, string | null>
+  tzResults: Map<string, LocalTime | null>
 ): void {
   for (const edit of edits) {
     const item = items.find((i) => i.uuid === edit.uuid);
@@ -446,12 +468,13 @@ function mutateLocations(
     item.lon = edit.lon;
     item.gps = 'user';
     item.gps_accuracy = 1;
-    const newTz = tzResults.get(edit.uuid);
-    if (newTz !== undefined && newTz !== null && newTz !== item.tz) {
-      const oldOffset = tzOffsetHours(item.tz);
-      const newOffset = tzOffsetHours(newTz);
-      item.date = applyHourOffset(item.date, newOffset - oldOffset);
-      item.tz = newTz;
+    // Assign the localized pair wholesale rather than shifting the clock by the
+    // offset delta: it is the same value the next rebuild will derive, so the
+    // in-memory item and the snapshot already agree with buildItemEntry.
+    const local = tzResults.get(edit.uuid);
+    if (local !== undefined && local !== null) {
+      item.date = local.date;
+      item.tz = local.tz;
     }
   }
 }

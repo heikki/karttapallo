@@ -106,6 +106,28 @@ export function exifFromLocalEpoch(localEpochSec: number): string {
 }
 
 /**
+ * Inverse of exifFromLocalEpoch: parse "YYYY:MM:DD HH:MM:SS" into the
+ * epoch-seconds value whose UTC components spell that wall clock. Subtract the
+ * zone's offset from the result to recover the true UTC instant. Returns null
+ * if the string isn't an EXIF date.
+ */
+export function localEpochFromExif(dateStr: string): number | null {
+  const match = exifDatePattern.exec(dateStr);
+  if (match?.groups === undefined) return null;
+  const { yr, mo, dy, hr, mi, sc } = match.groups;
+  return (
+    Date.UTC(
+      parseInt(yr!, 10),
+      parseInt(mo!, 10) - 1,
+      parseInt(dy!, 10),
+      parseInt(hr!, 10),
+      parseInt(mi!, 10),
+      parseInt(sc!, 10)
+    ) / 1000
+  );
+}
+
+/**
  * Get the system (OS) timezone offset in fractional hours at the date given
  * by an EXIF date string. DST-aware: uses the actual offset for that date.
  *

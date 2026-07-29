@@ -3,7 +3,6 @@ import { describe, expect, test } from 'bun:test';
 import {
   localizeInstant,
   tzNameFromCoords,
-  tzOffsetFromCoords,
   tzOffsetFromTzName,
   tzOffsetSecondsAtInstant
 } from './timezone';
@@ -66,23 +65,6 @@ describe('tzOffsetFromTzName', () => {
     expect(
       tzOffsetFromTzName('Not/A/Real/Zone', '2024:06:01 12:00:00')
     ).toBeNull();
-  });
-});
-
-describe('tzOffsetFromCoords', () => {
-  test('composes name lookup with offset resolution', () => {
-    // Helsinki in winter
-    expect(tzOffsetFromCoords(60.17, 24.94, '2024:01:15 12:00:00')).toBe(
-      '+02:00'
-    );
-    // Helsinki in summer (DST)
-    expect(tzOffsetFromCoords(60.17, 24.94, '2024:07:01 12:00:00')).toBe(
-      '+03:00'
-    );
-  });
-
-  test('returns null for empty date string', () => {
-    expect(tzOffsetFromCoords(60.17, 24.94, '')).toBeNull();
   });
 });
 

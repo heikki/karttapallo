@@ -203,6 +203,64 @@ describe('item-store applyEdits', () => {
     ).toBe(true);
   });
 
+  test('same-zone nudge inside a DST window leaves the clock and tz alone', async () => {
+    // Regression: the offset must be resolved at the photo's true UTC instant,
+    // not at its wall clock read as UTC. 2026-03-29 01:00 UTC is Helsinki's
+    // spring-forward; a photo at 02:30 local (+02:00) sits just before it, but
+    // reading 02:30 as UTC lands after it and yields +03:00. That mismatch made
+    // a nudge that never left Helsinki write a bogus timezone and shift the
+    // shown time by an hour — which the next rebuild then silently reverted.
+    const writer = recordingWriter();
+    const store = await open({
+      fresh: [
+        sampleItem({
+          uuid: 'AAAA',
+          lat: 60.17,
+          lon: 24.94,
+          date: '2026:03:29 02:30:00',
+          tz: '+02:00'
+        })
+      ],
+      writer
+    });
+    store.applyEdits({
+      // A few hundred metres away — same zone, same instant.
+      locationEdits: [{ uuid: 'AAAA', lat: 60.175, lon: 24.945 }],
+      timeEdits: []
+    });
+    const item = store.getAll()[0];
+    expect(item?.date).toBe('2026:03:29 02:30:00');
+    expect(item?.tz).toBe('+02:00');
+    expect(writer.calls.some((c) => c.startsWith('setTimezone'))).toBe(false);
+  });
+
+  test('cross-zone move relocalizes the clock at the true instant', async () => {
+    const writer = recordingWriter();
+    const store = await open({
+      fresh: [
+        sampleItem({
+          uuid: 'AAAA',
+          lat: 60.17,
+          lon: 24.94,
+          date: '2024:07:01 12:00:00',
+          tz: '+03:00'
+        })
+      ],
+      writer
+    });
+    store.applyEdits({
+      // Helsinki (+03:00 in July) -> Reykjavik (+00:00 year-round).
+      locationEdits: [{ uuid: 'AAAA', lat: 64.13, lon: -21.94 }],
+      timeEdits: []
+    });
+    const item = store.getAll()[0];
+    expect(item?.tz).toBe('+00:00');
+    expect(item?.date).toBe('2024:07:01 09:00:00');
+    expect(
+      writer.calls.some((c) => c === 'setTimezone AAAA Atlantic/Reykjavik 0')
+    ).toBe(true);
+  });
+
   test('rewrites snapshot after edits', async () => {
     const writer = recordingWriter();
     const store = await open({
