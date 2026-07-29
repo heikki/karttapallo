@@ -1,0 +1,27 @@
+# Derive timezone from the UTC instant plus coordinates, not from a stored offset
+
+Karttapallo treats an asset's **UTC instant** (`ZASSET.ZDATECREATED`, a Core Data timestamp) and its **coordinates** (latitude/longitude) as the only durable temporal truth. The wall-clock time and timezone shown for a photo are **derived** from those two, not read from the stored `ZTIMEZONEOFFSET` / `ZTIMEZONENAME` columns. The offset column is demoted to a re-appliable cache that exists solely so Photos.app and rendered exports display the same local time we do.
+
+## Why
+
+Both inputs we derive from are journaled and therefore restore-proof. `ZDATECREATED` is written via AppleScript (`set date`) and coordinates via AppleScript (`set location`); both are folded into `Asset-change.plj` immediately by Photos.app. The stored timezone offset is not — `setTimezone` writes SQLite directly, which only becomes durable at the next opportunistic journal coalesce and is silently lost by a restore that happens first (see [gotchas: Apple Photos library internals](../gotchas.md#apple-photos-library-internals)). Deriving from the durable pair means a lost offset cannot corrupt what we display.
+
+It also removes a latent inconsistency in the read path. Before this decision the wall clock came from the **stored** offset (`formatDate(ZDATECREATED, ZTIMEZONEOFFSET)` in `db.ts`) while the zone _label_ was recomputed from **coordinates** (`tzOffsetFromCoords` in `item-store.ts`, falling back to `Europe/Helsinki`). When the stored offset disagreed with the zone implied by the coordinates — which is exactly what a partial restore produces — the two halves of the same displayed time came from different sources. Deriving both from coordinates makes them consistent by construction: `coords → IANA zone` (geo-tz), then `(instant, IANA zone) → DST-aware offset` (`Intl.DateTimeFormat` `longOffset`), then local wall clock.
+
+## Alternatives rejected
+
+**Keep writing the offset via direct SQLite and rely on it.** This is the status quo that lost a batch of edits. Its durability depends on a background coalesce we cannot trigger or predict, so it can never be made reliable without controlling photolibraryd.
+
+**Write metadata into the original files.** Rewriting originals in place changes `ZORIGINALSTABLEHASH` / `ZINTERNALRESOURCE.ZFINGERPRINT`, risks iCloud desync and damage flags, and still would not fix already-imported assets (Photos freezes EXIF into `ex*` fields at import and never re-reads originals during rebuild). Rejected as both dangerous and insufficient.
+
+**Store our own parallel timezone record outside the library.** We already namespace per-library data under `data/libraries/{hash}/`, so a sidecar was possible. But the instant and coordinates already living in the (journaled) library _are_ a sufficient source of truth; a sidecar would add a second thing to keep in sync for no gain, and would not help Photos.app display the right local time.
+
+## Consequences
+
+**Timezone is derived from coordinates unconditionally — there is no gate on how the date was set.** Coordinates are the ground truth for an asset's timezone: the tz label must reflect where the photo was taken, so a UK photo or video reads `+01:00` (BST), never the camera's `+03:00` (Helsinki). An earlier iteration gated derivation on `ZDATECREATEDSOURCE === 1` (date came straight from EXIF, never rewritten) to avoid changing the wall clock of assets whose instant had been manually shifted — a "compensating shift" that rewrites `ZDATECREATED` to cancel a wrong offset, or a video whose date was typed by hand because `.mov` files carry no EXIF date. That gate was removed: it made a `.mov` in the UK keep `+03:00` while the photos beside it correctly read `+01:00`, splitting one album across two timezones. A wrong displayed **wall clock** is a data problem the user fixes by editing the time; it is not a reason to fall back to a geographically-wrong stored **offset**.
+
+The trade this accepts: for the ~252 assets whose instant was compensating-shifted, deriving the coords offset over the shifted instant yields a correct tz but a possibly-wrong wall clock, until the user nudges the time. That is the honest state — correct geography, user-owned local time — and it is preferred over a correct-clock/wrong-tz-label display that misrepresents where the photo was taken. (Measured against the restored library: 1462 EXIF-dated assets are corrected outright — e.g. Helsinki `+03:00` → Iceland `+00:00`, Sweden `+02:00` — and the 252 shifted assets now surface their true timezone.)
+
+`setTimezone` is no longer required for Karttapallo to display correct time — its only remaining job is to push a matching offset into Photos.sqlite so **Photos.app** and rendered exports agree with us. That write stays best-effort and non-durable; losing it degrades only the _other_ app's display, never ours, and it can be re-applied at any time by recomputing from coordinates. A re-apply/repair command can rewrite every asset's offset to the coords-derived value on demand.
+
+Assets with no coordinates (~388) have no basis for derivation and fall back to the stored offset, then to a configured default. Deliberately mobile captures — a 200-asset transatlantic crossing on ship's/nautical `Etc/GMT` zones, and action-cam videos with no embedded metadata — are outside what coordinate-derivation can model and are handled as explicit exceptions, not by the general path.

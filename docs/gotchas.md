@@ -70,3 +70,23 @@ When adding a new map subsystem (GeoJSON source, custom WebGL layer, or layer-bo
 
 - Sprite or glyph changes force a full style reload regardless of `transformStyle`. All current basemaps are raster-only; if a vector basemap is added, this assumption needs re-verification.
 - Holds for the `maplibre-gl` version pinned in `package.json`. A major upgrade may change behavior.
+
+## Apple Photos library internals
+
+### Direct SQLite writes to `Photos.sqlite` survive only until the next journal coalesce — they are **not** durable
+
+Photos does not treat `database/Photos.sqlite` as the source of truth for backup/restore. The real record of every asset lives in `resources/journals/`:
+
+- **`Asset-snapshot.plj`** — a full snapshot of all assets (~90 fields each), regenerated periodically by reading live SQLite.
+- **`Asset-change.plj`** — an append-only log of field-level changes since the last snapshot.
+
+To reconstruct the library, Photos replays the snapshot and then applies the change log on top. **A restore rebuilds `Photos.sqlite` from these journals**, not from the `.sqlite` file itself — and `database/` and `external/` carry `com.apple.metadata:com_apple_backup_excludeItem`, so they are _not_ backed up at all. Everything else (`originals/`, `resources/`, `internal/`, `private/`, `scopes/`) is.
+
+The consequence for us: **whether a direct-SQLite write survives a restore depends entirely on timing.**
+
+- **AppleScript writes** (location via `set location`, date via `set date` — see `photos-edit.ts`) go through Photos.app, which journals them into `Asset-change.plj` immediately. They are durable the moment they're made.
+- **Direct SQLite writes** (timezone via `setTimezone` — `UPDATE ZADDITIONALASSETATTRIBUTES`) are invisible to Photos and never journaled directly. They only become durable when photolibraryd next _coalesces_ — folds the change log back into `Asset-snapshot.plj` by re-reading live SQLite. If a restore happens before that coalesce, the write is gone.
+
+**Coalescing is opportunistic and unpredictable.** It is not triggered by opening, closing, or rebuilding the library, and shows no correlation with library size, change-log length, or age — it's background photolibraryd maintenance that fires whenever it fires. You can observe the last coalesce via `coalesceDate` in `resources/journals/Asset.plist`, and confirm whether a given direct write was swept in by grepping `Asset-snapshot.plj` for the value written (e.g. an IANA zone name like `Europe/Helsinki`, which Photos itself never writes — it uses `GMT+nnnn`).
+
+This is exactly how a batch of timezone edits was silently lost: the edits landed in the 7-week gap between the last coalesce (snapshot frozen) and a restore from an external drive, while the location/date edits from the same sessions — being AppleScript/journaled — survived. See [ADR-0013](adr/0013-derive-timezone-from-instant-and-coords.md) for the structural fix (stop depending on the offset column being durable).

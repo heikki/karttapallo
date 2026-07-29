@@ -11,14 +11,17 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { Database } from 'bun:sqlite';
 
+import { exifFromLocalEpoch, secondsToTzOffset } from '../date-utils';
+
 // Core Data epoch: 2001-01-01 00:00:00 UTC
 const CORE_DATA_EPOCH = 978307200;
 
 export interface PhotoRecord {
   uuid: string;
   type: 'photo' | 'video';
-  date: string; // "YYYY:MM:DD HH:MM:SS" local time
-  tz: string | null; // "+HH:MM"
+  instant: number | null; // UTC seconds since Unix epoch (durable truth, ADR-0013)
+  date: string; // "YYYY:MM:DD HH:MM:SS" local time, from the STORED offset (fallback)
+  tz: string | null; // "+HH:MM", from the STORED offset (fallback)
   lat: number | null;
   lon: number | null;
   duration: number | null; // seconds (videos only)
@@ -175,27 +178,24 @@ function discoverJoinTable(db: Database): JoinTableInfo {
 
 // ---------- Formatting helpers ----------
 
+/** UTC seconds since the Unix epoch from a Core Data timestamp. */
+function instantFromCoreData(coreDataTimestamp: number | null): number | null {
+  return coreDataTimestamp === null
+    ? null
+    : coreDataTimestamp + CORE_DATA_EPOCH;
+}
+
 function formatDate(
   coreDataTimestamp: number | null,
   timezoneOffsetSeconds: number | null
 ): string {
-  if (coreDataTimestamp === null) return '';
-
-  const unixSeconds = coreDataTimestamp + CORE_DATA_EPOCH;
-  const localSeconds = unixSeconds + (timezoneOffsetSeconds ?? 0);
-  const d = new Date(localSeconds * 1000);
-
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getUTCFullYear()}:${pad(d.getUTCMonth() + 1)}:${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
+  const unixSeconds = instantFromCoreData(coreDataTimestamp);
+  if (unixSeconds === null) return '';
+  return exifFromLocalEpoch(unixSeconds + (timezoneOffsetSeconds ?? 0));
 }
 
 function formatTzOffset(seconds: number | null): string | null {
-  if (seconds === null) return null;
-  const sign = seconds >= 0 ? '+' : '-';
-  const abs = Math.abs(seconds);
-  const h = Math.floor(abs / 3600);
-  const m = Math.floor((abs % 3600) / 60);
-  return `${sign}${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  return seconds === null ? null : secondsToTzOffset(seconds);
 }
 
 function formatCameraBrand(m: string, mod: string): string | null {
@@ -309,6 +309,7 @@ function rowToRecord(row: RawRow, albums: AlbumEntry[]): PhotoRecord {
   return {
     uuid: row.ZUUID,
     type: row.ZKIND === 1 ? 'video' : 'photo',
+    instant: instantFromCoreData(row.ZDATECREATED),
     date: formatDate(row.ZDATECREATED, row.ZTIMEZONEOFFSET),
     tz: formatTzOffset(row.ZTIMEZONEOFFSET),
     lat,

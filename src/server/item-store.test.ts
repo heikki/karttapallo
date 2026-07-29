@@ -3,9 +3,14 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 
-import { openItemStore, type ItemEntry, type ItemStore } from './item-store';
+import {
+  buildItemEntry,
+  openItemStore,
+  type ItemEntry,
+  type ItemStore
+} from './item-store';
 import type { PhotosWriter } from './photos-edit';
-import type { LibraryResolution } from './photos-library';
+import type { LibraryResolution, PhotoRecord } from './photos-library';
 
 let dataDir = '';
 
@@ -241,6 +246,26 @@ describe('item-store applyEdits', () => {
     expect(result.timeResults[0]?.error).toContain('boom');
   });
 
+  test('does not mutate the item when the write fails', async () => {
+    // A failed Photos write (e.g. automation not authorized) must leave the
+    // displayed time untouched — otherwise it looks applied but reverts on the
+    // next rebuild from Photos.sqlite.
+    const writer = recordingWriter();
+    writer.setDateTime = () => {
+      throw new Error('not authorized');
+    };
+    const store = await open({
+      fresh: [sampleItem({ uuid: 'AAAA', date: '2024:06:01 12:00:00' })],
+      writer
+    });
+    const result = store.applyEdits({
+      locationEdits: [],
+      timeEdits: [{ uuid: 'AAAA', hours: 5 }]
+    });
+    expect(result.timeResults[0]?.ok).toBe(false);
+    expect(store.getAll()[0]?.date).toBe('2024:06:01 12:00:00');
+  });
+
   test('time edit on missing uuid returns Item not found', async () => {
     const writer = recordingWriter();
     const store = await open({ fresh: [], writer });
@@ -312,5 +337,63 @@ describe('item-store write-time library guard', () => {
       timeEdits: []
     });
     expect(result.locationResults).toEqual([{ uuid: 'AAAA', ok: true }]);
+  });
+});
+
+describe('buildItemEntry date/tz derivation (ADR-0013)', () => {
+  // 2024-07-01 09:00:00 UTC. In Iceland this is 09:00 (+00:00); the STORED
+  // fields below spell the wrong Helsinki-clock time (+03:00, 12:00) as if the
+  // camera had been left on Finnish time.
+  const instant = Date.UTC(2024, 6, 1, 9, 0, 0) / 1000;
+  const ICELAND = { lat: 64.13, lon: -21.94 };
+
+  const sampleRecord = (overrides: Partial<PhotoRecord> = {}): PhotoRecord => ({
+    uuid: 'AAAA',
+    type: 'photo',
+    instant,
+    date: '2024:07:01 12:00:00', // stored, Helsinki-clock (wrong)
+    tz: '+03:00',
+    lat: ICELAND.lat,
+    lon: ICELAND.lon,
+    duration: null,
+    camera: null,
+    gps: 'exif',
+    gps_accuracy: 5,
+    albums: [],
+    albumUuids: [],
+    directory: null,
+    filename: null,
+    originalFilename: null,
+    hasEdits: false,
+    ...overrides
+  });
+
+  test('with coords: derives tz + wall clock from instant + coords', () => {
+    const item = buildItemEntry(sampleRecord(), 'NIA');
+    expect(item.date).toBe('2024:07:01 09:00:00');
+    expect(item.tz).toBe('+00:00');
+  });
+
+  test('always derives from coords regardless of how the date was set', () => {
+    // A manually-dated video (.mov, no EXIF date) still gets the coords-based
+    // tz, not the stored Helsinki offset — matching the surrounding photos.
+    const item = buildItemEntry(sampleRecord({ type: 'video' }), 'NIA');
+    expect(item.tz).toBe('+00:00');
+  });
+
+  test('no coords: falls back to the stored offset', () => {
+    const item = buildItemEntry(sampleRecord({ lat: null, lon: null }), 'NIA');
+    expect(item.date).toBe('2024:07:01 12:00:00');
+    expect(item.tz).toBe('+03:00');
+  });
+
+  test('stored offset already matches coords: no-op', () => {
+    // Helsinki coords with the correct Helsinki-summer stored offset.
+    const item = buildItemEntry(
+      sampleRecord({ lat: 60.17, lon: 24.94 }),
+      'NIA'
+    );
+    expect(item.date).toBe('2024:07:01 12:00:00');
+    expect(item.tz).toBe('+03:00');
   });
 });

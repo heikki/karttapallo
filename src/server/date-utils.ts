@@ -85,6 +85,26 @@ export function tzOffsetToSeconds(offset: string): number {
   return sign * (h * 3600 + m * 60);
 }
 
+/** Inverse of tzOffsetToSeconds: 10800 -> "+03:00", -18000 -> "-05:00". */
+export function secondsToTzOffset(seconds: number): string {
+  const sign = seconds >= 0 ? '+' : '-';
+  const abs = Math.abs(seconds);
+  const h = Math.floor(abs / 3600);
+  const m = Math.floor((abs % 3600) / 60);
+  return `${sign}${pad(h)}:${pad(m)}`;
+}
+
+/**
+ * Format an EXIF local date "YYYY:MM:DD HH:MM:SS" from an epoch-seconds value
+ * whose UTC components already spell the desired local wall clock (i.e. the
+ * instant already shifted by the local offset). Reads UTC getters so the host
+ * timezone never leaks in.
+ */
+export function exifFromLocalEpoch(localEpochSec: number): string {
+  const d = new Date(localEpochSec * 1000);
+  return `${d.getUTCFullYear()}:${pad(d.getUTCMonth() + 1)}:${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
+}
+
 /**
  * Get the system (OS) timezone offset in fractional hours at the date given
  * by an EXIF date string. DST-aware: uses the actual offset for that date.

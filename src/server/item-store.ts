@@ -38,6 +38,7 @@ import {
   type PhotoRecord
 } from './photos-library';
 import {
+  localizeInstant,
   tzNameFromCoords,
   tzOffsetFromCoords,
   tzOffsetFromTzName
@@ -86,7 +87,8 @@ function sortedAlbums(record: PhotoRecord): {
   };
 }
 
-function buildItemEntry(
+/** Exported for unit testing the date/tz derivation gate (ADR-0013). */
+export function buildItemEntry(
   record: PhotoRecord,
   notInAlbumUuid: string
 ): ItemEntry {
@@ -94,15 +96,30 @@ function buildItemEntry(
   const albumUuid = sorted.albumUuids.find(Boolean) ?? notInAlbumUuid;
   const photosUrl = `photos:albums?albumUuid=${albumUuid}&assetUuid=${record.uuid}`;
 
-  // The Photos.sqlite ZTIMEZONEOFFSET column stores raw GPS-derived offsets
-  // that aren't proper IANA timezone offsets, so always recompute from coords
-  // when available; fall back to Europe/Helsinki for items without coordinates.
-  let tz: string | null = null;
-  if (record.date !== '') {
-    if (record.lat !== null && record.lon !== null) {
-      tz = tzOffsetFromCoords(record.lat, record.lon, record.date);
+  // Timezone and wall clock are always DERIVED from the durable pair — the UTC
+  // instant and the coordinates — never from the stored ZTIMEZONEOFFSET, which
+  // a restore can silently lose (see docs/adr/0013). Coordinates are the ground
+  // truth for an asset's timezone, unconditionally: a photo's tz label must
+  // reflect where it was taken, so a UK photo/video reads +01:00 (BST), not the
+  // camera's +03:00 (Helsinki), regardless of how its date was set.
+  //
+  // We do NOT gate on date source. If an asset's instant was manually shifted
+  // (a compensating shift, or a video whose date was typed by hand because
+  // .mov files carry no EXIF date), deriving the coords offset can produce a
+  // wrong wall clock — that is a data problem the user fixes by editing the
+  // time, not a reason to fall back to a geographically-wrong stored offset.
+  // The stored offset is only the fallback when there are no coordinates.
+  let date = record.date;
+  let tz = record.tz;
+  if (record.instant !== null && record.lat !== null && record.lon !== null) {
+    const local = localizeInstant(record.lat, record.lon, record.instant);
+    if (local !== null) {
+      date = local.date;
+      tz = local.tz;
     }
-    tz ??= tzOffsetFromTzName('Europe/Helsinki', record.date);
+  }
+  if (tz === null && date !== '') {
+    tz = tzOffsetFromTzName('Europe/Helsinki', date);
   }
 
   const base = {
@@ -112,7 +129,7 @@ function buildItemEntry(
     thumb: `thumb/${record.uuid}.jpg`,
     lat: record.lat,
     lon: record.lon,
-    date: record.date,
+    date,
     tz,
     camera: record.camera
   };
@@ -306,10 +323,25 @@ export function openItemStore(options: OpenItemStoreOptions): ItemStore {
       writer.quitPhotosApp();
     }
 
-    mutateLocations(items, edits.locationEdits, tzResults);
-    mutateTimes(items, edits.timeEdits);
+    // Only reflect edits whose Photos write actually succeeded. A failed write
+    // (e.g. Photos automation not authorized) must NOT mutate the in-memory
+    // items or the snapshot — otherwise the edit looks applied but silently
+    // reverts on the next rebuild from Photos.sqlite.
+    const okLoc = new Set(
+      locationResults.filter((r) => r.ok).map((r) => r.uuid)
+    );
+    const okTime = new Set(timeResults.filter((r) => r.ok).map((r) => r.uuid));
+    mutateLocations(
+      items,
+      edits.locationEdits.filter((e) => okLoc.has(e.uuid)),
+      tzResults
+    );
+    mutateTimes(
+      items,
+      edits.timeEdits.filter((e) => okTime.has(e.uuid))
+    );
 
-    if (edits.locationEdits.length > 0 || edits.timeEdits.length > 0) {
+    if (okLoc.size > 0 || okTime.size > 0) {
       writeSnapshot();
     }
     return { locationResults, timeResults };
