@@ -18,7 +18,7 @@ function stopPropagation(e: Event) {
   e.stopPropagation();
 }
 
-export function showLightbox(index: number): void {
+export function showLightbox(index: number) {
   document.querySelector<PhotoLightbox>('photo-lightbox')?.show(index);
 }
 

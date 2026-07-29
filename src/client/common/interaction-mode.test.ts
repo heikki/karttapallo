@@ -2,19 +2,25 @@ import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 
 import { current, defineMode, enter, exit, toggle } from './interaction-mode';
 
-const flush = async (): Promise<void> => {
+async function flush() {
   await Promise.resolve();
-};
+}
 
-const noop = (): void => undefined;
-const newSpy = (): ReturnType<typeof mock<() => void>> => mock(noop);
+function noop() {
+  /* no-op */
+}
+function newSpy(): ReturnType<typeof mock<() => void>> {
+  return mock(noop);
+}
 
 interface ModeSpies {
   onEnter: ReturnType<typeof mock<() => void>>;
   onExit: ReturnType<typeof mock<() => void>>;
 }
 
-const newSpies = (): ModeSpies => ({ onEnter: newSpy(), onExit: newSpy() });
+function newSpies(): ModeSpies {
+  return { onEnter: newSpy(), onExit: newSpy() };
+}
 
 let placement: ModeSpies = newSpies();
 let measure: ModeSpies = newSpies();

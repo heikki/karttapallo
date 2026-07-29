@@ -2,8 +2,9 @@ import type { StyleSpecification } from 'maplibre-gl';
 
 import { MML_API_KEY } from '@common/features';
 
-const mmlTile = (layer: string, ext: string) =>
-  `https://avoin-karttakuva.maanmittauslaitos.fi/avoin/wmts/1.0.0/${layer}/default/WGS84_Pseudo-Mercator/{z}/{y}/{x}.${ext}?api-key=${MML_API_KEY}`;
+function mmlTile(layer: string, ext: string) {
+  return `https://avoin-karttakuva.maanmittauslaitos.fi/avoin/wmts/1.0.0/${layer}/default/WGS84_Pseudo-Mercator/{z}/{y}/{x}.${ext}?api-key=${MML_API_KEY}`;
+}
 
 function styles(): Record<string, StyleSpecification> {
   return {

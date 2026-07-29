@@ -32,7 +32,7 @@ export class InvalidNameError extends Error {
   }
 }
 
-function assertSafeName(name: string, kind: 'album' | 'file'): void {
+function assertSafeName(name: string, kind: 'album' | 'file') {
   if (name === '' || name === '.' || name === '..') {
     throw new InvalidNameError(`Invalid ${kind} name: ${JSON.stringify(name)}`);
   }
@@ -41,7 +41,7 @@ function assertSafeName(name: string, kind: 'album' | 'file'): void {
   }
 }
 
-function isAllowedFile(name: string): boolean {
+function isAllowedFile(name: string) {
   const lower = name.toLowerCase();
   return ALLOWED_EXTS.some((ext) => lower.endsWith(ext));
 }
@@ -61,7 +61,7 @@ export interface AlbumStore {
 }
 
 export function createAlbumStore(dataDir: string): AlbumStore {
-  function albumDir(album: string): string {
+  function albumDir(album: string) {
     assertSafeName(album, 'album');
     return join(dataDir, 'albums', album);
   }
@@ -82,7 +82,7 @@ export function createAlbumStore(dataDir: string): AlbumStore {
   function saveVisibility(
     album: string,
     store: Record<string, FileVisibility>
-  ): void {
+  ) {
     const dir = albumDir(album);
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, SIDECAR_NAME), JSON.stringify(store));
@@ -120,7 +120,7 @@ export function createAlbumStore(dataDir: string): AlbumStore {
     }));
   }
 
-  async function deleteFile(album: string, filename: string): Promise<void> {
+  async function deleteFile(album: string, filename: string) {
     assertSafeName(filename, 'file');
     const dir = albumDir(album);
     await unlink(join(dir, filename)).catch(() => undefined);
@@ -135,7 +135,7 @@ export function createAlbumStore(dataDir: string): AlbumStore {
     album: string,
     filename: string,
     visible: boolean
-  ): void {
+  ) {
     assertSafeName(filename, 'file');
     const store = loadVisibility(album);
     store[filename] = { visible };
@@ -151,13 +151,13 @@ export function createAlbumStore(dataDir: string): AlbumStore {
     }
   }
 
-  async function putRouteBytes(album: string, body: string): Promise<void> {
+  async function putRouteBytes(album: string, body: string) {
     const dir = albumDir(album);
     await mkdir(dir, { recursive: true });
     await Bun.write(join(dir, ROUTE_NAME), body);
   }
 
-  async function deleteRoute(album: string): Promise<void> {
+  async function deleteRoute(album: string) {
     const path = join(albumDir(album), ROUTE_NAME);
     await unlink(path).catch(() => undefined);
   }

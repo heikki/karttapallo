@@ -31,9 +31,12 @@ test('Measure distances on the map', async ({ page }) => {
   const canvas = page.locator('map-view >> canvas.maplibregl-canvas');
   const box = await canvas.boundingBox();
   if (box === null) throw new Error('canvas not laid out');
-  const clickAt = async (offsetX: number, offsetY: number) => {
-    await page.mouse.click(box.x + offsetX, box.y + offsetY);
-  };
+  // Pulled out of `box` before clickAt: a hoisted declaration is analysed
+  // above the null check, so it wouldn't see the narrowing.
+  const { x: canvasX, y: canvasY } = box;
+  async function clickAt(offsetX: number, offsetY: number) {
+    await page.mouse.click(canvasX + offsetX, canvasY + offsetY);
+  }
 
   // Initially no overlay (measure mode inactive).
   await expect(overlay).toHaveCount(0);

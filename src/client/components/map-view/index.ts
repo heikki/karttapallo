@@ -101,15 +101,15 @@ export class MapView extends LitElement implements MapApi {
     return this._map!;
   }
 
-  fitToPhotos(animate = false, selectFirst = false): void {
+  fitToPhotos(animate = false, selectFirst = false) {
     this._fit?.toPhotos(animate, selectFirst);
   }
 
-  reloadGpx(): void {
+  reloadGpx() {
     this._gpx?.reloadTracks();
   }
 
-  forceRemountPopup(): void {
+  forceRemountPopup() {
     this._popup?.forceRemount();
   }
 
@@ -117,11 +117,11 @@ export class MapView extends LitElement implements MapApi {
     return this._popup?.get()?.getElement();
   }
 
-  markerRadius(zoom: number): number {
+  markerRadius(zoom: number) {
     return this._markers?.getRadius(zoom) ?? 0;
   }
 
-  openExternal(target: 'apple' | 'google'): void {
+  openExternal(target: 'apple' | 'google') {
     if (this._map === undefined) return;
     const c = this._map.getCenter();
     const z = Math.round(this._map.getZoom());

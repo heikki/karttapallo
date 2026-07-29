@@ -15,39 +15,47 @@ import {
 } from './data';
 import type { RouteData, RoutePoint, RouteSegment } from './data';
 
-const photoPt = (uuid: string, lon: number, lat: number): RoutePoint => ({
-  type: 'photo',
-  uuid,
-  lon,
-  lat
-});
+function photoPt(uuid: string, lon: number, lat: number): RoutePoint {
+  return {
+    type: 'photo',
+    uuid,
+    lon,
+    lat
+  };
+}
 
-const wpPt = (lon: number, lat: number): RoutePoint => ({
-  type: 'waypoint',
-  lon,
-  lat
-});
+function wpPt(lon: number, lat: number): RoutePoint {
+  return {
+    type: 'waypoint',
+    lon,
+    lat
+  };
+}
 
-const seg = (
+function seg(
   from: [number, number],
   to: [number, number],
   method: RouteSegment['method'] = 'straight'
-): RouteSegment => ({ method, geometry: [from, to] });
+): RouteSegment {
+  return { method, geometry: [from, to] };
+}
 
-const photo = (overrides: Partial<Photo> = {}): Photo => ({
-  uuid: 'p1',
-  type: 'photo',
-  full: 'full/p1.jpg',
-  thumb: 'thumb/p1.jpg',
-  lat: 60.0,
-  lon: 25.0,
-  date: '2024:06:01 12:00:00',
-  tz: '+00:00',
-  camera: null,
-  gps: 'exif',
-  albums: [],
-  ...overrides
-});
+function photo(overrides: Partial<Photo> = {}): Photo {
+  return {
+    uuid: 'p1',
+    type: 'photo',
+    full: 'full/p1.jpg',
+    thumb: 'thumb/p1.jpg',
+    lat: 60.0,
+    lon: 25.0,
+    date: '2024:06:01 12:00:00',
+    tz: '+00:00',
+    camera: null,
+    gps: 'exif',
+    albums: [],
+    ...overrides
+  };
+}
 
 beforeEach(() => {
   clearEdits();

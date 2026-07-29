@@ -10,18 +10,18 @@ function getMapView(): HTMLElementTagNameMap['map-view'] | null {
   return document.querySelector('map-view');
 }
 
-export function fitToPhotos(animate = false, selectFirst = false): void {
+export function fitToPhotos(animate = false, selectFirst = false) {
   getMapView()?.fitToPhotos(animate, selectFirst);
 }
 
-export function openExternalMap(provider: 'apple' | 'google'): void {
+export function openExternalMap(provider: 'apple' | 'google') {
   getMapView()?.openExternal(provider);
 }
 
-export function reloadAlbumGpx(): void {
+export function reloadAlbumGpx() {
   getMapView()?.reloadGpx();
 }
 
-export function saveEdits(): void {
+export function saveEdits() {
   void saveEditsImpl();
 }

@@ -5,26 +5,30 @@ import * as interactionMode from './interaction-mode';
 import selection from './selection';
 import type { Photo } from './types';
 
-const photo = (overrides: Partial<Photo> = {}): Photo => ({
-  uuid: 'p1',
-  type: 'photo',
-  full: 'full/p1.jpg',
-  thumb: 'thumb/p1.jpg',
-  lat: 60.17,
-  lon: 24.94,
-  date: '2024:06:01 12:00:00',
-  tz: '+03:00',
-  camera: 'iPhone 15',
-  gps: 'exif',
-  albums: ['Helsinki'],
-  ...overrides
-});
+function photo(overrides: Partial<Photo> = {}): Photo {
+  return {
+    uuid: 'p1',
+    type: 'photo',
+    full: 'full/p1.jpg',
+    thumb: 'thumb/p1.jpg',
+    lat: 60.17,
+    lon: 24.94,
+    date: '2024:06:01 12:00:00',
+    tz: '+03:00',
+    camera: 'iPhone 15',
+    gps: 'exif',
+    albums: ['Helsinki'],
+    ...overrides
+  };
+}
 
-const noop = (): void => undefined;
+function noop() {
+  /* no-op */
+}
 
-const flush = async (): Promise<void> => {
+async function flush() {
   await Promise.resolve();
-};
+}
 
 beforeEach(async () => {
   selection.clear();

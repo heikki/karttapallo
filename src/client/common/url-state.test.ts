@@ -9,13 +9,13 @@ import {
   urlSignal
 } from './url-state';
 
-const setUrl = (qs: string): void => {
+function setUrl(qs: string) {
   history.replaceState(null, '', qs === '' ? location.pathname : `?${qs}`);
-};
+}
 
-const flushMicrotasks = async (): Promise<void> => {
+async function flushMicrotasks() {
   await Promise.resolve();
-};
+}
 
 const originalFetch = globalThis.fetch;
 

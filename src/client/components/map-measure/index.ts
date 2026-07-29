@@ -43,11 +43,11 @@ const LAYERS: LayerSpecification[] = [
 ];
 const LAYER_IDS = LAYERS.map((l) => l.id);
 
-function isActive(): boolean {
+function isActive() {
   return interactionMode.current.get() === 'measure';
 }
 
-function computeDistance(coords: ReadonlyArray<[number, number]>): number {
+function computeDistance(coords: ReadonlyArray<[number, number]>) {
   let total = 0;
   for (let i = 1; i < coords.length; i++) {
     total += turfDistance(point(coords[i - 1]!), point(coords[i]!), {
@@ -57,7 +57,7 @@ function computeDistance(coords: ReadonlyArray<[number, number]>): number {
   return total;
 }
 
-function formatDistance(km: number): string {
+function formatDistance(km: number) {
   if (km < 1) return `${Math.round(km * 1000)} m`;
   return `${km.toFixed(2)} km`;
 }
@@ -83,7 +83,7 @@ export class MapMeasure extends SignalWatcher(MapFeatureElement) {
   `;
 
   @state() private coords: Array<[number, number]> = [];
-  private readonly onMapClick = (e: MapMouseEvent): void => {
+  private readonly onMapClick = (e: MapMouseEvent) => {
     // Click on existing measure point removes it.
     const features = this.api.map.queryRenderedFeatures(e.point, {
       layers: ['measure-points-layer']
@@ -115,7 +115,7 @@ export class MapMeasure extends SignalWatcher(MapFeatureElement) {
     });
   }
 
-  private addLayers(): void {
+  private addLayers() {
     const map = this.api.map;
     for (const id of SOURCES) {
       map.addSource(id, {
@@ -129,7 +129,7 @@ export class MapMeasure extends SignalWatcher(MapFeatureElement) {
     }
   }
 
-  override updated(changed: Map<string, unknown>): void {
+  override updated(changed: Map<string, unknown>) {
     if (changed.has('coords')) this.updateSources();
   }
 
@@ -146,7 +146,7 @@ export class MapMeasure extends SignalWatcher(MapFeatureElement) {
     </div>`;
   }
 
-  private updateSources(): void {
+  private updateSources() {
     const pointSource = this.api.map.getSource<GeoJSONSource>('measure-points');
     if (pointSource !== undefined) {
       pointSource.setData({

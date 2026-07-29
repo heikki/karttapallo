@@ -9,18 +9,24 @@ import { resolveLibrary, volumeOf } from './resolve-library';
 let tmp = '';
 
 /** Build a fake .photoslibrary bundle with a Photos.sqlite inside. */
-function makeLibrary(): string {
+function makeLibrary() {
   const lib = join(tmp, 'Fake.photoslibrary');
   mkdirSync(join(lib, 'database'), { recursive: true });
   writeFileSync(join(lib, 'database', 'Photos.sqlite'), '');
   return lib;
 }
 
-const native = (r: ActiveLibraryResult) => (): ActiveLibraryResult => r;
+function native(r: ActiveLibraryResult) {
+  return (): ActiveLibraryResult => r;
+}
 
 /** FDA seam. Always injected so tests don't depend on the host's grant state. */
-const withFda = () => true;
-const withoutFda = () => false;
+function withFda() {
+  return true;
+}
+function withoutFda() {
+  return false;
+}
 
 beforeEach(() => {
   tmp = mkdtempSync(join(tmpdir(), 'karttapallo-resolve-'));

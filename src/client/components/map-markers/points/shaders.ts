@@ -27,7 +27,7 @@ export class Shader {
   u(name: string): WebGLUniformLocation | null {
     return this._u[name] ?? null;
   }
-  a(name: string): number {
+  a(name: string) {
     return this._a[name] ?? -1;
   }
 }
@@ -83,7 +83,7 @@ const PROJ_U = [
   'u_projection_transition'
 ];
 
-function projectionPrelude(shaderData: ShaderData): string {
+function projectionPrelude(shaderData: ShaderData) {
   if (shaderData.vertexShaderPrelude.length > 0) {
     return `${shaderData.vertexShaderPrelude}\n${shaderData.define}`;
   }

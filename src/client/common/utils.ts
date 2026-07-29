@@ -5,7 +5,7 @@ export function getYear(photo: Photo): string | null {
   return photo.date.split(':')[0] ?? null;
 }
 
-export function toUtcSortKey(date: string, tz: string | null): string {
+export function toUtcSortKey(date: string, tz: string | null) {
   const iso = date
     .replace(/^(?<y>\d{4}):(?<m>\d{2}):(?<d>\d{2})/v, '$1-$2-$3')
     .replace(' ', 'T');
@@ -13,7 +13,7 @@ export function toUtcSortKey(date: string, tz: string | null): string {
 }
 
 /** Sort photos in-place using precomputed sort keys (avoids repeated Date allocations). */
-export function sortByDate(photos: Photo[]): void {
+export function sortByDate(photos: Photo[]) {
   const keys = new Map<Photo, string>();
   for (const p of photos) {
     keys.set(p, p.date === '' ? '\uffff' : toUtcSortKey(p.date, p.tz));
@@ -21,7 +21,7 @@ export function sortByDate(photos: Photo[]): void {
   photos.sort((a, b) => keys.get(a)!.localeCompare(keys.get(b)!));
 }
 
-function parseTimePart(timePart: string | undefined): string {
+function parseTimePart(timePart: string | undefined) {
   if (timePart === undefined || timePart === '') return '';
   const [hours, minutes, seconds] = timePart.split(':');
   if (hours !== undefined && minutes !== undefined && seconds !== undefined) {
@@ -46,7 +46,7 @@ function parseDatePart(datePart: string): string | null {
 
 const tzPattern = /^(?<sign>[+-])(?<h>\d{2}):(?<m>\d{2})$/;
 
-function formatTz(tz: string): string {
+function formatTz(tz: string) {
   // "+03:00" -> "+3", "-05:30" -> "-5:30", "+00:00" -> "UTC"
   const match = tzPattern.exec(tz);
   if (match === null) return tz;
@@ -58,7 +58,7 @@ function formatTz(tz: string): string {
   return `${short}:${minutes}`;
 }
 
-export function formatDate(dateStr: string, tz?: string | null): string {
+export function formatDate(dateStr: string, tz?: string | null) {
   if (dateStr === '') return 'Unknown date';
   // Input format: "YYYY:MM:DD HH:MM:SS" -> Output: "D.M.YYYY HH:MM:SS"
   const [datePart, timePart] = dateStr.split(' ');
@@ -72,7 +72,7 @@ export function formatDate(dateStr: string, tz?: string | null): string {
   return base;
 }
 
-export function editableDateStr(exifDate: string): string {
+export function editableDateStr(exifDate: string) {
   if (exifDate === '') return '';
   const [datePart, timePart] = exifDate.split(' ');
   if (datePart === undefined) return '';
@@ -86,20 +86,18 @@ export function editableDateStr(exifDate: string): string {
   return `${d} ${h}:${m}:${s}`;
 }
 
-export function isVideo(item: Photo): boolean {
+export function isVideo(item: Photo) {
   return item.type === 'video';
 }
 
-function toDMS(decimal: number): string {
+function toDMS(decimal: number) {
   const abs = Math.abs(decimal);
   const deg = Math.floor(abs);
   const min = (abs - deg) * 60;
   return `${deg}°${min.toFixed(1)}'`;
 }
 
-export function formatCoords(
-  coords: { lat: number; lon: number } | null
-): string {
+export function formatCoords(coords: { lat: number; lon: number } | null) {
   if (coords !== null) {
     const ns = coords.lat >= 0 ? 'N' : 'S';
     const ew = coords.lon >= 0 ? 'E' : 'W';
@@ -108,21 +106,21 @@ export function formatCoords(
   return 'No location';
 }
 
-export function getThumbUrl(photo: Photo): string {
+export function getThumbUrl(photo: Photo) {
   if (photo.thumb === '') {
     return photo.filename ?? '';
   }
   return photo.thumb;
 }
 
-export function getFullUrl(photo: Photo): string {
+export function getFullUrl(photo: Photo) {
   if (photo.full === '') {
     return photo.filename ?? '';
   }
   return photo.full;
 }
 
-export function getVideoUrl(photo: Photo): string {
+export function getVideoUrl(photo: Photo) {
   return `video/${photo.uuid}`;
 }
 
@@ -191,6 +189,8 @@ export function parseUserDatetime(
     match.groups.tm !== undefined && match.groups.tm !== ''
       ? match.groups.tm
       : null;
-  const pad = (n: number) => String(n).padStart(2, '0');
+  function pad(n: number) {
+    return String(n).padStart(2, '0');
+  }
   return { day: `${year}:${pad(month)}:${pad(day)}`, time };
 }

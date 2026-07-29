@@ -46,12 +46,12 @@ let saveTimer: ReturnType<typeof setTimeout> | null = null;
 // doesn't leak into the next session).
 let suppressNextMapClick = false;
 
-function isActive(): boolean {
+function isActive() {
   return interactionMode.current.get() === 'route-edit';
 }
 
 /** Apply a state transition with the appropriate side effects. */
-function transition(next: InteractionState | null): void {
+function transition(next: InteractionState | null) {
   const prev = interaction;
   interaction = next;
 
@@ -84,7 +84,7 @@ function cursorFor(s: InteractionState | null): string | null {
 
 // ---------- Public API ----------
 
-export function initRouteEdit(m: MapGL): void {
+export function initRouteEdit(m: MapGL) {
   map = m;
   createEditLayers(m);
 
@@ -113,7 +113,7 @@ export function initRouteEdit(m: MapGL): void {
 
 // ---------- Lifecycle ----------
 
-function onEnter(): void {
+function onEnter() {
   if (map === null) return;
   // canEnter guarantees route.current is non-null here.
   route.syncPhotoPoints(data.filteredPhotos.get());
@@ -138,7 +138,7 @@ function onEnter(): void {
   transition({ kind: 'idle' });
 }
 
-function onExit(): void {
+function onExit() {
   if (map === null) return;
 
   if (interaction?.kind === 'dragging') teardownDragListeners();
@@ -159,17 +159,17 @@ function onExit(): void {
   map.off('mouseleave', 'route-edit-points-layer', onPointLeave);
 }
 
-function setLayerVisibility(show: boolean): void {
+function setLayerVisibility(show: boolean) {
   if (map === null) return;
   setLayersVisibility(map, ALL_EDIT_LAYERS, show);
 }
 
-function scheduleAutoSave(): void {
+function scheduleAutoSave() {
   if (saveTimer !== null) clearTimeout(saveTimer);
   saveTimer = setTimeout(flushPendingSave, 1000);
 }
 
-function flushPendingSave(): void {
+function flushPendingSave() {
   if (saveTimer !== null) {
     clearTimeout(saveTimer);
     saveTimer = null;
@@ -195,7 +195,7 @@ function firstClickableHit(
   return null;
 }
 
-function onMapClick(e: MapMouseEvent): void {
+function onMapClick(e: MapMouseEvent) {
   if (map === null) return;
   const cur = route.current.get();
   if (cur === null) return;
@@ -230,7 +230,7 @@ function onMapClick(e: MapMouseEvent): void {
   }
 }
 
-function onRightClick(e: MapMouseEvent): void {
+function onRightClick(e: MapMouseEvent) {
   if (map === null) return;
   if (route.current.get() === null) return;
   e.preventDefault();
@@ -243,7 +243,7 @@ function onRightClick(e: MapMouseEvent): void {
   }
 }
 
-function addWaypointAtClick(lon: number, lat: number): void {
+function addWaypointAtClick(lon: number, lat: number) {
   if (map === null) return;
   const cur = route.current.get();
   if (cur === null || cur.data.segments.length === 0) return;
@@ -251,7 +251,7 @@ function addWaypointAtClick(lon: number, lat: number): void {
   insertWaypointAt(bestIdx, lon, lat);
 }
 
-function insertWaypointAt(segIdx: number, lon: number, lat: number): void {
+function insertWaypointAt(segIdx: number, lon: number, lat: number) {
   const cur = route.current.get();
   if (cur === null) return;
   const method = cur.data.segments[segIdx]?.method;
@@ -269,7 +269,7 @@ function insertWaypointAt(segIdx: number, lon: number, lat: number): void {
   scheduleAutoSave();
 }
 
-function removeWaypointAt(pointIdx: number): void {
+function removeWaypointAt(pointIdx: number) {
   const segBefore = pointIdx - 1;
   const method = route.removeWaypoint(pointIdx);
   if (method === null) return;
@@ -283,7 +283,7 @@ function removeWaypointAt(pointIdx: number): void {
 
 // ---------- Segment routing popup ----------
 
-function showSegmentPopup(segIdx: number, lon: number, lat: number): void {
+function showSegmentPopup(segIdx: number, lon: number, lat: number) {
   if (map === null) return;
   removePopup();
   const cur = route.current.get();
@@ -305,7 +305,7 @@ function showSegmentPopup(segIdx: number, lon: number, lat: number): void {
   map.getContainer().appendChild(popupEl);
 }
 
-function removePopup(): void {
+function removePopup() {
   if (popupEl !== null) {
     popupEl.remove();
     popupEl = null;
@@ -314,7 +314,7 @@ function removePopup(): void {
 
 // ---------- Drag ----------
 
-function onPointMouseDown(e: MapLayerMouseEvent): void {
+function onPointMouseDown(e: MapLayerMouseEvent) {
   if (map === null || e.originalEvent.button !== 0) return;
   if (route.current.get() === null) return;
   const feature = e.features?.[0];
@@ -323,7 +323,7 @@ function onPointMouseDown(e: MapLayerMouseEvent): void {
   startDrag(idx, e);
 }
 
-function onSegmentMouseDown(e: MapLayerMouseEvent): void {
+function onSegmentMouseDown(e: MapLayerMouseEvent) {
   if (map === null || e.originalEvent.button !== 0) return;
   if (route.current.get() === null) return;
   // Don't start segment drag if also on a point
@@ -341,7 +341,7 @@ function onSegmentMouseDown(e: MapLayerMouseEvent): void {
   startDrag(segIdx + 1, e);
 }
 
-function startDrag(idx: number, e: MapMouseEvent): void {
+function startDrag(idx: number, e: MapMouseEvent) {
   if (map === null) return;
   e.preventDefault();
   map.dragPan.disable();
@@ -353,7 +353,7 @@ function startDrag(idx: number, e: MapMouseEvent): void {
   transition({ kind: 'dragging', pointIdx: idx });
 }
 
-function onDragMove(e: MapMouseEvent): void {
+function onDragMove(e: MapMouseEvent) {
   if (interaction?.kind !== 'dragging') return;
   route.updateAdjacentSegments(
     interaction.pointIdx,
@@ -362,7 +362,7 @@ function onDragMove(e: MapMouseEvent): void {
   );
 }
 
-function onDragEnd(): void {
+function onDragEnd() {
   if (interaction?.kind !== 'dragging') return;
   const idx = interaction.pointIdx;
   teardownDragListeners();
@@ -370,7 +370,7 @@ function onDragEnd(): void {
   rerouteAfterDrag(idx);
 }
 
-function rerouteAfterDrag(pointIdx: number): void {
+function rerouteAfterDrag(pointIdx: number) {
   const cur = route.current.get();
   if (cur === null) return;
   const segBefore = pointIdx - 1;
@@ -384,7 +384,7 @@ function rerouteAfterDrag(pointIdx: number): void {
   scheduleAutoSave();
 }
 
-function teardownDragListeners(): void {
+function teardownDragListeners() {
   if (map === null) return;
   map.dragPan.enable();
   map.off('mousemove', onDragMove);
@@ -396,14 +396,14 @@ function teardownDragListeners(): void {
 
 const CURSOR_CLASSES = ['cursor-pointer', 'cursor-grabbing'];
 
-function setCursorClass(cls: string | null): void {
+function setCursorClass(cls: string | null) {
   if (map === null) return;
   const canvas = map.getCanvas();
   for (const c of CURSOR_CLASSES) canvas.classList.remove(c);
   if (cls !== null) canvas.classList.add(cls);
 }
 
-function showHoverHighlight(segIdx: number): void {
+function showHoverHighlight(segIdx: number) {
   if (map === null) return;
   const cur = route.current.get();
   if (cur === null) return;
@@ -416,20 +416,20 @@ function showHoverHighlight(segIdx: number): void {
   });
 }
 
-function clearHoverHighlight(): void {
+function clearHoverHighlight() {
   if (map === null) return;
   setHoverSource(map, { type: 'FeatureCollection', features: [] });
 }
 
 // ---------- Hover handlers ----------
 
-function onSegmentLeave(): void {
+function onSegmentLeave() {
   if (interaction?.kind === 'hoveringSegment') {
     transition({ kind: 'idle' });
   }
 }
 
-function onSegmentMove(e: MapLayerMouseEvent): void {
+function onSegmentMove(e: MapLayerMouseEvent) {
   if (
     map === null ||
     interaction === null ||
@@ -452,7 +452,7 @@ function onSegmentMove(e: MapLayerMouseEvent): void {
   transition({ kind: 'hoveringSegment', segIdx });
 }
 
-function onPointEnter(e: MapLayerMouseEvent): void {
+function onPointEnter(e: MapLayerMouseEvent) {
   if (map === null || interaction === null || interaction.kind === 'dragging') {
     return;
   }
@@ -461,7 +461,7 @@ function onPointEnter(e: MapLayerMouseEvent): void {
   transition({ kind: 'hoveringPoint', pointId: id });
 }
 
-function onPointLeave(): void {
+function onPointLeave() {
   if (interaction?.kind === 'hoveringPoint') {
     transition({ kind: 'idle' });
   }

@@ -9,26 +9,27 @@ const sampleData = {
   uuid: 'fixture-uuid'
 };
 
-const jsonResponse = (data: Record<string, unknown>): Response =>
-  new Response(JSON.stringify(data), {
+function jsonResponse(data: Record<string, unknown>): Response {
+  return new Response(JSON.stringify(data), {
     headers: { 'content-type': 'application/json' }
   });
+}
 
-const mount = async (): Promise<MetadataModal> => {
+async function mount(): Promise<MetadataModal> {
   const el = new MetadataModal();
   document.body.appendChild(el);
   await el.updateComplete;
   return el;
-};
+}
 
-const query = (el: MetadataModal, selector: string): HTMLElement => {
+function query(el: MetadataModal, selector: string): HTMLElement {
   const found = el.shadowRoot?.querySelector<HTMLElement>(selector) ?? null;
   if (found === null) throw new Error(`missing ${selector}`);
   return found;
-};
+}
 
 /** Press on the header, move by (dx, dy), release. */
-const dragHeader = (el: MetadataModal, dx: number, dy: number): void => {
+function dragHeader(el: MetadataModal, dx: number, dy: number) {
   const header = query(el, '.header');
   header.dispatchEvent(
     new PointerEvent('pointerdown', {
@@ -45,13 +46,13 @@ const dragHeader = (el: MetadataModal, dx: number, dy: number): void => {
     })
   );
   window.dispatchEvent(new PointerEvent('pointerup', {}));
-};
+}
 
 /** Press and release on the backdrop, as a browser would report it. */
-const backdropClick = (el: MetadataModal): void => {
+function backdropClick(el: MetadataModal) {
   el.dispatchEvent(new PointerEvent('pointerdown', { button: 0 }));
   el.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-};
+}
 
 describe('<metadata-modal>', () => {
   test('mounts and starts hidden (active=false)', async () => {
@@ -176,9 +177,9 @@ describe('<metadata-modal> photo navigation', () => {
     const el = await mount();
     el.loadMetadata('first-uuid');
     const seen: string[] = [];
-    const listener = (e: Event) => {
+    function listener(e: Event) {
       seen.push((e as KeyboardEvent).key);
-    };
+    }
     document.addEventListener('keydown', listener);
 
     for (const key of ['ArrowRight', 'ArrowLeft', ' ']) {
@@ -265,15 +266,15 @@ describe('<metadata-modal> header drag', () => {
 });
 
 describe('<metadata-modal> copying text', () => {
-  const selectBody = (el: MetadataModal): void => {
+  function selectBody(el: MetadataModal) {
     const range = document.createRange();
     range.selectNodeContents(query(el, '.body'));
     const selection = window.getSelection();
     selection?.removeAllRanges();
     selection?.addRange(range);
-  };
+  }
 
-  const dispatchCopy = (): ClipboardEvent => {
+  function dispatchCopy(): ClipboardEvent {
     const event = new ClipboardEvent('copy', {
       clipboardData: new DataTransfer(),
       bubbles: true,
@@ -281,16 +282,16 @@ describe('<metadata-modal> copying text', () => {
     });
     document.dispatchEvent(event);
     return event;
-  };
+  }
 
-  const mountWithTable = async (): Promise<MetadataModal> => {
+  async function mountWithTable(): Promise<MetadataModal> {
     const el = await mount();
     el.active = true;
     (el as unknown as { _data: Record<string, unknown> })._data = sampleData;
     el.requestUpdate();
     await el.updateComplete;
     return el;
-  };
+  }
 
   test('fills the empty clipboard payload from the selection', async () => {
     const el = await mountWithTable();

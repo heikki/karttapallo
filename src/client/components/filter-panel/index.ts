@@ -27,19 +27,19 @@ const panelStyles = css`
   }
 `;
 
-function onYearChange(e: Event): void {
+function onYearChange(e: Event) {
   data.setYear((e.target as HTMLSelectElement).value);
 }
 
-function onAlbumChange(e: Event): void {
+function onAlbumChange(e: Event) {
   data.setAlbum((e.target as HTMLSelectElement).value);
 }
 
-function onCameraChange(e: Event): void {
+function onCameraChange(e: Event) {
   data.setCamera((e.target as HTMLSelectElement).value);
 }
 
-function onReset(): void {
+function onReset() {
   selection.clear();
   viewState.mapStyle.set('satellite');
   viewState.markerStyle.set('classic');

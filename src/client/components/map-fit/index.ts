@@ -14,7 +14,7 @@ function computePhotoBounds(): LngLatBounds {
   return bounds;
 }
 
-function isSinglePointBounds(bounds: LngLatBounds): boolean {
+function isSinglePointBounds(bounds: LngLatBounds) {
   return (
     bounds.getSouthWest().lng === bounds.getNorthEast().lng &&
     bounds.getSouthWest().lat === bounds.getNorthEast().lat
@@ -29,7 +29,7 @@ export class MapFit extends MapFeatureElement {
     }
   }
 
-  toPhotos(animate = false, selectFirst = false): void {
+  toPhotos(animate = false, selectFirst = false) {
     if (data.filteredPhotos.get().length === 0) return;
     const bounds = computePhotoBounds();
     const duration = animate ? 500 : 0;
@@ -55,7 +55,7 @@ export class MapFit extends MapFeatureElement {
     this.triggerPostFitActions(animate, selectFirst);
   }
 
-  private triggerPostFitActions(animate: boolean, selectFirst: boolean): void {
+  private triggerPostFitActions(animate: boolean, selectFirst: boolean) {
     if (!selectFirst) return;
     if (animate) {
       void this.api.map.once('moveend', () => {
@@ -66,7 +66,7 @@ export class MapFit extends MapFeatureElement {
     }
   }
 
-  private computeTopPadding(): number {
+  private computeTopPadding() {
     if (this.api.map.getProjection().type !== 'globe') return 350;
     const popupEl = this.api.popupElement();
     if (popupEl === undefined) return 50;

@@ -16,7 +16,7 @@ import type { MapApi } from './api';
 import background from './background';
 import config from './config';
 
-function showMapError(msg: string, onClick?: () => void): void {
+function showMapError(msg: string, onClick?: () => void) {
   let banner = document.getElementById('map-error-banner');
   if (banner === null) {
     banner = document.createElement('div');
@@ -104,13 +104,13 @@ function createMap(container: HTMLElement): MapGL {
   });
 }
 
-function installControls(map: MapGL): void {
+function installControls(map: MapGL) {
   map.addControl(new NavigationControl({ showCompass: false }), 'bottom-right');
   map.addControl(new GlobeControl(), 'bottom-right');
   map.addControl(new ScaleControl({ unit: 'metric' }), 'bottom-left');
 }
 
-function installListeners(map: MapGL, api: MapApi): void {
+function installListeners(map: MapGL, api: MapApi) {
   map.on('moveend', () => {
     const c = map.getCenter();
     mapViewToUrl({ lat: c.lat, lon: c.lng, zoom: map.getZoom() });
@@ -153,7 +153,7 @@ function installListeners(map: MapGL, api: MapApi): void {
   });
 }
 
-function installBackground(map: MapGL): void {
+function installBackground(map: MapGL) {
   background.init(map.getContainer());
   background.start();
 
@@ -162,7 +162,7 @@ function installBackground(map: MapGL): void {
   // changes plus once at start, plus on projection-transition end (the
   // 'move' fired during transitions covers most cases, but the post-flip
   // resting state needs an explicit update).
-  const updateRadius = (): void => {
+  function updateRadius() {
     if (map.getProjection().type !== 'globe') return;
     const { lat, lng } = map.getCenter();
     const centerPx = map.project([lng, lat]);
@@ -174,7 +174,7 @@ function installBackground(map: MapGL): void {
       Math.sqrt(dx * dx + dy * dy),
       Math.min(canvas.clientWidth, canvas.clientHeight)
     );
-  };
+  }
   map.on('move', updateRadius);
   map.on('projectiontransition', updateRadius);
   void map.once('load', updateRadius);
@@ -187,7 +187,7 @@ function installBackground(map: MapGL): void {
   });
 }
 
-function installDebugDiagnostics(map: MapGL): void {
+function installDebugDiagnostics(map: MapGL) {
   let renderFrames = 0;
   let lastRenderTs = 0;
   map.on('render', () => {
@@ -212,7 +212,7 @@ function installDebugDiagnostics(map: MapGL): void {
 // Crosshair cursor on the map canvas while any mode is active. Escape to
 // exit the mode lives in <map-popup>'s keydown handler so it can sit in the
 // shared priority chain with date-edit and popup-close.
-function installInteractionMode(map: MapGL): void {
+function installInteractionMode(map: MapGL) {
   effect(() => {
     map
       .getCanvas()
@@ -220,7 +220,7 @@ function installInteractionMode(map: MapGL): void {
   });
 }
 
-function installStyleEffect(map: MapGL): void {
+function installStyleEffect(map: MapGL) {
   let lastAppliedStyleKey = viewState.mapStyle.get();
   effect(() => {
     const next = viewState.mapStyle.get();

@@ -48,11 +48,11 @@ export const current: Signal.State<RouteRef | null> = signal<RouteRef | null>(
 
 // ---------- Primitives ----------
 
-export function clear(): void {
+export function clear() {
   current.set(null);
 }
 
-export function setRoute(album: string, data: RouteData): void {
+export function setRoute(album: string, data: RouteData) {
   current.set({ album, data });
 }
 
@@ -75,10 +75,7 @@ export async function loadFromServer(
   }
 }
 
-export async function saveToServer(
-  album: string,
-  data: RouteData
-): Promise<void> {
+export async function saveToServer(album: string, data: RouteData) {
   await fetch(`/api/albums/${encodeURIComponent(album)}/route`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -88,7 +85,7 @@ export async function saveToServer(
 
 // ---------- Sync verbs ----------
 
-export function insertWaypoint(segIdx: number, lon: number, lat: number): void {
+export function insertWaypoint(segIdx: number, lon: number, lat: number) {
   const cur = current.get();
   if (cur === null) return;
   current.set({
@@ -110,7 +107,7 @@ export function updateAdjacentSegments(
   pointIdx: number,
   lon: number,
   lat: number
-): void {
+) {
   const cur = current.get();
   if (cur === null) return;
   current.set({
@@ -119,7 +116,7 @@ export function updateAdjacentSegments(
   });
 }
 
-export function syncPhotoPoints(photos: Photo[]): boolean {
+export function syncPhotoPoints(photos: Photo[]) {
   const cur = current.get();
   if (cur === null) return false;
   const { route: next, changed } = routeData.syncPhotoPoints(cur.data, photos);
@@ -139,7 +136,7 @@ export function syncPhotoPoints(photos: Photo[]): boolean {
  * On failure, downgrades the method to 'straight' so method and geometry
  * stay consistent.
  */
-export async function rerouteSegment(segIdx: number): Promise<void> {
+export async function rerouteSegment(segIdx: number) {
   const before = current.get();
   if (before === null) return;
   const seg = before.data.segments[segIdx];
@@ -176,10 +173,7 @@ export async function rerouteSegment(segIdx: number): Promise<void> {
  * Change a segment's routing method. Returns false if the routing API
  * failed (method left unchanged).
  */
-export async function applySegmentMethod(
-  segIdx: number,
-  method: SegMethod
-): Promise<boolean> {
+export async function applySegmentMethod(segIdx: number, method: SegMethod) {
   const before = current.get();
   if (before === null) return false;
   const seg = before.data.segments[segIdx];

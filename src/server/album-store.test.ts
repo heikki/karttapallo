@@ -29,7 +29,7 @@ function makeFormData(files: Array<{ name: string; body: string }>): FormData {
   return fd;
 }
 
-async function expectInvalidName(promise: Promise<unknown>): Promise<void> {
+async function expectInvalidName(promise: Promise<unknown>) {
   try {
     await promise;
   } catch (err) {

@@ -12,10 +12,7 @@ interface MapLike {
 type MapViewElement = HTMLElement & { _map?: MapLike };
 
 /** Count the features currently in a MapLibre GeoJSON source. */
-export async function sourceFeatureCount(
-  page: Page,
-  sourceId: string
-): Promise<number> {
+export async function sourceFeatureCount(page: Page, sourceId: string) {
   return await page.evaluate((id) => {
     const view = document.querySelector('map-view') as MapViewElement | null;
     return view?._map?.getSource(id)?.serialize().data?.features?.length ?? 0;
@@ -23,10 +20,7 @@ export async function sourceFeatureCount(
 }
 
 /** Read a layer's `visibility` layout property; defaults to 'visible'. */
-export async function layerVisibility(
-  page: Page,
-  layerId: string
-): Promise<string> {
+export async function layerVisibility(page: Page, layerId: string) {
   return await page.evaluate((id) => {
     const view = document.querySelector('map-view') as MapViewElement | null;
     return view?._map?.getLayoutProperty(id, 'visibility') ?? 'visible';

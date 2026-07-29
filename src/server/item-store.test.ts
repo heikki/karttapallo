@@ -14,28 +14,30 @@ import type { LibraryResolution, PhotoRecord } from './photos-library';
 
 let dataDir = '';
 
-const sampleItem = (overrides: Partial<ItemEntry> = {}): ItemEntry => ({
-  uuid: overrides.uuid ?? 'AAAA',
-  type: 'photo',
-  full: `full/${overrides.uuid ?? 'AAAA'}.jpg`,
-  thumb: `thumb/${overrides.uuid ?? 'AAAA'}.jpg`,
-  lat: 60.17,
-  lon: 24.94,
-  date: '2024:06:01 12:00:00',
-  tz: '+03:00',
-  camera: 'iPhone 15',
-  gps: 'exif',
-  gps_accuracy: 5,
-  albums: ['Helsinki'],
-  photos_url: `photos:albums?albumUuid=A&assetUuid=${overrides.uuid ?? 'AAAA'}`,
-  ...overrides
-});
+function sampleItem(overrides: Partial<ItemEntry> = {}): ItemEntry {
+  return {
+    uuid: overrides.uuid ?? 'AAAA',
+    type: 'photo',
+    full: `full/${overrides.uuid ?? 'AAAA'}.jpg`,
+    thumb: `thumb/${overrides.uuid ?? 'AAAA'}.jpg`,
+    lat: 60.17,
+    lon: 24.94,
+    date: '2024:06:01 12:00:00',
+    tz: '+03:00',
+    camera: 'iPhone 15',
+    gps: 'exif',
+    gps_accuracy: 5,
+    albums: ['Helsinki'],
+    photos_url: `photos:albums?albumUuid=A&assetUuid=${overrides.uuid ?? 'AAAA'}`,
+    ...overrides
+  };
+}
 
 interface RecordingWriter extends PhotosWriter {
   calls: string[];
 }
 
-const recordingWriter = (): RecordingWriter => {
+function recordingWriter(): RecordingWriter {
   const calls: string[] = [];
   return {
     calls,
@@ -52,9 +54,9 @@ const recordingWriter = (): RecordingWriter => {
       calls.push('quitPhotosApp');
     }
   };
-};
+}
 
-function seedSnapshot(items: ItemEntry[]): void {
+function seedSnapshot(items: ItemEntry[]) {
   writeFileSync(join(dataDir, 'items.json'), JSON.stringify(items));
 }
 
@@ -405,26 +407,28 @@ describe('buildItemEntry date/tz derivation (ADR-0013)', () => {
   const instant = Date.UTC(2024, 6, 1, 9, 0, 0) / 1000;
   const ICELAND = { lat: 64.13, lon: -21.94 };
 
-  const sampleRecord = (overrides: Partial<PhotoRecord> = {}): PhotoRecord => ({
-    uuid: 'AAAA',
-    type: 'photo',
-    instant,
-    date: '2024:07:01 12:00:00', // stored, Helsinki-clock (wrong)
-    tz: '+03:00',
-    lat: ICELAND.lat,
-    lon: ICELAND.lon,
-    duration: null,
-    camera: null,
-    gps: 'exif',
-    gps_accuracy: 5,
-    albums: [],
-    albumUuids: [],
-    directory: null,
-    filename: null,
-    originalFilename: null,
-    hasEdits: false,
-    ...overrides
-  });
+  function sampleRecord(overrides: Partial<PhotoRecord> = {}): PhotoRecord {
+    return {
+      uuid: 'AAAA',
+      type: 'photo',
+      instant,
+      date: '2024:07:01 12:00:00', // stored, Helsinki-clock (wrong)
+      tz: '+03:00',
+      lat: ICELAND.lat,
+      lon: ICELAND.lon,
+      duration: null,
+      camera: null,
+      gps: 'exif',
+      gps_accuracy: 5,
+      albums: [],
+      albumUuids: [],
+      directory: null,
+      filename: null,
+      originalFilename: null,
+      hasEdits: false,
+      ...overrides
+    };
+  }
 
   test('with coords: derives tz + wall clock from instant + coords', () => {
     const item = buildItemEntry(sampleRecord(), 'NIA');

@@ -31,7 +31,7 @@ let pendingUrlParams: URLSearchParams | null = null;
 let urlFlushTimer: ReturnType<typeof setTimeout> | null = null;
 let viewSaveTimer: ReturnType<typeof setTimeout> | null = null;
 
-export function updateUrl(applier: (params: URLSearchParams) => void): void {
+export function updateUrl(applier: (params: URLSearchParams) => void) {
   pendingUrlParams ??= new URLSearchParams(location.search);
   applier(pendingUrlParams);
   urlFlushTimer ??= setTimeout(() => {
@@ -39,7 +39,7 @@ export function updateUrl(applier: (params: URLSearchParams) => void): void {
   }, 100);
 }
 
-export function flushUrl(): void {
+export function flushUrl() {
   if (urlFlushTimer !== null) {
     clearTimeout(urlFlushTimer);
     urlFlushTimer = null;
@@ -47,14 +47,14 @@ export function flushUrl(): void {
   flushPending(true);
 }
 
-export function resetUrl(): void {
+export function resetUrl() {
   updateUrl((params) => {
     for (const k of [...params.keys()]) params.delete(k);
   });
   flushUrl();
 }
 
-function flushPending(immediate: boolean): void {
+function flushPending(immediate: boolean) {
   if (pendingUrlParams === null) return;
   const params = pendingUrlParams;
   pendingUrlParams = null;
@@ -68,9 +68,9 @@ function flushPending(immediate: boolean): void {
   scheduleViewSave(params, immediate);
 }
 
-function scheduleViewSave(params: URLSearchParams, immediate: boolean): void {
+function scheduleViewSave(params: URLSearchParams, immediate: boolean) {
   if (viewSaveTimer !== null) clearTimeout(viewSaveTimer);
-  const doSave = (): void => {
+  function doSave() {
     viewSaveTimer = null;
     const obj = Object.fromEntries(params);
     const qs = new URLSearchParams(obj).toString();
@@ -80,7 +80,7 @@ function scheduleViewSave(params: URLSearchParams, immediate: boolean): void {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(obj)
     });
-  };
+  }
   if (immediate) doSave();
   else viewSaveTimer = setTimeout(doSave, 1000);
 }
@@ -121,7 +121,7 @@ export function urlSignal<T>(
 
 // --- Map view codec --------------------------------------------------------
 
-export function mapViewToUrl(view: MapView): void {
+export function mapViewToUrl(view: MapView) {
   updateUrl((params) => {
     params.set('lat', view.lat.toFixed(5));
     params.set('lon', view.lon.toFixed(5));

@@ -6,14 +6,14 @@ import * as edits from '@common/edits';
  * only shows `alert()` if the host wires up the JS-dialog delegate; routing to
  * the debug log too means save failures are visible even if it doesn't.
  */
-function notifyUser(msg: string): void {
+function notifyUser(msg: string) {
   const log = (window as unknown as { __debugLog?: string[] }).__debugLog;
   log?.push(`${new Date().toISOString().slice(11, 19)} SAVE: ${msg}`);
   // eslint-disable-next-line no-alert -- user needs feedback on save failure
   alert(msg);
 }
 
-export async function saveEdits(): Promise<void> {
+export async function saveEdits() {
   const coordEdits = edits.getCoordEdits();
   const timeEdits = edits.getTimeEdits();
   if (coordEdits.length === 0 && timeEdits.length === 0) return;

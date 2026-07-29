@@ -8,15 +8,21 @@ import type {
 } from '@playwright/test/reporter';
 
 const useColor = process.env.NO_COLOR === undefined;
-const green = (s: string) => (useColor ? `\x1b[32m${s}\x1b[0m` : s);
-const red = (s: string) => (useColor ? `\x1b[31m${s}\x1b[0m` : s);
-const dim = (s: string) => (useColor ? `\x1b[2m${s}\x1b[0m` : s);
+function green(s: string) {
+  return useColor ? `\x1b[32m${s}\x1b[0m` : s;
+}
+function red(s: string) {
+  return useColor ? `\x1b[31m${s}\x1b[0m` : s;
+}
+function dim(s: string) {
+  return useColor ? `\x1b[2m${s}\x1b[0m` : s;
+}
 
-function shortName(file: string): string {
+function shortName(file: string) {
   return basename(file).replace(/\.e2e\.ts$/, '');
 }
 
-function formatDuration(ms: number): string {
+function formatDuration(ms: number) {
   return ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`;
 }
 

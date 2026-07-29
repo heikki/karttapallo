@@ -3,9 +3,7 @@
 // `process.env.X` access survives into the browser bundle and throws
 // `process is not defined`. The try/catch shields us from that case so the app
 // loads cleanly without a .env file.
-function readPublicEnv(
-  name: 'PUBLIC_MML_API_KEY' | 'PUBLIC_ORS_API_KEY'
-): string {
+function readPublicEnv(name: 'PUBLIC_MML_API_KEY' | 'PUBLIC_ORS_API_KEY') {
   try {
     if (name === 'PUBLIC_MML_API_KEY') {
       return process.env.PUBLIC_MML_API_KEY ?? '';

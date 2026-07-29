@@ -33,13 +33,13 @@ export function getEffectiveLocation(photo: Photo): Coord | null {
   return getEffectiveCoords(photo);
 }
 
-export function setCoord(uuid: string, lat: number, lon: number): void {
+export function setCoord(uuid: string, lat: number, lon: number) {
   const next = new Map(pendingCoords.get());
   next.set(uuid, { lat, lon });
   pendingCoords.set(next);
 }
 
-export function addTimeOffset(uuid: string, deltaHours: number): void {
+export function addTimeOffset(uuid: string, deltaHours: number) {
   const cur = pendingTimeOffsets.get();
   const total = (cur.get(uuid) ?? 0) + deltaHours;
   const next = new Map(cur);
@@ -48,14 +48,14 @@ export function addTimeOffset(uuid: string, deltaHours: number): void {
   pendingTimeOffsets.set(next);
 }
 
-export function setTimeOffset(uuid: string, totalHours: number): void {
+export function setTimeOffset(uuid: string, totalHours: number) {
   const next = new Map(pendingTimeOffsets.get());
   if (totalHours === 0) next.delete(uuid);
   else next.set(uuid, totalHours);
   pendingTimeOffsets.set(next);
 }
 
-function applyHourOffset(dateStr: string, hours: number): string {
+function applyHourOffset(dateStr: string, hours: number) {
   if (dateStr === '' || hours === 0) return dateStr;
   const match = exifDatePattern.exec(dateStr);
   if (match?.groups === undefined) return dateStr;
@@ -69,11 +69,13 @@ function applyHourOffset(dateStr: string, hours: number): string {
     parseInt(sc!, 10)
   );
   d.setTime(d.getTime() + Math.round(hours * 3600000));
-  const pad = (n: number) => String(n).padStart(2, '0');
+  function pad(n: number) {
+    return String(n).padStart(2, '0');
+  }
   return `${d.getFullYear()}:${pad(d.getMonth() + 1)}:${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 
-export function getEffectiveDate(photo: Photo): string {
+export function getEffectiveDate(photo: Photo) {
   const offset = pendingTimeOffsets.get().get(photo.uuid) ?? 0;
   if (offset === 0) return photo.date;
   return applyHourOffset(photo.date, offset);
@@ -99,7 +101,7 @@ export function getTimeEdits(): Array<{ uuid: string; hours: number }> {
   );
 }
 
-export function clear(): void {
+export function clear() {
   pendingCoords.set(new Map());
   pendingTimeOffsets.set(new Map());
 }

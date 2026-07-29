@@ -258,7 +258,7 @@ function ensureFbo(w: number, h: number) {
   needsNebulaUpdate = true;
 }
 
-function initGL(container: HTMLElement): boolean {
+function initGL(container: HTMLElement) {
   canvas = document.createElement('canvas');
   canvas.id = 'globe-bg';
   container.prepend(canvas);

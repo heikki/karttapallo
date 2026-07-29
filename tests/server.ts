@@ -34,21 +34,23 @@ interface SeedSpec {
   lon: number;
 }
 
-const seed = (s: SeedSpec): ItemEntry => ({
-  uuid: s.uuid,
-  type: 'photo',
-  full: `full/${s.uuid}.jpg`,
-  thumb: `thumb/${s.uuid}.jpg`,
-  lat: s.lat,
-  lon: s.lon,
-  date: s.date,
-  tz: '+03:00',
-  camera: s.camera,
-  gps: 'exif',
-  gps_accuracy: 5,
-  albums: s.albums,
-  photos_url: ''
-});
+function seed(s: SeedSpec): ItemEntry {
+  return {
+    uuid: s.uuid,
+    type: 'photo',
+    full: `full/${s.uuid}.jpg`,
+    thumb: `thumb/${s.uuid}.jpg`,
+    lat: s.lat,
+    lon: s.lon,
+    date: s.date,
+    tz: '+03:00',
+    camera: s.camera,
+    gps: 'exif',
+    gps_accuracy: 5,
+    albums: s.albums,
+    photos_url: ''
+  };
+}
 
 // Mixed years/albums/cameras so cascade tests have something to narrow.
 // Each photo gets unique coords so the popup's copy/paste-location button

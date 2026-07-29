@@ -342,7 +342,7 @@ export class BloomLayer implements CustomLayerInterface {
     }
   }
 
-  private needsBlurUpdate(mvp: Float32Array, w: number, h: number): boolean {
+  private needsBlurUpdate(mvp: Float32Array, w: number, h: number) {
     return (
       this.matrixChanged(mvp) ||
       this.renderedGeneration !== this.dataGeneration ||
@@ -352,7 +352,7 @@ export class BloomLayer implements CustomLayerInterface {
     );
   }
 
-  private matrixChanged(matrix: Float32Array): boolean {
+  private matrixChanged(matrix: Float32Array) {
     if (this.lastMatrix === null) {
       this.lastMatrix = new Float32Array(matrix);
       return true;

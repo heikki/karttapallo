@@ -59,7 +59,7 @@ export function createSegmentPopup(opts: SegmentPopupOpts): HTMLElement {
   return el;
 }
 
-export function showRouteError(map: MapGL, msg: string): void {
+export function showRouteError(map: MapGL, msg: string) {
   const el = document.createElement('div');
   el.textContent = msg;
   el.style.cssText =

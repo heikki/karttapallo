@@ -17,7 +17,7 @@ let _entered: Mode | null = null;
 
 export const current = computed(() => _current.get());
 
-export function defineMode(name: Mode, def: ModeDef): void {
+export function defineMode(name: Mode, def: ModeDef) {
   _defs.set(name, def);
   // Catch up if current was set before defineMode ran (deep-link race).
   if (_current.get() === name && _entered !== name) {
@@ -26,18 +26,18 @@ export function defineMode(name: Mode, def: ModeDef): void {
   }
 }
 
-export function enter(name: Mode): boolean {
+export function enter(name: Mode) {
   if (_current.get() === name) return true;
   if (_defs.get(name)?.canEnter?.() === false) return false;
   _current.set(name);
   return true;
 }
 
-export function exit(): void {
+export function exit() {
   _current.set(null);
 }
 
-export function toggle(name: Mode): void {
+export function toggle(name: Mode) {
   if (_current.get() === name) exit();
   else enter(name);
 }

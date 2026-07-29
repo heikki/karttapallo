@@ -110,13 +110,13 @@ export class MapGpx extends MapFeatureElement {
   }
 
   /** Force-reload GPX tracks for the current album. */
-  reloadTracks(): void {
+  reloadTracks() {
     const album = this.currentAlbum;
     this.currentAlbum = null; // reset cache so loadGpxForAlbum re-fetches
     void this.loadGpxForAlbum(album);
   }
 
-  private addLayers(): void {
+  private addLayers() {
     const map = this.api.map;
     map.addSource('gpx-tracks', {
       type: 'geojson',
@@ -129,7 +129,7 @@ export class MapGpx extends MapFeatureElement {
     for (const spec of LAYERS) map.addLayer(spec);
   }
 
-  private async loadGpxForAlbum(album: string | null): Promise<void> {
+  private async loadGpxForAlbum(album: string | null) {
     if (album === this.currentAlbum) return;
     this.currentAlbum = album;
     const seq = ++this.loadSeq;
@@ -181,7 +181,7 @@ export class MapGpx extends MapFeatureElement {
       tracks: Array<Feature<LineString>>;
       waypoints: Array<Feature<Point>>;
     }
-  ): Promise<void> {
+  ) {
     try {
       const url = `/albums/${encodeURIComponent(src.album)}/${encodeURIComponent(src.filename)}`;
       const res = await fetch(url);
@@ -200,7 +200,7 @@ export class MapGpx extends MapFeatureElement {
     doc: Document,
     color: string,
     out: Array<Feature<LineString>>
-  ): void {
+  ) {
     const tracks = Array.from(doc.querySelectorAll('trk'));
     for (const trk of tracks) {
       const coords = extractTrackPoints(trk);
@@ -218,7 +218,7 @@ export class MapGpx extends MapFeatureElement {
     doc: Document,
     color: string,
     out: Array<Feature<Point>>
-  ): void {
+  ) {
     const wpts = Array.from(doc.querySelectorAll('wpt'));
     for (const wpt of wpts) {
       const lat = parseFloat(wpt.getAttribute('lat') ?? '');
@@ -233,7 +233,7 @@ export class MapGpx extends MapFeatureElement {
     }
   }
 
-  private updateSources(): void {
+  private updateSources() {
     const trackSrc = this.api.map.getSource<GeoJSONSource>('gpx-tracks');
     if (trackSrc !== undefined) {
       const fc: FeatureCollection = {

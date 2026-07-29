@@ -42,7 +42,7 @@ function findProjectRoot(): string | null {
 
 const projectRoot = findProjectRoot();
 
-function findDataDir(): string {
+function findDataDir() {
   if (
     process.env.KARTTAPALLO_DATA_DIR !== undefined &&
     process.env.KARTTAPALLO_DATA_DIR !== ''
@@ -86,7 +86,7 @@ function relaunchApp(): never {
 
 // Resolve the active Photos library, failing loud (ADR 0012). Never silently
 // fall back to a different library — show the user why and let them recover.
-async function resolveLibraryOrExit(): Promise<string> {
+async function resolveLibraryOrExit() {
   for (;;) {
     const r = resolveLibrary();
     if (r.ok) return r.path;
@@ -295,7 +295,7 @@ const rpc = BrowserView.defineRPC<AppRPC>({
 
 const savedFrame = loadWindowState();
 
-function buildViewUrl(): string {
+function buildViewUrl() {
   try {
     // `view` is per-library (it carries library-specific state — map center,
     // filters, and the selected photo UUID), so it lives in libDir, not the
@@ -347,7 +347,7 @@ interface ElectrobunEvent {
   data?: { detail?: string | { url?: string }; action?: string };
 }
 
-function extractUrl(event: ElectrobunEvent): string {
+function extractUrl(event: ElectrobunEvent) {
   const detail = event.data?.detail;
   if (typeof detail === 'string') {
     if (detail.startsWith('{')) {

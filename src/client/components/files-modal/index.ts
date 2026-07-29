@@ -3,7 +3,7 @@ import { customElement, state as litState, property } from 'lit/decorators.js';
 
 import { reloadAlbumGpx } from '@common/actions';
 
-export function showAlbumFiles(album: string): void {
+export function showAlbumFiles(album: string) {
   document.querySelector<FilesModal>('files-modal')?.show(album);
 }
 

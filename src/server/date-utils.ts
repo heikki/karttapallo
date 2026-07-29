@@ -5,10 +5,12 @@
 export const exifDatePattern =
   /^(?<yr>\d{4}):(?<mo>\d{2}):(?<dy>\d{2}) (?<hr>\d{2}):(?<mi>\d{2}):(?<sc>\d{2})$/v;
 
-const pad = (n: number) => String(n).padStart(2, '0');
+function pad(n: number) {
+  return String(n).padStart(2, '0');
+}
 
 /** Apply an hour offset to an EXIF date string. */
-export function applyHourOffset(dateStr: string, hours: number): string {
+export function applyHourOffset(dateStr: string, hours: number) {
   if (dateStr === '' || hours === 0) return dateStr;
   const match = exifDatePattern.exec(dateStr);
   if (match?.groups === undefined) return dateStr;
@@ -26,7 +28,7 @@ export function applyHourOffset(dateStr: string, hours: number): string {
 }
 
 /** Convert local date + tz offset to UTC sortable string. */
-export function dateToUtc(dateStr: string, tz: string | null): string {
+export function dateToUtc(dateStr: string, tz: string | null) {
   if (dateStr === '' || tz === null || tz === '') return dateStr;
   try {
     const match = exifDatePattern.exec(dateStr);
@@ -67,26 +69,26 @@ function parseTzOffset(tz: string): { sign: number; h: number; m: number } {
 }
 
 /** Get timezone offset in fractional hours. "+03:00" -> 3, "-05:30" -> -5.5 */
-export function tzOffsetHours(tz: string | null): number {
+export function tzOffsetHours(tz: string | null) {
   if (tz === null || tz === '') return 0;
   const { sign, h, m } = parseTzOffset(tz);
   return sign * (h + m / 60);
 }
 
 /** Get timezone offset in milliseconds. */
-function tzOffsetMs(tz: string): number {
+function tzOffsetMs(tz: string) {
   const { sign, h, m } = parseTzOffset(tz);
   return sign * (h * 3600000 + m * 60000);
 }
 
 /** Convert UTC offset string like "+03:00" to seconds. */
-export function tzOffsetToSeconds(offset: string): number {
+export function tzOffsetToSeconds(offset: string) {
   const { sign, h, m } = parseTzOffset(offset);
   return sign * (h * 3600 + m * 60);
 }
 
 /** Inverse of tzOffsetToSeconds: 10800 -> "+03:00", -18000 -> "-05:00". */
-export function secondsToTzOffset(seconds: number): string {
+export function secondsToTzOffset(seconds: number) {
   const sign = seconds >= 0 ? '+' : '-';
   const abs = Math.abs(seconds);
   const h = Math.floor(abs / 3600);
@@ -100,7 +102,7 @@ export function secondsToTzOffset(seconds: number): string {
  * instant already shifted by the local offset). Reads UTC getters so the host
  * timezone never leaks in.
  */
-export function exifFromLocalEpoch(localEpochSec: number): string {
+export function exifFromLocalEpoch(localEpochSec: number) {
   const d = new Date(localEpochSec * 1000);
   return `${d.getUTCFullYear()}:${pad(d.getUTCMonth() + 1)}:${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
 }
@@ -134,7 +136,7 @@ export function localEpochFromExif(dateStr: string): number | null {
  * e.g. "2024:07:01 12:00:00" in Finland → +3 (EEST)
  *      "2024:01:15 12:00:00" in Finland → +2 (EET)
  */
-export function systemTzOffsetHours(dateStr: string): number {
+export function systemTzOffsetHours(dateStr: string) {
   const match = exifDatePattern.exec(dateStr);
   if (match?.groups === undefined) {
     return -new Date().getTimezoneOffset() / 60;

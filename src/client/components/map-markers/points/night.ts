@@ -1,9 +1,9 @@
 // Subsolar point calculation (ported from maplibre-gl-nightlayer) + transition helpers
 
-function toRad(deg: number): number {
+function toRad(deg: number) {
   return (deg * Math.PI) / 180;
 }
-function toDeg(rad: number): number {
+function toDeg(rad: number) {
   return (rad / Math.PI) * 180;
 }
 
@@ -18,7 +18,7 @@ function floorMod(a: bigint, b: bigint): bigint {
   return a - floorDiv(a, b) * b;
 }
 
-function isLeapYear(y: bigint): boolean {
+function isLeapYear(y: bigint) {
   if (y % 4n !== 0n) {
     return false;
   }

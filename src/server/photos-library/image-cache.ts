@@ -44,7 +44,7 @@ export interface ImageCache {
 
 // ---------- Image helpers ----------
 
-function createThumbnail(fullPath: string, thumbPath: string): boolean {
+function createThumbnail(fullPath: string, thumbPath: string) {
   return resizeToJpeg(fullPath, thumbPath, 400);
 }
 
@@ -91,7 +91,7 @@ function convertEditedPhoto(
   directory: string | null,
   filename: string | null,
   outputPath: string
-): boolean {
+) {
   const renderedPath = resolveEditedPath(
     libraryPath,
     directory,
@@ -111,10 +111,7 @@ function convertEditedPhoto(
   return convertToJpeg(originalPath, outputPath);
 }
 
-function convertOriginalPhoto(
-  originalPath: string,
-  outputPath: string
-): boolean {
+function convertOriginalPhoto(originalPath: string, outputPath: string) {
   const ext = extname(originalPath).toLowerCase();
   if (ext === '.jpg' || ext === '.jpeg') {
     copyFileSync(originalPath, outputPath);
@@ -127,7 +124,7 @@ function convertFull(
   libraryPath: string,
   asset: AssetRecord,
   outputPath: string
-): boolean {
+) {
   const { directory, filename } = asset;
 
   if (asset.type === 'video') {
@@ -159,7 +156,7 @@ export function createImageCache(config: ImageCacheConfig): ImageCache {
   mkdirSync(fullDir, { recursive: true });
   mkdirSync(thumbDir, { recursive: true });
 
-  function isCacheValid(cachedPath: string, sourceMtime: number): boolean {
+  function isCacheValid(cachedPath: string, sourceMtime: number) {
     try {
       const cachedMtime = statSync(cachedPath).mtimeMs;
       return cachedMtime >= sourceMtime;
@@ -212,7 +209,7 @@ export function createImageCache(config: ImageCacheConfig): ImageCache {
     return cachedPath;
   }
 
-  function invalidate(uuid: string): void {
+  function invalidate(uuid: string) {
     try {
       unlinkSync(join(fullDir, `${uuid}.jpg`));
     } catch {

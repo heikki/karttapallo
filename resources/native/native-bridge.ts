@@ -8,7 +8,7 @@ import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { dlopen, FFIType, ptr } from 'bun:ffi';
 
-function findDylib(): string {
+function findDylib() {
   const argv0Dir = dirname(process.argv[0] ?? '.');
   const candidates = [
     // 1. resources/native/ next to this source file (bun dev from project root)
@@ -63,11 +63,7 @@ const lib = dlopen(findDylib(), {
   }
 });
 
-export function convertToJpeg(
-  input: string,
-  output: string,
-  quality = 0.9
-): boolean {
+export function convertToJpeg(input: string, output: string, quality = 0.9) {
   const inBuf = toCString(input);
   const outBuf = toCString(output);
   return lib.symbols.convertToJpeg(ptr(inBuf), ptr(outBuf), quality) === 0;
@@ -78,7 +74,7 @@ export function resizeToJpeg(
   output: string,
   maxDim: number,
   quality = 0.8
-): boolean {
+) {
   const inBuf = toCString(input);
   const outBuf = toCString(output);
   return (
@@ -88,7 +84,7 @@ export function resizeToJpeg(
 
 const ERR_BUF_LEN = 1024;
 
-export function runAppleScript(script: string): void {
+export function runAppleScript(script: string) {
   const scriptBuf = toCString(script);
   const errBuf = new Uint8Array(ERR_BUF_LEN);
   const rc = lib.symbols.runAppleScript(
@@ -140,7 +136,7 @@ export function resolveActiveLibraryPath(): ActiveLibraryResult {
   return { status: 'no-bookmark' };
 }
 
-function decodeCString(buf: Uint8Array): string {
+function decodeCString(buf: Uint8Array) {
   const nullIdx = buf.indexOf(0);
   return new TextDecoder().decode(
     buf.subarray(0, nullIdx === -1 ? undefined : nullIdx)
@@ -151,7 +147,7 @@ export function extractVideoFrame(
   videoPath: string,
   output: string,
   maxDim = 1920
-): boolean {
+) {
   const inBuf = toCString(videoPath);
   const outBuf = toCString(output);
   return lib.symbols.extractVideoFrame(ptr(inBuf), ptr(outBuf), maxDim) === 0;

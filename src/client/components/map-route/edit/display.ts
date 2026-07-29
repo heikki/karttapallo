@@ -118,7 +118,7 @@ const EDIT_LAYERS: LayerSpecification[] = [
 
 export const ALL_EDIT_LAYERS = EDIT_LAYERS.map((l) => l.id);
 
-export function createEditLayers(m: MapGL): void {
+export function createEditLayers(m: MapGL) {
   const empty = { type: 'FeatureCollection' as const, features: [] };
   for (const id of EDIT_SOURCES) {
     m.addSource(id, { type: 'geojson', data: empty });
@@ -127,7 +127,7 @@ export function createEditLayers(m: MapGL): void {
 }
 
 /** Bring edit-mode points on top of marker/photo layers added after our edit layers. */
-export function raiseEditPoints(map: MapGL): void {
+export function raiseEditPoints(map: MapGL) {
   if (map.getLayer('route-edit-points-outline') !== undefined) {
     map.moveLayer('route-edit-points-outline');
   }
@@ -136,7 +136,7 @@ export function raiseEditPoints(map: MapGL): void {
   }
 }
 
-function updateLineSrc(map: MapGL, r: RouteData): void {
+function updateLineSrc(map: MapGL, r: RouteData) {
   const src = map.getSource<GeoJSONSource>('route-edit-line');
   if (src === undefined) return;
   src.setData({
@@ -145,7 +145,7 @@ function updateLineSrc(map: MapGL, r: RouteData): void {
   });
 }
 
-export function updateEditSources(map: MapGL, r: RouteData): void {
+export function updateEditSources(map: MapGL, r: RouteData) {
   const pointsSrc = map.getSource<GeoJSONSource>('route-edit-points');
   if (pointsSrc !== undefined) {
     const photoMap = new Map<string, Photo>();
@@ -182,7 +182,7 @@ export function updateEditSources(map: MapGL, r: RouteData): void {
   updateLineSrc(map, r);
 }
 
-export function setHoverSource(map: MapGL, geojson: object): void {
+export function setHoverSource(map: MapGL, geojson: object) {
   const src = map.getSource<GeoJSONSource>('route-edit-hover');
   src?.setData(geojson as GeoJSON.GeoJSON);
 }

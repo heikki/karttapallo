@@ -66,11 +66,11 @@ export class MapMarkers extends MapFeatureElement {
     });
   }
 
-  getRadius(zoom: number): number {
+  getRadius(zoom: number) {
     return this.currentLayer?.markerRadius(zoom) ?? 0;
   }
 
-  private refreshView(): void {
+  private refreshView() {
     if (this.currentLayer === null) return;
     const mode = interactionMode.current.get();
     this.currentLayer.setView({
@@ -82,13 +82,13 @@ export class MapMarkers extends MapFeatureElement {
     });
   }
 
-  private install(): void {
+  private install() {
     this.currentLayer?.uninstall();
     this.currentLayer = markerStyles[this.currentStyle]!();
     this.currentLayer.install(this.api.map, ANCHOR);
   }
 
-  private bindInteractions(): void {
+  private bindInteractions() {
     this.interactionCleanup?.();
 
     const layerId = this.currentLayer?.id;
@@ -97,7 +97,7 @@ export class MapMarkers extends MapFeatureElement {
     const map = this.api.map;
     const canvas = map.getCanvas();
 
-    const onLayerClick = (e: MapLayerMouseEvent): void => {
+    function onLayerClick(e: MapLayerMouseEvent) {
       if (interactionMode.current.get() === 'placement') return;
       e.preventDefault();
       e.originalEvent.stopPropagation();
@@ -108,18 +108,18 @@ export class MapMarkers extends MapFeatureElement {
       const photo = data.filteredPhotos.get()[clickedIndex];
       if (photo === undefined) return;
       selection.selectPhoto(photo.uuid);
-    };
+    }
 
-    const onMouseEnter = (): void => {
+    function onMouseEnter() {
       if (interactionMode.current.get() !== 'placement') {
         canvas.style.cursor = 'pointer';
       }
-    };
-    const onMouseLeave = (): void => {
+    }
+    function onMouseLeave() {
       if (interactionMode.current.get() !== 'placement') {
         canvas.style.cursor = '';
       }
-    };
+    }
 
     map.on('click', layerId, onLayerClick);
     map.on('mouseenter', layerId, onMouseEnter);

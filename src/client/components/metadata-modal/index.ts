@@ -1,7 +1,7 @@
 import { css, html, LitElement, nothing } from 'lit';
 import { customElement, state as litState, property } from 'lit/decorators.js';
 
-export function showMetadata(uuid: string): void {
+export function showMetadata(uuid: string) {
   document.querySelector<MetadataModal>('metadata-modal')?.loadMetadata(uuid);
 }
 
@@ -11,18 +11,18 @@ export function showMetadata(uuid: string): void {
  * it unconditionally — and so the lightbox and the popup both pushing the
  * same uuid on one arrow key costs a single fetch.
  */
-export function refreshMetadata(uuid: string): void {
+export function refreshMetadata(uuid: string) {
   const modal = document.querySelector<MetadataModal>('metadata-modal');
   if (modal === null) return;
   if (!modal.active || modal.shownUuid === uuid) return;
   modal.loadMetadata(uuid);
 }
 
-function escapeHtml(s: string): string {
+function escapeHtml(s: string) {
   return s.replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-function formatSimpleValue(value: boolean | string | number): string {
+function formatSimpleValue(value: boolean | string | number) {
   if (typeof value === 'boolean') return value ? 'Yes' : 'No';
   if (typeof value === 'string') {
     return value === '' ? '<em>—</em>' : escapeHtml(value);
@@ -30,7 +30,7 @@ function formatSimpleValue(value: boolean | string | number): string {
   return String(value);
 }
 
-function formatMetadataValue(value: unknown): string {
+function formatMetadataValue(value: unknown) {
   if (value === null || value === undefined) return '<em>—</em>';
   if (
     typeof value === 'boolean' ||
@@ -93,7 +93,7 @@ const METADATA_FIELDS: Array<[string, string]> = [
  */
 const ALWAYS_SHOWN = new Set(['original_date']);
 
-function isEmptyValue(val: unknown): boolean {
+function isEmptyValue(val: unknown) {
   return (
     val === null ||
     val === undefined ||
@@ -437,7 +437,7 @@ export class MetadataModal extends LitElement {
    * The text currently selected inside this modal, or '' if the selection is
    * empty or lives elsewhere on the page.
    */
-  private _selectedText(): string {
+  private _selectedText() {
     const shadow = this.shadowRoot;
     const selection = window.getSelection();
     if (shadow === null || selection === null) return '';

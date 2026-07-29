@@ -76,7 +76,7 @@ interface AlbumEntry {
 
 // ---------- Database lifecycle ----------
 
-export function defaultLibraryPath(): string {
+export function defaultLibraryPath() {
   return join(homedir(), 'Pictures/Photos Library.photoslibrary');
 }
 
@@ -95,7 +95,7 @@ export function openPhotosDb(libraryPath?: string): Database {
   return db;
 }
 
-function validateSchema(db: Database): void {
+function validateSchema(db: Database) {
   const required: Record<string, string[]> = {
     ZASSET: [
       'Z_PK',
@@ -188,7 +188,7 @@ function instantFromCoreData(coreDataTimestamp: number | null): number | null {
 function formatDate(
   coreDataTimestamp: number | null,
   timezoneOffsetSeconds: number | null
-): string {
+) {
   const unixSeconds = instantFromCoreData(coreDataTimestamp);
   if (unixSeconds === null) return '';
   return exifFromLocalEpoch(unixSeconds + (timezoneOffsetSeconds ?? 0));
@@ -407,7 +407,7 @@ export function queryVideos(db: Database): PhotoRecord[] {
  * is library-local — every Photos library generates a fresh one — so we
  * resolve it dynamically rather than hardcoding.
  */
-export function queryNotInAlbumUuid(db: Database): string {
+export function queryNotInAlbumUuid(db: Database) {
   const row = db
     .query<
       { ZUUID: string },
@@ -463,11 +463,7 @@ export function queryAssetIndex(db: Database): Map<string, AssetRecord> {
 type MetaRow = Record<string, unknown>;
 type SetFn = (key: string, val: unknown) => void;
 
-function metaSet(
-  result: Record<string, unknown>,
-  key: string,
-  val: unknown
-): void {
+function metaSet(result: Record<string, unknown>, key: string, val: unknown) {
   if (val !== null && val !== undefined && val !== '' && val !== -180.0) {
     result[key] = val; // eslint-disable-line no-param-reassign -- intentional accumulator mutation
   }
@@ -479,7 +475,7 @@ function formatDimPair(w: unknown, h: unknown): string | null {
   return `${w}×${h}`;
 }
 
-function formatMetaDimensions(row: MetaRow, set: SetFn): void {
+function formatMetaDimensions(row: MetaRow, set: SetFn) {
   const cur = formatDimPair(row.width, row.height);
   const orig = formatDimPair(row.original_width, row.original_height);
   const dimensions =
@@ -493,7 +489,7 @@ function formatMetaDimensions(row: MetaRow, set: SetFn): void {
   }
 }
 
-function formatMetaDuration(row: MetaRow, set: SetFn): void {
+function formatMetaDuration(row: MetaRow, set: SetFn) {
   if (typeof row.duration === 'number' && row.duration > 0) {
     const mins = Math.floor(row.duration / 60);
     const secs = Math.floor(row.duration % 60);
@@ -501,7 +497,7 @@ function formatMetaDuration(row: MetaRow, set: SetFn): void {
   }
 }
 
-function formatMetaFlags(row: MetaRow, set: SetFn): void {
+function formatMetaFlags(row: MetaRow, set: SetFn) {
   set('favorite', row.favorite === 1 ? 'Yes' : null);
   set('hidden', row.hidden === 1 ? 'Yes' : null);
   set('ismovie', row.kind === 1 ? 'Yes' : null);
@@ -509,7 +505,7 @@ function formatMetaFlags(row: MetaRow, set: SetFn): void {
   set('hdr', typeof row.hdr === 'number' && row.hdr > 0 ? 'Yes' : null);
 }
 
-function formatMetaCamera(row: MetaRow, set: SetFn): void {
+function formatMetaCamera(row: MetaRow, set: SetFn) {
   const make = typeof row.camera_make === 'string' ? row.camera_make : null;
   const model = typeof row.camera_model === 'string' ? row.camera_model : null;
   if (make !== null || model !== null) {
@@ -522,7 +518,7 @@ function formatMetaCamera(row: MetaRow, set: SetFn): void {
   set('lens', row.lens_model);
 }
 
-function formatMetaExposure(row: MetaRow, set: SetFn): void {
+function formatMetaExposure(row: MetaRow, set: SetFn) {
   if (typeof row.aperture === 'number') {
     set('aperture', `f/${row.aperture.toFixed(1)}`);
   }
@@ -600,9 +596,10 @@ function num(v: unknown): number | null {
  * and blanked a date the camera really did record. Any one field is enough;
  * requiring several would fail assets whose EXIF is merely sparse.
  */
-function hasExifProvenance(row: MetaRow): boolean {
-  const present = (v: unknown): boolean =>
-    typeof v === 'number' || (typeof v === 'string' && v !== '');
+function hasExifProvenance(row: MetaRow) {
+  function present(v: unknown) {
+    return typeof v === 'number' || (typeof v === 'string' && v !== '');
+  }
   return (
     present(row.camera_make) ||
     present(row.camera_model) ||
@@ -614,7 +611,7 @@ function hasExifProvenance(row: MetaRow): boolean {
   );
 }
 
-function formatMetaDates(row: MetaRow, set: SetFn, setAlways: SetFn): void {
+function formatMetaDates(row: MetaRow, set: SetFn, setAlways: SetFn) {
   const off = num(row.tz_offset);
   const exifOff = num(row.exif_tz_offset);
   const local = formatDate(num(row.date_created), off);
@@ -636,7 +633,7 @@ function formatMetaDates(row: MetaRow, set: SetFn, setAlways: SetFn): void {
   );
 }
 
-function formatMetaGpsAccuracy(row: MetaRow, set: SetFn): void {
+function formatMetaGpsAccuracy(row: MetaRow, set: SetFn) {
   set(
     'gps_accuracy',
     typeof row.gps_accuracy === 'number' && row.gps_accuracy >= 0
@@ -645,7 +642,7 @@ function formatMetaGpsAccuracy(row: MetaRow, set: SetFn): void {
   );
 }
 
-function queryMetaRelations(db: Database, uuid: string, set: SetFn): void {
+function queryMetaRelations(db: Database, uuid: string, set: SetFn) {
   const keywords = db
     .query<{ ZTITLE: string }, [string]>(
       `SELECT k.ZTITLE FROM ZKEYWORD k

@@ -148,7 +148,7 @@ export function buildItemEntry(
   return { ...base, ...tail };
 }
 
-function sortEntries(entries: ItemEntry[]): void {
+function sortEntries(entries: ItemEntry[]) {
   entries.sort((a, b) => {
     const d = dateToUtc(a.date, a.tz).localeCompare(dateToUtc(b.date, b.tz));
     return d === 0 ? a.uuid.localeCompare(b.uuid) : d;
@@ -232,10 +232,7 @@ function buildFromPhotosDb(libraryPath?: string): ItemEntry[] {
   }
 }
 
-function evictOrphanedCacheFiles(
-  cacheDir: string,
-  liveUuids: Set<string>
-): void {
+function evictOrphanedCacheFiles(cacheDir: string, liveUuids: Set<string>) {
   for (const sub of ['full', 'thumb']) {
     const dir = join(cacheDir, sub);
     if (!existsSync(dir)) continue;
@@ -269,12 +266,12 @@ export function openItemStore(options: OpenItemStoreOptions): ItemStore {
 
   let { items, json: snapshotJson } = loadSnapshot(snapshotPath);
 
-  function writeSnapshot(): void {
+  function writeSnapshot() {
     snapshotJson = JSON.stringify(items);
     writeFileSync(snapshotPath, snapshotJson);
   }
 
-  async function rebuild(): Promise<boolean> {
+  async function rebuild() {
     // Yield so callers can finish startup before the build runs synchronously.
     await Promise.resolve();
     const fresh = buildFresh();
@@ -460,7 +457,7 @@ function mutateLocations(
   items: ItemEntry[],
   edits: LocationEdit[],
   tzResults: Map<string, LocalTime | null>
-): void {
+) {
   for (const edit of edits) {
     const item = items.find((i) => i.uuid === edit.uuid);
     if (item === undefined) continue;
@@ -479,7 +476,7 @@ function mutateLocations(
   }
 }
 
-function mutateTimes(items: ItemEntry[], edits: TimeEdit[]): void {
+function mutateTimes(items: ItemEntry[], edits: TimeEdit[]) {
   for (const edit of edits) {
     const item = items.find((i) => i.uuid === edit.uuid);
     if (item !== undefined) {

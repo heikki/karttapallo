@@ -60,7 +60,7 @@ function readFiltersFromUrl(): Partial<Filters> {
   return result;
 }
 
-function writeFiltersToUrl(f: Filters): void {
+function writeFiltersToUrl(f: Filters) {
   updateUrl((params) => {
     for (const key of FILTER_KEYS) params.delete(key);
     if (f.year !== 'all') params.set('year', f.year);
@@ -132,14 +132,14 @@ export const cameraOptions = computed(() => {
 
 // --- Filtered projection ----------------------------------------------
 
-function matchesGps(p: Photo, gps: string[]): boolean {
+function matchesGps(p: Photo, gps: string[]) {
   if (gps.length === 0) return false;
   if (gps.length === ALL_GPS.length) return true;
   if (p.gps === null) return gps.includes('none');
   return gps.includes(p.gps);
 }
 
-function matchesMedia(p: Photo, media: string[]): boolean {
+function matchesMedia(p: Photo, media: string[]) {
   if (media.length === 0) return false;
   if (media.length === ALL_MEDIA.length) return true;
   return media.includes(p.type);
@@ -163,23 +163,23 @@ export const filteredPhotos = computed(() => {
 
 // --- Verbs ------------------------------------------------------------
 
-function set(next: Filters): void {
+function set(next: Filters) {
   _filters.set(applyCascade(next, photos.get()));
 }
 
-export function setYear(year: string): void {
+export function setYear(year: string) {
   set({ ..._filters.get(), year });
 }
 
-export function setAlbum(album: string): void {
+export function setAlbum(album: string) {
   set({ ..._filters.get(), album });
 }
 
-export function setCamera(camera: string): void {
+export function setCamera(camera: string) {
   set({ ..._filters.get(), camera });
 }
 
-export function toggleGps(value: string): void {
+export function toggleGps(value: string) {
   const cur = _filters.get();
   const gps = cur.gps.includes(value)
     ? cur.gps.filter((v) => v !== value)
@@ -187,13 +187,13 @@ export function toggleGps(value: string): void {
   set({ ...cur, gps });
 }
 
-export function soloGps(value: string): void {
+export function soloGps(value: string) {
   const cur = _filters.get();
   const isSolo = cur.gps.length === 1 && cur.gps[0] === value;
   set({ ...cur, gps: isSolo ? [...DEFAULT_GPS] : [value] });
 }
 
-export function toggleMedia(value: string): void {
+export function toggleMedia(value: string) {
   const cur = _filters.get();
   const media = cur.media.includes(value)
     ? cur.media.filter((v) => v !== value)
@@ -201,13 +201,13 @@ export function toggleMedia(value: string): void {
   set({ ...cur, media });
 }
 
-export function soloMedia(value: string): void {
+export function soloMedia(value: string) {
   const cur = _filters.get();
   const isSolo = cur.media.length === 1 && cur.media[0] === value;
   set({ ...cur, media: isSolo ? [...DEFAULT_MEDIA] : [value] });
 }
 
-export function resetFilters(): void {
+export function resetFilters() {
   _filters.set({
     ...DEFAULTS,
     gps: [...DEFAULT_GPS],

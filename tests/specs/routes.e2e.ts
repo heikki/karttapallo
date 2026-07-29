@@ -20,11 +20,11 @@ test.beforeEach(() => {
 // Edit mode populates a separate `route-edit-points` source — one feature
 // per photo + waypoint — driven by `<map-route>`'s edit module.
 
-async function selectAlbum(page: Page, album: string): Promise<void> {
+async function selectAlbum(page: Page, album: string) {
   await page.getByLabel('Album').selectOption(album);
 }
 
-async function clickViewBtn(page: Page, label: string): Promise<void> {
+async function clickViewBtn(page: Page, label: string) {
   await page.getByRole('button', { name: label }).click();
 }
 

@@ -8,8 +8,9 @@ import {
 } from './timezone';
 
 /** Unix seconds for a UTC wall clock (hour precision), for building test instants. */
-const utc = (y: number, mo: number, d: number, h: number): number =>
-  Date.UTC(y, mo - 1, d, h, 0, 0) / 1000;
+function utc(y: number, mo: number, d: number, h: number) {
+  return Date.UTC(y, mo - 1, d, h, 0, 0) / 1000;
+}
 
 describe('tzNameFromCoords', () => {
   test('returns IANA name for a known coordinate', () => {

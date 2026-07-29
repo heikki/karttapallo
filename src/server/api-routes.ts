@@ -117,7 +117,7 @@ export function createApiHandler(dataDir: string, options: ApiHandlerOptions) {
     }
   }
 
-  function emitEditResults(results: EditResults): void {
+  function emitEditResults(results: EditResults) {
     if (onEditResult === undefined) return;
     for (const r of results.locationResults) {
       onEditResult({

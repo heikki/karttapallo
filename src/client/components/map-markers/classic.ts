@@ -231,13 +231,13 @@ export class ClassicLayer implements MarkerLayer {
   markerRadius = classicMarkerRadius;
 }
 
-function classicMarkerRadius(zoom: number): number {
+function classicMarkerRadius(zoom: number) {
   // Matches hitAreaRadius stops
   const stops = [2, 6, 8, 10, 14, 16];
   return lerpStops(zoom, stops);
 }
 
-function lerpStops(zoom: number, stops: number[]): number {
+function lerpStops(zoom: number, stops: number[]) {
   if (zoom <= stops[0]!) return stops[1]!;
   for (let i = 0; i < stops.length - 2; i += 2) {
     const z0 = stops[i]!;

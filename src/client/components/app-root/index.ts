@@ -51,9 +51,9 @@ export class AppRoot extends LitElement {
       },
       { passive: false }
     );
-    const preventGesture = (e: Event) => {
+    function preventGesture(e: Event) {
       e.preventDefault();
-    };
+    }
     document.addEventListener('gesturestart', preventGesture);
     document.addEventListener('gesturechange', preventGesture);
 

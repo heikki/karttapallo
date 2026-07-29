@@ -38,7 +38,7 @@ export type LibraryResolution =
  * under their own hashed dir; only truly global state (`state.json`) stays at
  * the top level of `dataDir`.
  */
-export function libraryDataDir(dataDir: string, libraryPath: string): string {
+export function libraryDataDir(dataDir: string, libraryPath: string) {
   const hash = createHash('sha256')
     .update(libraryPath)
     .digest('hex')
@@ -51,7 +51,7 @@ export function libraryDataDir(dataDir: string, libraryPath: string): string {
  * opaque hash is traceable back to its library path — read the `library.json`
  * files under `data/libraries/` to see the mapping. Best-effort, never fatal.
  */
-export function markLibraryDir(libDir: string, libraryPath: string): void {
+export function markLibraryDir(libDir: string, libraryPath: string) {
   try {
     writeFileSync(
       join(libDir, 'library.json'),
@@ -68,7 +68,7 @@ export function volumeOf(libraryPath: string): string | null {
   return m?.groups?.volume ?? null;
 }
 
-function hasDatabase(libraryPath: string): boolean {
+function hasDatabase(libraryPath: string) {
   return existsSync(join(libraryPath, 'database', 'Photos.sqlite'));
 }
 
@@ -81,7 +81,7 @@ function hasDatabase(libraryPath: string): boolean {
  * container read at all, rather than letting macOS put its own dialog on screen
  * (see `resolveLibrary`).
  */
-export function hasFullDiskAccess(): boolean {
+export function hasFullDiskAccess() {
   try {
     const fd = openSync(
       join(homedir(), 'Library/Application Support/com.apple.TCC/TCC.db'),

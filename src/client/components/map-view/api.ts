@@ -63,7 +63,7 @@ export function setLayersVisibility(
   map: MapGL,
   layerIds: string[],
   visible: boolean
-): void {
+) {
   const v = visible ? 'visible' : 'none';
   for (const id of layerIds) {
     if (map.getLayer(id) !== undefined) {

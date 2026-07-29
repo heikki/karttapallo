@@ -145,10 +145,12 @@ function tzOffsetMinutes(tzName: string, refDate: Date): number | null {
   }
 }
 
-function formatLocalDate(utcUnix: number, offsetMinutes: number): string {
+function formatLocalDate(utcUnix: number, offsetMinutes: number) {
   const localSec = utcUnix + offsetMinutes * 60;
   const d = new Date(localSec * 1000);
-  const pad = (n: number) => String(n).padStart(2, '0');
+  function pad(n: number) {
+    return String(n).padStart(2, '0');
+  }
   return `${d.getUTCFullYear()}:${pad(d.getUTCMonth() + 1)}:${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
 }
 

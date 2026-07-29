@@ -7,18 +7,18 @@ import type { Map as MapGL, Popup } from 'maplibre-gl';
  * `render` continuously) and skipped via a cache key when nothing
  * observable changed. Self-cleans on the popup's `'close'` event.
  */
-export function attach(map: MapGL, popup: Popup): void {
+export function attach(map: MapGL, popup: Popup) {
   let lastKey = '';
-  const update = (): void => {
+  function update() {
     lastKey = applyMask(map, popup, lastKey);
-  };
+  }
   map.on('render', update);
   popup.on('close', () => {
     map.off('render', update);
   });
 }
 
-function applyMask(map: MapGL, popup: Popup, lastKey: string): string {
+function applyMask(map: MapGL, popup: Popup, lastKey: string) {
   const el = popup.getElement() as HTMLElement | undefined;
   if (el === undefined) return lastKey;
 

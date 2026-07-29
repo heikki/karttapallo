@@ -188,7 +188,7 @@ export class PointsLayer implements MarkerLayer {
   markerRadius = pointsMarkerRadius;
 }
 
-function pointsMarkerRadius(zoom: number): number {
+function pointsMarkerRadius(zoom: number) {
   // Matches dotPaint circle-radius: exponential 1.5 interpolation
   const base = 1.5;
   const stops = [4, 1, 8, 2, 12, 3, 16, 5, 20, 7];

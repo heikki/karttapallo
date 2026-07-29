@@ -59,7 +59,7 @@ const itemStore = openItemStore({
 const albumStore = createAlbumStore(libDir);
 const orsClient = createOrsClient(dataDir);
 
-function logEditResult(event: EditResultEvent): void {
+function logEditResult(event: EditResultEvent) {
   const dim = '\x1b[2m';
   const reset = '\x1b[0m';
   const label = event.kind === 'location' ? '📍' : '⏰';
@@ -103,7 +103,7 @@ function logRequest(
   pathname: string,
   status: number,
   ms: number
-): void {
+) {
   const reset = '\x1b[0m';
   const dim = '\x1b[2m';
   const methodColor = methodColors[method] ?? '\x1b[37m';

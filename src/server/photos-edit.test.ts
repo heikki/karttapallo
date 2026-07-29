@@ -43,10 +43,13 @@ function evalScript(script: string, today: Date): Date {
   return d;
 }
 
-const wallClock = (d: Date): string =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-` +
-  `${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:` +
-  `${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
+function wallClock(d: Date) {
+  return (
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-` +
+    `${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:` +
+    `${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`
+  );
+}
 
 describe('buildDateTimeScript', () => {
   test('produces the requested date regardless of what day it is run', () => {

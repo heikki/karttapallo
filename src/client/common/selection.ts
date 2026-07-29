@@ -28,14 +28,14 @@ function getPhotoIndex(): number | null {
 }
 
 // Placement hides the popup; measure and route-edit don't conflict with it.
-function isPopupOpen(): boolean {
+function isPopupOpen() {
   return (
     selectedPhotoUuid.get() !== null &&
     interactionMode.current.get() !== 'placement'
   );
 }
 
-function selectPhoto(uuid: string): void {
+function selectPhoto(uuid: string) {
   selectedPhotoUuid.set(uuid);
   // Placement targeted the previous selection.
   if (interactionMode.current.get() === 'placement') {
@@ -43,18 +43,18 @@ function selectPhoto(uuid: string): void {
   }
 }
 
-function clear(): void {
+function clear() {
   selectedPhotoUuid.set(null);
   interactionMode.exit();
 }
 
 // Close the popup without touching interactionMode — measure and
 // route-edit shouldn't exit when the user dismisses the popup.
-function closePopup(): void {
+function closePopup() {
   selectedPhotoUuid.set(null);
 }
 
-function next(): boolean {
+function next() {
   const idx = getPhotoIndex();
   if (idx === null) return false;
   const photos = data.filteredPhotos.get();
@@ -65,7 +65,7 @@ function next(): boolean {
   return true;
 }
 
-function prev(): boolean {
+function prev() {
   const idx = getPhotoIndex();
   if (idx === null) return false;
   const photos = data.filteredPhotos.get();
@@ -76,7 +76,7 @@ function prev(): boolean {
   return true;
 }
 
-function toggleOldestNewest(): void {
+function toggleOldestNewest() {
   const photos = data.filteredPhotos.get();
   if (photos.length === 0) return;
   let oldestIdx = 0;

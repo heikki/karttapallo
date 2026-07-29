@@ -21,11 +21,11 @@ const WHEEL_ZOOM_RATE = 1 / 300;
  * Self-cleans when the popup fires `'close'`. Caller just calls
  * `attach` once and forgets.
  */
-export function attach(map: MapGL, popup: Popup): void {
+export function attach(map: MapGL, popup: Popup) {
   const popupEl = popup.getElement();
   const canvas = map.getCanvas();
 
-  const zoomAroundPopup = (e: WheelEvent): void => {
+  function zoomAroundPopup(e: WheelEvent) {
     const coords = getSelectedMarkerCoords();
     if (coords === null) return;
     e.preventDefault();
@@ -54,7 +54,7 @@ export function attach(map: MapGL, popup: Popup): void {
       zoomAnchor.y + (h / 2 - zoomAnchor.y) / scale
     ] as [number, number];
     map.jumpTo({ center: map.unproject(newCenterPx), zoom: newZoom });
-  };
+  }
 
   popupEl.addEventListener('wheel', zoomAroundPopup);
 
@@ -63,10 +63,10 @@ export function attach(map: MapGL, popup: Popup): void {
     handler: (e: MouseEvent) => void;
   }> = [];
   for (const type of ['mousedown', 'mousemove', 'mouseup'] as const) {
-    const handler = (e: MouseEvent): void => {
+    function handler(e: MouseEvent) {
       e.preventDefault();
       canvas.dispatchEvent(new MouseEvent(type, e));
-    };
+    }
     popupEl.addEventListener(type, handler);
     mouseHandlers.push({ type, handler });
   }

@@ -9,7 +9,7 @@ import selection from '@common/selection';
 import { formatDate, getThumbUrl } from '@common/utils';
 import { MapFeatureElement } from '@components/map-view/api';
 
-function onPlacementClick(e: MapMouseEvent): void {
+function onPlacementClick(e: MapMouseEvent) {
   const uuid = selection.selectedPhotoUuid.get();
   if (uuid === null) {
     selection.clear();

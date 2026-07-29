@@ -30,7 +30,7 @@ export function getSetting(dataDir: string, key: string): string | null {
   return load(dataDir)[key] ?? null;
 }
 
-export function setSetting(dataDir: string, key: string, value: string): void {
+export function setSetting(dataDir: string, key: string, value: string) {
   const store = load(dataDir);
   store[key] = value;
   writeFileSync(join(dataDir, STATE_FILE), JSON.stringify(store));

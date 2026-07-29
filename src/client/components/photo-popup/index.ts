@@ -276,7 +276,7 @@ export class PhotoPopup extends SignalWatcher(LitElement) {
    * date-edit Escape priority over closing the popup. Returns true if
    * the key was consumed.
    */
-  closeDateEdit(): boolean {
+  closeDateEdit() {
     if (!this._dateEditMode) return false;
     this._dateEditMode = false;
     return true;

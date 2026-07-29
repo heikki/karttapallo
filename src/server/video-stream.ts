@@ -10,7 +10,7 @@
 
 import { extname } from 'node:path';
 
-function videoMimeType(filename: string): string {
+function videoMimeType(filename: string) {
   const ext = extname(filename).toLowerCase();
   if (ext === '.mov') return 'video/quicktime';
   if (ext === '.m4v') return 'video/x-m4v';

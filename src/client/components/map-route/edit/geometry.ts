@@ -7,7 +7,7 @@ function distToPolyline(
   px: number,
   py: number,
   coords: Array<[number, number]>
-): number {
+) {
   let minDist = Infinity;
   for (let i = 0; i < coords.length - 1; i++) {
     const [ax, ay] = coords[i]!;
@@ -31,12 +31,12 @@ export function findNearestSegment(
   route: RouteData,
   lon: number,
   lat: number
-): number {
+) {
   const clickPx = map.project([lon, lat]);
-  const toScreen = (c: [number, number]): [number, number] => {
+  function toScreen(c: [number, number]): [number, number] {
     const p = map.project(c);
     return [p.x, p.y];
-  };
+  }
   let bestIdx = 0;
   let bestDist = Infinity;
   for (let i = 0; i < route.segments.length; i++) {

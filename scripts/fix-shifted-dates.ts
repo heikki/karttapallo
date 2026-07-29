@@ -148,12 +148,14 @@ const videosHeld = drifted.length - targets.length;
 
 // ---------- rendering ----------
 
-const pad = (n: number) => String(n).padStart(2, '0');
+function pad(n: number) {
+  return String(n).padStart(2, '0');
+}
 
 /**
  * Render a UTC instant as the wall clock in the PHOTO's timezone. Display only.
  */
-function photoLocal(instant: number, offsetSeconds: number | null): string {
+function photoLocal(instant: number, offsetSeconds: number | null) {
   const d = new Date((instant + (offsetSeconds ?? 0)) * 1000);
   return (
     `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ` +

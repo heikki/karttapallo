@@ -66,7 +66,7 @@ function panBy(map: MapGL, panX: number, panY: number, duration: number) {
  * Pan the map to fit the popup after opening it on the current view.
  * Used for initial popup show (click on marker).
  */
-export function panToFitPopup(map: MapGL, popup: Popup): void {
+export function panToFitPopup(map: MapGL, popup: Popup) {
   afterPopupLayout(() => {
     const rects = getPopupRect(map, popup);
     if (rects === null) return;
@@ -87,7 +87,7 @@ export function flyToPopupTo(
   map: MapGL,
   popup: Popup,
   coords: [number, number]
-): void {
+) {
   afterPopupLayout(() => {
     const rects = getPopupRect(map, popup);
     if (rects === null) return;
@@ -108,7 +108,7 @@ export function flyToPopupTo(
       } catch {
         return;
       }
-      const onMoveEnd = () => {
+      function onMoveEnd() {
         map.off('moveend', onMoveEnd);
         afterPopupLayout(() => {
           const r = getPopupRect(map, popup);
@@ -116,7 +116,7 @@ export function flyToPopupTo(
           const adj = calculatePanOffset(r.mapRect, r.popupRect);
           panBy(map, adj.panX, adj.panY, 200);
         });
-      };
+      }
       map.on('moveend', onMoveEnd);
     } else {
       panBy(map, panX, panY, 300);

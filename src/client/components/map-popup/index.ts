@@ -19,7 +19,7 @@ import { flyToPopupTo, panToFitPopup } from './pan';
 // Decode the new thumb before we swap it onto the popup, so the
 // browser paints the image and the popup move in the same frame —
 // no intermediate jitter from a half-loaded image resizing it.
-async function preloadThumb(photo: Photo): Promise<void> {
+async function preloadThumb(photo: Photo) {
   const img = new Image();
   img.src = getThumbUrl(photo);
   try {
@@ -72,7 +72,7 @@ export class MapPopup extends MapFeatureElement {
     });
   }
 
-  private handleKeydown(e: KeyboardEvent): void {
+  private handleKeydown(e: KeyboardEvent) {
     if (e.key === 'Escape') {
       this.handleEscape(e);
       return;
@@ -95,7 +95,7 @@ export class MapPopup extends MapFeatureElement {
   // wins so a stray Escape doesn't lose the edit row; mode-exit wins over
   // popup-close so e.g. exiting placement returns to the popup instead of
   // dismissing it.
-  private handleEscape(e: KeyboardEvent): void {
+  private handleEscape(e: KeyboardEvent) {
     e.preventDefault();
     if (this.mounted?.el.closeDateEdit() === true) return;
     if (interactionMode.current.get() !== null) {
@@ -114,7 +114,7 @@ export class MapPopup extends MapFeatureElement {
    * Force a full unmount/remount; the same-uuid path otherwise just syncs
    * in place, leaving the popup anchored to the old projection.
    */
-  forceRemount(): void {
+  forceRemount() {
     if (this.mounted === null) return;
     this.suppressCloseClear = true;
     this.mounted.popup.remove();
@@ -128,7 +128,7 @@ export class MapPopup extends MapFeatureElement {
     return [0, -(radius * 1.3 + 5)];
   }
 
-  private reanchorPopup(): void {
+  private reanchorPopup() {
     if (this.mounted === null) return;
     if (!this.mounted.popup.isOpen()) return;
     // Just update the offset — no remove/addTo cycle.
@@ -137,7 +137,7 @@ export class MapPopup extends MapFeatureElement {
     this.mounted.popup.setOffset(this.popupOffset());
   }
 
-  private applySelection(): void {
+  private applySelection() {
     const photo = selection.isPopupOpen() ? selection.getPhoto() : undefined;
     if (photo === undefined) {
       this.mounted?.popup.remove();
@@ -152,7 +152,7 @@ export class MapPopup extends MapFeatureElement {
     }
   }
 
-  private openPopup(photo: Photo): void {
+  private openPopup(photo: Photo) {
     const { lon, lat } = edits.getEffectiveCoords(photo);
     const idx = selection.getPhotoIndex() ?? 0;
 
@@ -187,7 +187,7 @@ export class MapPopup extends MapFeatureElement {
     panToFitPopup(this.api.map, popup);
   }
 
-  private movePopupTo(photo: Photo): void {
+  private movePopupTo(photo: Photo) {
     if (this.mounted === null) return;
     const idx = selection.getPhotoIndex() ?? 0;
     const { lon, lat } = edits.getEffectiveCoords(photo);
@@ -196,7 +196,7 @@ export class MapPopup extends MapFeatureElement {
     flyToPopupTo(this.api.map, this.mounted.popup, [lon, lat]);
   }
 
-  private async flyPopupTo(photo: Photo): Promise<void> {
+  private async flyPopupTo(photo: Photo) {
     const seq = ++this.navSeq;
     await preloadThumb(photo);
     // Selection or popup may have changed during the await; bail if so.
@@ -215,7 +215,7 @@ export class MapPopup extends MapFeatureElement {
     flyToPopupTo(this.api.map, this.mounted.popup, [lng, lat]);
   }
 
-  private setContent(photo: Photo, index: number): void {
+  private setContent(photo: Photo, index: number) {
     if (this.mounted === null) return;
     const { el } = this.mounted;
     el.photo = photo;

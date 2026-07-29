@@ -56,7 +56,7 @@ const loadAlbum = computed<string | null>(() => {
   return album;
 });
 
-function applyDisplaySource(map: MapGL, r: RouteData | null): void {
+function applyDisplaySource(map: MapGL, r: RouteData | null) {
   const src = map.getSource<GeoJSONSource>('photo-route');
   if (src === undefined) return;
   src.setData({
@@ -69,7 +69,7 @@ function albumPhotosFor(album: string) {
   return data.photos.get().filter((p) => p.albums.includes(album));
 }
 
-function addDisplayLayers(map: MapGL): void {
+function addDisplayLayers(map: MapGL) {
   const empty: FeatureCollection = {
     type: 'FeatureCollection',
     features: []
@@ -80,7 +80,7 @@ function addDisplayLayers(map: MapGL): void {
 
 @customElement('map-route')
 export class MapRoute extends MapFeatureElement {
-  override firstUpdated(): void {
+  override firstUpdated() {
     const map = this.api.map;
     addDisplayLayers(map);
     initRouteEdit(map);

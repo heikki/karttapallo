@@ -7,7 +7,9 @@ import { expect, test } from '@playwright/test';
 test('Switch map and marker styles', async ({ page }) => {
   await page.goto('/');
 
-  const mapBtn = (label: string) => page.getByRole('button', { name: label });
+  function mapBtn(label: string) {
+    return page.getByRole('button', { name: label });
+  }
 
   // 1) Defaults: Aerial + Classic active, URL clean.
   await expect(mapBtn('Aerial')).toHaveClass(/active/);

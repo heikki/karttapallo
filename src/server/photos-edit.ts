@@ -18,7 +18,7 @@ import { defaultLibraryPath } from './photos-library';
 // ---------- AppleScript helpers ----------
 
 /** Set location via AppleScript (Photos.app must be running). */
-export function setLocation(uuid: string, lat: number, lon: number): void {
+export function setLocation(uuid: string, lat: number, lon: number) {
   const script = `tell application "Photos" to set the location of media item id "${uuid}" to {${lat}, ${lon}}`;
   runAppleScript(script);
 }
@@ -40,11 +40,7 @@ export function setLocation(uuid: string, lat: number, lon: number): void {
  *
  * date: "YYYY-MM-DD", time: "HH:MM:SS"
  */
-export function buildDateTimeScript(
-  uuid: string,
-  date: string,
-  time: string
-): string {
+export function buildDateTimeScript(uuid: string, date: string, time: string) {
   const [yr, mo, dy] = date.split('-');
   const [hr, mi, sc] = time.split(':');
   return [
@@ -61,7 +57,7 @@ export function buildDateTimeScript(
 }
 
 /** Set date/time via AppleScript. date: "YYYY-MM-DD", time: "HH:MM:SS" */
-export function setDateTime(uuid: string, date: string, time: string): void {
+export function setDateTime(uuid: string, date: string, time: string) {
   runAppleScript(buildDateTimeScript(uuid, date, time));
 }
 
@@ -86,7 +82,7 @@ export function setTimezone(
   tzName: string,
   offsetSeconds: number,
   libraryPath?: string
-): void {
+) {
   const dbPath = join(
     libraryPath ?? defaultLibraryPath(),
     'database/Photos.sqlite'
@@ -119,7 +115,7 @@ export function setTimezone(
 
 // ---------- Quit Photos.app ----------
 
-export function quitPhotosApp(): void {
+export function quitPhotosApp() {
   runAppleScript('tell application "Photos" to quit');
 }
 
