@@ -2,12 +2,12 @@
 
 Geotagged photo map viewer with Apple Photos integration.
 
-## Project Stats (as of 21.05.2026)
+## Project Stats (as of 29.07.2026)
 
 - **TypeScript files**: 76
-- **Lines of code**: 12,934 (+ 3,286 tests)
-- **Total commits**: 593
-- **Total tokens**: ~2,456M | **Total cost**: ~$1,537
+- **Lines of code**: 13,388 (+ 3,610 tests)
+- **Total commits**: 606
+- **Total tokens**: ~2,624M | **Total cost**: ~$1,691
 
 ## Updating This Diary
 
@@ -36,6 +36,33 @@ git log --pretty=format:"%ad|%s" --date=format:"%Y-%m-%d" | head -50  # Recent c
 - Skip minor tweaks — only significant features and fixes belong, especially on busy days.
 - Describe final outcomes, not reverted intermediate attempts.
 - Flat list, no sub-bullets or prose.
+
+## 29.07.2026 — Photos writes under a signed build; timezone from coordinates
+
+**Tokens**: 25M | **Cost**: $20
+
+- Photo times and timezones are now restore-proof — derived from the UTC instant plus coordinates
+- Saving to Photos works again in the signed build; per-photo failures now surface in the debug log
+- A disconnected library drive now prompts to reconnect instead of silently loading the wrong library
+- Photos access now asks for Full Disk Access once instead of re-prompting on every launch
+- The popup's date edit row closes when a save starts
+
+## 05.07.2026 — Signed macOS build
+
+**Tokens**: 20M | **Cost**: $28
+
+- The macOS build is now code-signed, so the Photos access grant survives relaunch
+- Internal: one command creates and removes the local self-signed signing certificate
+
+## 30.06.2026 — Multiple Photos libraries
+
+**Tokens**: 66M | **Cost**: $61
+
+- The app now follows the system's active Photos library instead of a hardcoded path
+- Cache, albums, and view state are stored per library, so switching no longer mixes them up
+- An unmounted library fails loud with a retry prompt instead of silently loading the wrong photos
+- Fixed the desktop window sometimes opening blank
+- Dropped the iCloud Drive backup of album data — Time Machine already covers it
 
 ## 21.05.2026 — Renamed to Karttapallo
 
