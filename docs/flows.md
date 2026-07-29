@@ -32,7 +32,7 @@ Canonical inventory of user-visible flows. Each Tier 5 e2e spec maps to one or m
 - **Copy and paste a location** — copy on one photo, paste on another; becomes a pending edit.
 - **Adjust a photo's date/time** — popup "edit" → ±1d / ±1h buttons or manual `D.M.YYYY HH:MM` input; pending until saved.
 - **Copy and paste a date** — copy on one photo, paste on another (computes the hour offset).
-- **Save edits** — "Save to Photos" pushes pending edits to Photos.app; data reloads, popup reopens; alert on error.
+- **Save edits** — "Save to Photos" pushes pending edits to Photos.app; data reloads, popup reopens with the date edit row closed; alert on error.
 - **Discard edits** — clears all pending location and time edits.
 - **Open a photo in Apple Photos** — Photos.app link button on popup and lightbox.
 

@@ -49,8 +49,9 @@ export class PhotoPopup extends SignalWatcher(LitElement) {
   @property({ type: Number }) index = 0;
 
   // Date edit mode is local UI state. Auto-clears when the photo changes
-  // (see updated() below). Escape inside the input clears it directly;
-  // Escape elsewhere routes through closeDateEdit() called by <map-popup>.
+  // or a save starts (see updated() and firstUpdated() below). Escape inside
+  // the input clears it directly; Escape elsewhere routes through
+  // closeDateEdit() called by <map-popup>.
   @state() private _dateEditMode = false;
   private _lastSeenUuid: string | null = null;
 
@@ -290,6 +291,16 @@ export class PhotoPopup extends SignalWatcher(LitElement) {
     // Stop all keydown propagation so external handlers (arrow nav, spacebar)
     // don't intercept keys meant for this input.
     e.stopPropagation();
+  }
+
+  override firstUpdated() {
+    // "Save to Photos" flushes the pending edits and reloads the photos under
+    // the still-open popup, so an open date-edit row would be editing state
+    // that no longer exists. Drop it the moment a save starts.
+    this.updateEffect(() => {
+      const saving = edits.saving.get();
+      if (saving) this._dateEditMode = false;
+    });
   }
 
   override updated(changed: Map<string, unknown>) {

@@ -31,4 +31,9 @@ test('Save edits', async ({ page }) => {
 
   // Section disappears once edits.clear() runs after the successful POST.
   await expect(page.locator('filter-panel >> .edit-section')).toHaveCount(0);
+
+  // The popup stayed open across the save; its date edit row must not, since
+  // the edit it was showing has been flushed.
+  await expect(popup).toBeVisible();
+  await expect(popup.locator('.date-edit-row')).toHaveCount(0);
 });
