@@ -65,6 +65,25 @@ console.log(`[main] Data directory: ${dataDir}`);
 
 mkdirSync(dataDir, { recursive: true });
 
+// Deep link to the Full Disk Access list. Must be the System Settings anchor:
+// the pre-Ventura `com.apple.preference.security?Privacy_AllFiles` form is not
+// reliably remapped and can land on the Privacy root with no FDA list in sight.
+const FDA_SETTINGS_URL =
+  'x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_AllFiles';
+
+// Full Disk Access is cached per process: an app that was already running when
+// the grant was ticked does not see it — macOS itself offers "Quit & Reopen"
+// for this. So recovery has to relaunch; retrying in-process can only ever fail
+// again, leaving the user stuck in the modal.
+function relaunchApp(): never {
+  // process.argv0 is <bundle>/Contents/MacOS/launcher (same base as resourcesDir).
+  const appBundle = resolve(dirname(process.argv0), '..', '..');
+  Bun.spawn(['open', '-n', appBundle], {
+    stdio: ['ignore', 'ignore', 'ignore']
+  });
+  process.exit(0);
+}
+
 // Resolve the active Photos library, failing loud (ADR 0012). Never silently
 // fall back to a different library — show the user why and let them recover.
 async function resolveLibraryOrExit(): Promise<string> {
@@ -77,20 +96,20 @@ async function resolveLibraryOrExit(): Promise<string> {
       const { response } = await Utils.showMessageBox({
         type: 'warning',
         title: 'Full Disk Access Required',
+        // Text goes in `message`, never `detail`: Electrobun forwards `detail`
+        // over FFI but its prebuilt native binary drops it — NSAlert has only
+        // messageText/informativeText, spent on `title` and `message`.
         message:
-          'Karttapallo needs Full Disk Access to find your Photos library.',
-        detail:
-          'Open System Settings > Privacy & Security > Full Disk Access, enable Karttapallo, then click Retry.',
-        buttons: ['Open System Settings', 'Retry', 'Quit']
+          'Karttapallo needs Full Disk Access to find your Photos library.\n\n' +
+          'Switch it on in the list, then open Karttapallo again.',
+        buttons: ['Open System Settings', 'Quit']
       });
-      if (response === 0) {
-        Bun.spawn([
-          'open',
-          'x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles'
-        ]);
-      } else if (response === 2) {
-        process.exit(1);
-      }
+      // Quit either way. The grant cannot reach this process, so there is
+      // nothing left for it to do — and staying alive would re-show this modal
+      // on top of the Settings window the user just asked for. spawnSync so the
+      // exit below can't tear `open` down with us.
+      if (response === 0) Bun.spawnSync(['open', FDA_SETTINGS_URL]);
+      process.exit(response === 0 ? 0 : 1);
     } else {
       const where =
         r.volume === null ? 'at its saved path' : `on the volume "${r.volume}"`;
@@ -180,17 +199,16 @@ function showFullDiskAccessDialog() {
   void Utils.showMessageBox({
     type: 'warning',
     title: 'Full Disk Access Required',
+    // See the note in resolveLibraryOrExit: `detail` is never rendered.
     message:
-      'Karttapallo needs Full Disk Access to read photo metadata from Photos.sqlite.',
-    detail:
-      'Open System Settings > Privacy & Security > Full Disk Access, then enable access for Karttapallo.\n\nRestart the app after granting access.',
-    buttons: ['Open System Settings', 'OK']
+      'Karttapallo needs Full Disk Access to read photo metadata.\n\n' +
+      'Switch it on in the list, then relaunch.',
+    buttons: ['Open System Settings', 'Relaunch', 'OK']
   }).then(({ response }: { response: number }) => {
     if (response === 0) {
-      Bun.spawn([
-        'open',
-        'x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles'
-      ]);
+      Bun.spawn(['open', FDA_SETTINGS_URL]);
+    } else if (response === 1) {
+      relaunchApp();
     }
   });
 }

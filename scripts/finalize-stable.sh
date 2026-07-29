@@ -25,7 +25,12 @@ set -euo pipefail
 APP="build/stable-macos-arm64/Karttapallo.app"
 ENT="build/stable-macos-arm64/entitlements.plist"
 IDENTITY="${ELECTROBUN_DEVELOPER_ID:-Karttapallo Signing}"
-USAGE="Karttapallo updates the location, date, and time of your photos in the Photos app."
+# A single space, not a sentence: macOS's own prompt text already says what
+# granting Automation means, and anything here is appended in the app's language
+# regardless of the system's — an English line under a Finnish prompt. The value
+# must stay non-empty though; the key going missing is what makes macOS
+# auto-deny with no prompt at all (see the header above).
+USAGE=" "
 
 if [[ ! -d "$APP" ]]; then
   echo "finalize-stable: $APP not found — run build:app:stable first" >&2
@@ -43,11 +48,13 @@ if [[ -z "$TAR" ]]; then
 fi
 
 # Set (add-or-overwrite) NSAppleEventsUsageDescription on a bundle's Info.plist.
+# plutil rather than PlistBuddy: PlistBuddy takes the value from its -c command
+# string and splits on whitespace, so a whitespace-only USAGE collapses to
+# nothing. plutil takes the value as its own argument and preserves it. It also
+# add-or-overwrites in one call, so no Set-then-Add fallback is needed.
 set_usage_key() {
   local plist="$1"
-  if ! /usr/libexec/PlistBuddy -c "Set :NSAppleEventsUsageDescription $USAGE" "$plist" 2>/dev/null; then
-    /usr/libexec/PlistBuddy -c "Add :NSAppleEventsUsageDescription string $USAGE" "$plist"
-  fi
+  /usr/bin/plutil -replace NSAppleEventsUsageDescription -string "$USAGE" "$plist"
 }
 
 WORK="$(mktemp -d)"

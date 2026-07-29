@@ -18,6 +18,10 @@ function makeLibrary(): string {
 
 const native = (r: ActiveLibraryResult) => (): ActiveLibraryResult => r;
 
+/** FDA seam. Always injected so tests don't depend on the host's grant state. */
+const withFda = () => true;
+const withoutFda = () => false;
+
 beforeEach(() => {
   tmp = mkdtempSync(join(tmpdir(), 'karttapallo-resolve-'));
 });
@@ -29,18 +33,34 @@ afterEach(() => {
 describe('resolveLibrary', () => {
   test('ok when the active library exists', () => {
     const path = makeLibrary();
-    const res = resolveLibrary(native({ status: 'ok', path }));
+    const res = resolveLibrary(native({ status: 'ok', path }), withFda);
     expect(res).toEqual({ ok: true, path });
   });
 
+  test('fda error without probing the container when FDA is missing', () => {
+    // The native resolver must not run: reading the Photos container is what
+    // triggers the per-launch macOS consent prompt this gate exists to avoid.
+    let probed = false;
+    const res = resolveLibrary(() => {
+      probed = true;
+      return { status: 'ok', path: makeLibrary() };
+    }, withoutFda);
+
+    expect(probed).toBe(false);
+    expect(res).toMatchObject({ ok: false, error: 'fda' });
+  });
+
   test('fda error when prefs are unreadable', () => {
-    const res = resolveLibrary(native({ status: 'denied', message: 'nope' }));
+    const res = resolveLibrary(
+      native({ status: 'denied', message: 'nope' }),
+      withFda
+    );
     expect(res).toEqual({ ok: false, error: 'fda', message: 'nope' });
   });
 
   test('unavailable (never silent fallback) when active library has no db', () => {
     const path = '/Volumes/No Such Drive 7f3a/Photos Library.photoslibrary';
-    const res = resolveLibrary(native({ status: 'ok', path }));
+    const res = resolveLibrary(native({ status: 'ok', path }), withFda);
     expect(res).toEqual({
       ok: false,
       error: 'unavailable',
@@ -52,7 +72,7 @@ describe('resolveLibrary', () => {
   test('no-bookmark falls back to the system library only when present', () => {
     // System default almost certainly lacks a db in CI/tmp, so this asserts the
     // fail-loud branch rather than a silent system-library read.
-    const res = resolveLibrary(native({ status: 'no-bookmark' }));
+    const res = resolveLibrary(native({ status: 'no-bookmark' }), withFda);
     if (res.ok) {
       expect(res.path).toContain('Pictures');
     } else {

@@ -12,7 +12,8 @@
  */
 
 import { createHash } from 'node:crypto';
-import { existsSync, writeFileSync } from 'node:fs';
+import { closeSync, existsSync, openSync, writeFileSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { join } from 'node:path';
 import {
   resolveActiveLibraryPath,
@@ -72,11 +73,50 @@ function hasDatabase(libraryPath: string): boolean {
 }
 
 /**
+ * Promptless Full Disk Access probe.
+ *
+ * Reading the TCC database requires FDA but — unlike an app container — never
+ * raises a consent prompt: without the grant the open simply fails with EPERM.
+ * That asymmetry is the whole point. It lets us decide whether to attempt the
+ * container read at all, rather than letting macOS put its own dialog on screen
+ * (see `resolveLibrary`).
+ */
+export function hasFullDiskAccess(): boolean {
+  try {
+    const fd = openSync(
+      join(homedir(), 'Library/Application Support/com.apple.TCC/TCC.db'),
+      'r'
+    );
+    closeSync(fd);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * @param resolve native resolver seam — overridable in tests.
+ * @param hasFda Full Disk Access probe seam — overridable in tests.
  */
 export function resolveLibrary(
-  resolve: () => ActiveLibraryResult = resolveActiveLibraryPath
+  resolve: () => ActiveLibraryResult = resolveActiveLibraryPath,
+  hasFda: () => boolean = hasFullDiskAccess
 ): LibraryResolution {
+  // Check FDA *before* touching the Photos container. The container read is what
+  // makes macOS raise its own "wants to access data from other apps" prompt, and
+  // that grant (kTCCServiceSystemPolicyAppData) is session-scoped — it is
+  // re-prompted every single launch, however many times the user allows it. Only
+  // FDA persists (docs/gotchas.md), and FDA supersedes it, so with the grant in
+  // place the read below is silent. Gating here keeps the unwinnable per-launch
+  // prompt off screen and points the user at the grant that actually sticks.
+  if (!hasFda()) {
+    return {
+      ok: false,
+      error: 'fda',
+      message: 'Full Disk Access has not been granted.'
+    };
+  }
+
   const active = resolve();
 
   if (active.status === 'denied') {
