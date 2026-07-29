@@ -4,10 +4,10 @@ Geotagged photo map viewer with Apple Photos integration.
 
 ## Project Stats (as of 29.07.2026)
 
-- **TypeScript files**: 76
-- **Lines of code**: 13,388 (+ 3,610 tests)
-- **Total commits**: 606
-- **Total tokens**: ~2,624M | **Total cost**: ~$1,691
+- **TypeScript files**: 77
+- **Lines of code**: 13,798 (+ 3,729 tests)
+- **Total commits**: 614
+- **Total tokens**: ~2,668M | **Total cost**: ~$1,726
 
 ## Updating This Diary
 
@@ -39,9 +39,13 @@ git log --pretty=format:"%ad|%s" --date=format:"%Y-%m-%d" | head -50  # Recent c
 
 ## 29.07.2026 — Photos writes under a signed build; timezone from coordinates
 
-**Tokens**: 25M | **Cost**: $20
+**Tokens**: 69M | **Cost**: $55
 
 - Photo times and timezones are now restore-proof — derived from the UTC instant plus coordinates
+- Nudging a photo on the map no longer shifts its clock by an hour during a daylight-saving window
+- Editing a photo's date no longer lands it a month late when done near the end of a month
+- The metadata modal shows the camera's original date, left empty for files carrying no EXIF
+- New script puts capture dates back on the camera's own times where they drifted by a fixed amount
 - Saving to Photos works again in the signed build; per-photo failures now surface in the debug log
 - A disconnected library drive now prompts to reconnect instead of silently loading the wrong library
 - Photos access now asks for Full Disk Access once instead of re-prompting on every launch

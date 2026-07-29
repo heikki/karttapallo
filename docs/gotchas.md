@@ -102,3 +102,19 @@ The consequence for us: **whether a direct-SQLite write survives a restore depen
 **Coalescing is opportunistic and unpredictable.** It is not triggered by opening, closing, or rebuilding the library, and shows no correlation with library size, change-log length, or age — it's background photolibraryd maintenance that fires whenever it fires. You can observe the last coalesce via `coalesceDate` in `resources/journals/Asset.plist`, and confirm whether a given direct write was swept in by grepping `Asset-snapshot.plj` for the value written (e.g. an IANA zone name like `Europe/Helsinki`, which Photos itself never writes — it uses `GMT+nnnn`).
 
 This is exactly how a batch of timezone edits was silently lost: the edits landed in the 7-week gap between the last coalesce (snapshot frozen) and a restore from an external drive, while the location/date edits from the same sessions — being AppleScript/journaled — survived. See [ADR-0013](adr/0013-derive-timezone-from-instant-and-coords.md) for the structural fix (stop depending on the offset column being durable).
+
+### `ZEXTENDEDATTRIBUTES` is not an EXIF table
+
+It holds aperture, ISO and camera model, so it reads like one. It is not — it is Photos' general per-asset metadata cache, and `ZDATECREATED`, `ZTIMEZONEOFFSET` and `ZTIMEZONENAME` are the only columns it fills for **every** asset. A file the camera wrote no EXIF into still gets a date there, sourced from whatever Photos could find, and that can be an artifact of copying with no bearing on when the thing was shot.
+
+In this library 554 of 4841 assets carry no camera metadata at all — every video from a camera that writes none, plus screenshots, scans and stripped exports. For one album's clips the stored dates all fall inside a nine-minute window, ascending in exact filename order, while the clips themselves span a month: a copy session, recorded as if it were the filming.
+
+Nothing in the schema records where the date came from, so infer it from the shooting fields — make, model, lens, ISO, aperture, shutter speed, focal length. If any survived, Photos had an EXIF block to read the date from too. **Make and model alone are too narrow**: some stills have both stripped while keeping ISO, aperture and a lens model, and testing on those two blanks a date the camera really did record.
+
+Photos writes the row once at import and never saves it again — `Z_OPT` stays at 1 while `ZASSET` climbs into the teens — so no later date edit touches it, through Photos or otherwise. That also makes it the last surviving record of a capture time once the originals themselves have been rewritten by copying, which is a reason not to clear it. Clearing would not stick anyway (see the journal-coalesce gotcha above), and the same row carries duration, fps and codec.
+
+### `ZINFERREDTIMEZONEOFFSET` is populated for everything and still wrong often enough not to use
+
+Photos fills it for all 4841 assets, which makes it look like a free answer to "what zone was this taken in". It disagrees with a coordinate-derived offset for 955 of the 4649 assets where both can be computed. Iceland is the clearest failure: 37 assets there claim +3600 where 0 is correct.
+
+Derive the offset from coordinates instead (ADR-0013). Do not read this column, and do not treat agreement with it as corroboration.
