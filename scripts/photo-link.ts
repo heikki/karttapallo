@@ -53,12 +53,32 @@ if (matches.length === 0) {
   process.exit(1);
 }
 
+/**
+ * Wrap `url` in an OSC 8 hyperlink so a terminal makes it ⌘-clickable.
+ *
+ * Needed because terminals only auto-detect a fixed list of schemes —
+ * Ghostty's is hardcoded in `src/config/url.zig` and `karttapallo:` will
+ * never be on it. OSC 8 sidesteps detection entirely: the terminal stores the
+ * URI and hands it to `open` on click, without caring what scheme it is.
+ *
+ * The visible text stays the URL itself, so the line reads and copies the
+ * same whether or not the terminal renders the link. Piped output is left
+ * plain — escape sequences around the URL would break anything grepping it.
+ */
+function hyperlink(url: string): string {
+  if (!process.stdout.isTTY) return url;
+  const osc8 = '\u001B]8;;';
+  const st = '\u001B\\';
+  return `${osc8}${url}${st}${url}${osc8}${st}`;
+}
+
 // A prefix can hit more than one asset; print them all rather than pick, so
 // an ambiguous prefix can't quietly hand out a link to the wrong photo.
 for (const record of matches) {
   const entry = buildItemEntry(record, notInAlbumUuid);
   const where = entry.lat === null ? 'no location' : 'located';
+  const link = `karttapallo://photo/${record.uuid}`;
   console.log(
-    `${entry.date} ${entry.tz ?? '     '}  ${where.padEnd(11)}  karttapallo://photo/${record.uuid}`
+    `${entry.date} ${entry.tz ?? '     '}  ${where.padEnd(11)}  ${hyperlink(link)}`
   );
 }
