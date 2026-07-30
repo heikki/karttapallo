@@ -12,6 +12,11 @@
  * wrong offset, and because Photos journals the instant, the damage is durable
  * and unrecoverable. It is what produced the ~252 shifted assets in ADR-0013.
  *
+ * Three kinds of change, reported separately: a wrong offset, a right offset
+ * under a non-IANA name, and no stored offset at all. The last is the clearest
+ * case of the three — there is nothing to disagree with, only a gap to fill —
+ * yet it is the one an offset-vs-offset comparison is most apt to skip.
+ *
  * Usage:
  *   bun scripts/fix-timezones.ts          # dry run
  *   bun scripts/fix-timezones.ts --fix    # write to Photos.sqlite
@@ -191,8 +196,21 @@ interface NameChange {
   expectedTzName: string;
   localDate: string;
 }
+/**
+ * No stored offset to compare against — the columns are simply empty. Carries
+ * no shift amount because there is no "before": Photos has never had an offset
+ * for these, so nothing on screen moves relative to a previous reading.
+ */
+interface MissingChange {
+  row: Row;
+  expectedTzName: string;
+  /** Local time the derived offset establishes. Display only. */
+  localDate: string;
+  newOffsetSec: number;
+}
 const byAlbum = new Map<string, Change[]>();
 const byAlbumName = new Map<string, NameChange[]>();
+const byAlbumMissing = new Map<string, MissingChange[]>();
 
 for (const row of filtered) {
   const expectedTzName = geoTzFind(row.lat, row.lon)[0];
@@ -203,11 +221,28 @@ for (const row of filtered) {
     row.tz_offset === null ? null : Math.round(row.tz_offset / 60);
   const expectedOffset = tzOffsetMinutes(expectedTzName, utcDate);
 
-  if (storedOffset === null || expectedOffset === null) continue;
+  // Nothing geo-tz could resolve means nothing to write. A null STORED offset
+  // is the opposite case — the gap this script exists to close — so it gets a
+  // bucket of its own rather than falling out of a comparison it cannot join.
+  if (expectedOffset === null) continue;
 
   const album = row.albums ?? '—';
 
-  if (storedOffset === expectedOffset) {
+  if (storedOffset === null) {
+    // Local time from the EXPECTED offset, unlike the other two buckets: they
+    // show what Photos displays now, and here that is nothing to show.
+    const localDate = formatLocalDate(
+      row.date_created + CORE_DATA_EPOCH,
+      expectedOffset
+    );
+    if (!byAlbumMissing.has(album)) byAlbumMissing.set(album, []);
+    byAlbumMissing.get(album)!.push({
+      row,
+      expectedTzName,
+      localDate,
+      newOffsetSec: expectedOffset * 60
+    });
+  } else if (storedOffset === expectedOffset) {
     // Offset correct but IANA name wrong (e.g. GMT+0100 → Europe/Paris)
     if (row.tz_name !== expectedTzName) {
       const localDate = formatLocalDate(
@@ -238,6 +273,7 @@ for (const row of filtered) {
 if (FIX) photosDb.run('BEGIN IMMEDIATE');
 
 let fixedName = 0;
+let fixedMissing = 0;
 
 for (const [album, changes] of byAlbum) {
   changes.sort((a, b) => a.localDate.localeCompare(b.localDate));
@@ -278,11 +314,30 @@ for (const [album, changes] of byAlbumName) {
   }
 }
 
+for (const [album, changes] of byAlbumMissing) {
+  changes.sort((a, b) => a.localDate.localeCompare(b.localDate));
+  console.log(
+    `\n[${album}] — ${changes.length} photos (no stored offset; local time at right is the one being established)`
+  );
+  for (const { row, expectedTzName, localDate, newOffsetSec } of changes) {
+    console.log(
+      `         ${row.filename.padEnd(40)} ${'(none)'.padEnd(25)} → ${expectedTzName.padEnd(25)} local: ${localDate}`
+    );
+    if (FIX) {
+      updateTzStmt!.run(newOffsetSec, expectedTzName, row.pk);
+    }
+    fixedMissing++;
+  }
+}
+
 if (FIX) photosDb.run('COMMIT');
 
-const skipped = rows.length - fixed - fixedName;
+// Counted against `filtered`, not `rows`: under --album the run never looked
+// at the rest of the library, and folding it into "Unchanged" would report
+// thousands of assets as inspected-and-fine.
+const skipped = filtered.length - fixed - fixedName - fixedMissing;
 console.log(
-  `\n${FIX ? 'Fixed' : 'Would fix'}: ${fixed} offset + ${fixedName} name  |  Unchanged: ${skipped}`
+  `\n${FIX ? 'Fixed' : 'Would fix'}: ${fixed} offset + ${fixedName} name + ${fixedMissing} missing  |  Unchanged: ${skipped}`
 );
 if (!FIX) console.log('\nRun with --fix to apply changes.');
 
