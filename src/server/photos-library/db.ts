@@ -12,6 +12,7 @@ import { join } from 'node:path';
 import { Database } from 'bun:sqlite';
 
 import { exifFromLocalEpoch, secondsToTzOffset } from '../date-utils';
+import { tzNameFromCoords, tzOffsetSecondsAtInstant } from '../timezone';
 
 // Core Data epoch: 2001-01-01 00:00:00 UTC
 const CORE_DATA_EPOCH = 978307200;
@@ -557,6 +558,55 @@ function num(v: unknown): number | null {
 }
 
 /**
+ * Whether the asset carries EXIF the camera itself wrote. Nothing records where
+ * ZEXTENDEDATTRIBUTES.ZDATECREATED came from, so the shooting fields stand in:
+ * if any survived, Photos had an EXIF block to read the date from too.
+ *
+ * Make and model alone are not enough — 21 stills in this library have both
+ * stripped while keeping ISO, aperture and a lens model ("iPhone 5 back camera
+ * 4.12mm f/2.4"), and testing on those two would have called them provenanceless
+ * and blanked a date the camera really did record. Any one field is enough;
+ * requiring several would fail assets whose EXIF is merely sparse.
+ */
+function hasExifProvenance(row: MetaRow) {
+  function present(v: unknown) {
+    return typeof v === 'number' || (typeof v === 'string' && v !== '');
+  }
+  return (
+    present(row.camera_make) ||
+    present(row.camera_model) ||
+    present(row.lens_model) ||
+    present(row.iso) ||
+    present(row.aperture) ||
+    present(row.shutter_speed) ||
+    present(row.focal_length)
+  );
+}
+
+/**
+ * Wall clock and zone for `date`, derived from the durable pair — the UTC
+ * instant and the coordinates — the same way buildItemEntry derives them for
+ * the items list (ADR-0013). The stored ZTIMEZONEOFFSET is a fallback, not the
+ * source: a restore can lose it, and where it is missing the stored path
+ * silently renders the UTC wall clock with no zone beside it to say so.
+ *
+ * Null when there is nothing to derive from — no instant, no coordinates, or
+ * coordinates geo-tz maps to no zone — which is exactly when the stored
+ * columns are all we have.
+ */
+function derivedLocal(row: MetaRow) {
+  const instant = instantFromCoreData(num(row.date_created));
+  const lat = parseCoord(num(row.latitude));
+  const lon = parseCoord(num(row.longitude));
+  if (instant === null || lat === null || lon === null) return null;
+  const tzName = tzNameFromCoords(lat, lon);
+  if (tzName === null) return null;
+  const offsetSec = tzOffsetSecondsAtInstant(tzName, instant);
+  if (offsetSec === null) return null;
+  return { local: exifFromLocalEpoch(instant + offsetSec), offsetSec, tzName };
+}
+
+/**
  * Emit `date` and, when it differs, `original_date`.
  *
  * The zone rides along with each time rather than sitting in a row of its own,
@@ -583,48 +633,27 @@ function num(v: unknown): number | null {
  * Given provenance, the row earns a value only when the wall clock or the
  * offset actually differs; matching both means only the label style differs (an
  * IANA name vs Photos' own GMT+nnnn), which is not a real disagreement and
- * would just be noise on most assets.
+ * would just be noise on most assets. That comparison runs against the DERIVED
+ * pair whenever there is one, not the stored pair — the row exists to be read
+ * against the Date line above it, so hiding it means agreeing with what that
+ * line actually shows.
  */
-/**
- * Whether the asset carries EXIF the camera itself wrote. Nothing records where
- * ZEXTENDEDATTRIBUTES.ZDATECREATED came from, so the shooting fields stand in:
- * if any survived, Photos had an EXIF block to read the date from too.
- *
- * Make and model alone are not enough — 21 stills in this library have both
- * stripped while keeping ISO, aperture and a lens model ("iPhone 5 back camera
- * 4.12mm f/2.4"), and testing on those two would have called them provenanceless
- * and blanked a date the camera really did record. Any one field is enough;
- * requiring several would fail assets whose EXIF is merely sparse.
- */
-function hasExifProvenance(row: MetaRow) {
-  function present(v: unknown) {
-    return typeof v === 'number' || (typeof v === 'string' && v !== '');
-  }
-  return (
-    present(row.camera_make) ||
-    present(row.camera_model) ||
-    present(row.lens_model) ||
-    present(row.iso) ||
-    present(row.aperture) ||
-    present(row.shutter_speed) ||
-    present(row.focal_length)
-  );
-}
-
 function formatMetaDates(row: MetaRow, set: SetFn, setAlways: SetFn) {
   const off = num(row.tz_offset);
   const exifOff = num(row.exif_tz_offset);
-  const local = formatDate(num(row.date_created), off);
+  const derived = derivedLocal(row);
+  const local = derived?.local ?? formatDate(num(row.date_created), off);
+  const localOff = derived?.offsetSec ?? off;
   const exifLocal = formatDate(num(row.exif_date), exifOff);
 
-  set('date', withZone(local, zoneLabel(row.tz_name, off)));
+  set('date', withZone(local, derived?.tzName ?? zoneLabel(row.tz_name, off)));
 
   if (!hasExifProvenance(row)) {
     setAlways('original_date', null);
     return;
   }
 
-  const sameMoment = local === exifLocal && off === exifOff;
+  const sameMoment = local === exifLocal && localOff === exifOff;
   set(
     'original_date',
     sameMoment
