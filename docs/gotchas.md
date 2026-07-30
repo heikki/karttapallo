@@ -140,3 +140,11 @@ Photos writes the row once at import and never saves it again — `Z_OPT` stays 
 Photos fills it for all 4841 assets, which makes it look like a free answer to "what zone was this taken in". It disagrees with a coordinate-derived offset for 955 of the 4649 assets where both can be computed. Iceland is the clearest failure: 37 assets there claim +3600 where 0 is correct.
 
 Derive the offset from coordinates instead (ADR-0013). Do not read this column, and do not treat agreement with it as corroboration.
+
+### A `karttapallo://` link is dropped when it launches the app
+
+macOS delivers the URL as an Apple Event while the bundle is still starting, and Electrobun's native side keeps no queue for one that arrives before `setURLOpenHandler` is called — which happens in the Bun child process, seconds into launch. So a link clicked while the app is **closed** launches the app on its saved view and the requested photo is silently lost. Clicking it again, with the app up, works: that path is delivered to the running window and is verified.
+
+Nothing in `src/server/index.ts` can recover it — the uuid is buffered there as early as possible and consumed as the window's initial URL, which covers an event that lands after the Bun process is alive but before the window exists. The gap is earlier than any JavaScript we get to run, and closing it means patching Electrobun's prebuilt launcher to hold the URL until a handler registers.
+
+Separately: replacing `/Applications/Karttapallo.app` in place does **not** make LaunchServices notice a newly declared URL scheme — `open` keeps answering `kLSApplicationNotFoundErr` against a bundle whose `Info.plist` plainly declares it. `bun run install:app` therefore ends with `lsregister -f` on the installed bundle.

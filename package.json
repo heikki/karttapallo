@@ -10,7 +10,7 @@
     "dev:app": "bun run build:native && electrobun build && electrobun dev",
     "build:app": "bun run build:native && electrobun build",
     "build:app:stable": "bun run build:native && electrobun build --env=stable",
-    "install:app": "bun run build:app:stable && bash scripts/finalize-stable.sh && cp -r build/stable-macos-arm64/Karttapallo.app /Applications/",
+    "install:app": "bun run build:app:stable && bash scripts/finalize-stable.sh && cp -r build/stable-macos-arm64/Karttapallo.app /Applications/ && /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f /Applications/Karttapallo.app",
     "cert": "bash scripts/cert.sh",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",

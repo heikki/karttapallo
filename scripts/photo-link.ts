@@ -1,20 +1,18 @@
 /**
- * Print `karttapallo://` deep links for photos matching a query.
+ * Print the `karttapallo://` deep link for a photo, given its uuid.
  *
- * The point is to skip the manual hunt: a finding usually names a datetime or
- * a filename, and this turns that into a link that opens the app on the photo.
+ * Matching is on uuid alone — a full one or a unique prefix. Date matching
+ * was deliberately dropped: Photos formats capture times EXIF-style
+ * ("2026:06:10 17:22:38"), so a query written the way anyone would type it
+ * silently found nothing, and a date is not a stable identifier anyway.
  *
- * Dates are built with `buildItemEntry`, the same function the API serves
- * from, so what you match against is the wall clock the app actually shows —
- * derived from instant + coordinates, not the stored offset (ADR-0013). A
- * query matched against ZTIMEZONEOFFSET instead would miss exactly the
- * mis-zoned assets most worth linking to.
+ * The lookup exists so the link is checked against the active library before
+ * you hand it out: it confirms the asset is there and prints its date and
+ * whether it has a location, which is usually what you wanted to know.
  *
  * Usage:
- *   bun scripts/photo-link.ts 2019-07-14           # a day
- *   bun scripts/photo-link.ts "2019-07-14 13:2"    # narrowed to ~10 minutes
- *   bun scripts/photo-link.ts IMG_1234             # a filename
- *   bun scripts/photo-link.ts A1B2C3D4             # a uuid prefix
+ *   bun scripts/photo-link.ts AF597F6B-4EE6-47A8-968D-20C709CBADD6
+ *   bun scripts/photo-link.ts AF597F6B
  */
 
 import { buildItemEntry } from '@server/item-store';
@@ -26,13 +24,9 @@ import {
   resolveLibrary
 } from '@server/photos-library';
 
-const MAX_RESULTS = 40;
-
 const query = process.argv[2];
 if (query === undefined || query === '') {
-  console.error(
-    'Usage: bun scripts/photo-link.ts <datetime | filename | uuid>'
-  );
+  console.error('Usage: bun scripts/photo-link.ts <uuid>');
   process.exit(1);
 }
 
@@ -49,34 +43,22 @@ if (!resolved.ok) {
 
 const db = openPhotosDb(resolved.path);
 const notInAlbumUuid = queryNotInAlbumUuid(db);
-const records = [...queryPhotos(db), ...queryVideos(db)];
-
 const needle = query.toLowerCase();
-const matches = records
-  .map((record) => ({ record, entry: buildItemEntry(record, notInAlbumUuid) }))
-  .filter(
-    ({ record, entry }) =>
-      entry.date.toLowerCase().includes(needle) ||
-      record.uuid.toLowerCase().startsWith(needle) ||
-      (record.originalFilename ?? record.filename ?? '')
-        .toLowerCase()
-        .includes(needle)
-  )
-  .sort((a, b) => a.entry.date.localeCompare(b.entry.date));
+const matches = [...queryPhotos(db), ...queryVideos(db)].filter((record) =>
+  record.uuid.toLowerCase().startsWith(needle)
+);
 
 if (matches.length === 0) {
-  console.error(`No photo matches ${query}`);
+  console.error(`No photo with uuid ${query} in ${resolved.path}`);
   process.exit(1);
 }
 
-for (const { record, entry } of matches.slice(0, MAX_RESULTS)) {
-  const name = record.originalFilename ?? record.filename ?? '';
+// A prefix can hit more than one asset; print them all rather than pick, so
+// an ambiguous prefix can't quietly hand out a link to the wrong photo.
+for (const record of matches) {
+  const entry = buildItemEntry(record, notInAlbumUuid);
   const where = entry.lat === null ? 'no location' : 'located';
   console.log(
-    `${entry.date} ${entry.tz ?? '     '}  ${name.padEnd(24)} ${where.padEnd(11)} karttapallo://photo?id=${record.uuid}`
+    `${entry.date} ${entry.tz ?? '     '}  ${where.padEnd(11)}  karttapallo://photo?id=${record.uuid}`
   );
-}
-
-if (matches.length > MAX_RESULTS) {
-  console.log(`… ${matches.length - MAX_RESULTS} more; narrow the query`);
 }
