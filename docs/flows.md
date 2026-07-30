@@ -9,7 +9,7 @@ Canonical inventory of user-visible flows. Each Tier 5 e2e spec maps to one or m
 - **View a photo full size** — lightbox shows date/timezone; arrows cycle; Escape/Space/backdrop closes; trackpad pinch zooms.
 - **Watch a video** — videos play inline in lightbox; native controls auto-hide; Space toggles play/pause; mute persists across videos.
 - **View photo metadata** — info button → modal with all fields from `Photos.sqlite`; UUID has copy button; movable, non-blocking; close with X / Escape.
-- **Open a photo from a link** — a `karttapallo://photo?id=<uuid>` link opens the app (launching it if needed) on that photo: filters widen so it's visible, the map moves to it, and the popup opens.
+- **Open a photo from a link** — a `karttapallo://photo/<uuid>` link opens the app (launching it if needed) on that photo: filters widen so it's visible, the map moves to it, and the popup opens.
 
 ## Filter
 

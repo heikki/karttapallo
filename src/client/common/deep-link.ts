@@ -3,7 +3,7 @@ import type { Photo } from './types';
 import { updateUrl } from './url-state';
 
 /**
- * Client half of `karttapallo://photo?id=<uuid>` — see `@server/deep-link`.
+ * Client half of `karttapallo://photo/<uuid>` — see `@server/deep-link`.
  *
  * The server turns a deep link into `?id=<uuid>&focus=1`. `id` alone would
  * already seed the selection, but it cannot be trusted to show anything: the

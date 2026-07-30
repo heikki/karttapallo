@@ -61,7 +61,7 @@ export default {
     identifier: 'com.karttapallo.app',
     version: '1.0.0',
 
-    // `karttapallo://photo?id=<uuid>` opens the app on one photo — see
+    // `karttapallo://photo/<uuid>` opens the app on one photo — see
     // src/server/deep-link.ts. macOS registers the scheme from Info.plist
     // when it sees the bundle, which in practice means the copy in
     // /Applications that `bun run install:app` puts there; a `bun run

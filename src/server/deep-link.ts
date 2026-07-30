@@ -6,11 +6,12 @@
  * Parsing lives here so it stays testable without an app bundle.
  *
  * The form is:
- *   karttapallo://photo?id=<uuid>
+ *   karttapallo://photo/<uuid>
  *
- * `id` is deliberately the same param name the app already uses for a
- * selected photo in its own URL, so a deep link and the in-app URL name the
- * photo the same way and there is one spelling to remember.
+ * A path segment rather than `?id=` so the link survives being typed into a
+ * shell unquoted — zsh globs on `?` and refuses the command outright with
+ * "no matches found". The query form is still parsed, because links in that
+ * shape were handed out before the switch, but it is not what we emit.
  */
 
 // Photos UUIDs are `8-4-4-4-12` hex. Checked loosely — the point is to reject
@@ -35,10 +36,21 @@ export function parseDeepLink(raw: string): DeepLink | null {
   if (url?.protocol !== 'karttapallo:') return null;
 
   // The host (`photo`) is not checked: it reads as the target and leaves
-  // room for other kinds later, but `id` is what carries the meaning.
-  const uuid = url.searchParams.get('id');
+  // room for other kinds later, but the uuid is what carries the meaning.
+  const uuid = uuidFromPath(url) ?? url.searchParams.get('id');
   if (uuid === null || !UUID_RE.test(uuid)) return null;
   return { uuid };
+}
+
+// `karttapallo://photo/<uuid>` parses as host="photo", pathname="/<uuid>".
+// Case survives because `karttapallo:` is a non-special scheme, so the host
+// is opaque and never lowercased the way an http one would be.
+function uuidFromPath(url: URL): string | null {
+  const last = url.pathname
+    .split('/')
+    .filter((s) => s !== '')
+    .at(-1);
+  return last === undefined ? null : decodeURIComponent(last);
 }
 
 /**

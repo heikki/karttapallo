@@ -5,20 +5,28 @@ import { deepLinkViewUrl, parseDeepLink } from './deep-link';
 const UUID = 'A1B2C3D4-5E6F-4071-8A9B-0C1D2E3F4A5B';
 
 describe('parseDeepLink', () => {
-  test('reads the uuid from id, case intact', () => {
+  test('reads the uuid from the path, case intact', () => {
+    expect(parseDeepLink(`karttapallo://photo/${UUID}`)).toEqual({
+      uuid: UUID
+    });
+  });
+
+  // Links in the query shape were handed out before the path form replaced
+  // it, so they keep working.
+  test('still reads the older ?id= form', () => {
     expect(parseDeepLink(`karttapallo://photo?id=${UUID}`)).toEqual({
       uuid: UUID
     });
   });
 
   test('rejects other schemes', () => {
-    expect(parseDeepLink(`https://example.com/photo?id=${UUID}`)).toBeNull();
-    expect(parseDeepLink(`photos://asset?id=${UUID}`)).toBeNull();
+    expect(parseDeepLink(`https://example.com/photo/${UUID}`)).toBeNull();
+    expect(parseDeepLink(`photos://asset/${UUID}`)).toBeNull();
   });
 
-  test('rejects a link with no id', () => {
+  test('rejects a link naming no photo', () => {
     expect(parseDeepLink('karttapallo://')).toBeNull();
-    expect(parseDeepLink(`karttapallo://photo/${UUID}`)).toBeNull();
+    expect(parseDeepLink('karttapallo://photo/')).toBeNull();
     expect(parseDeepLink('karttapallo://photo?id=')).toBeNull();
     expect(parseDeepLink('not a url')).toBeNull();
   });
@@ -26,8 +34,9 @@ describe('parseDeepLink', () => {
   // The uuid is interpolated into a query string, so anything that could add
   // a second param or escape the value has to be turned away at the door.
   test('rejects a uuid carrying query-string metacharacters', () => {
+    expect(parseDeepLink('karttapallo://photo/abc%26style%3Devil')).toBeNull();
     expect(parseDeepLink('karttapallo://photo?id=abc%26style=evil')).toBeNull();
-    expect(parseDeepLink('karttapallo://photo?id=../../etc')).toBeNull();
+    expect(parseDeepLink('karttapallo://photo/../../etc')).toBeNull();
   });
 });
 

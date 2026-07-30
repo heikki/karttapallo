@@ -27,7 +27,7 @@ const { getSetting, setSetting } = await import('./state');
 
 // --- Deep links ------------------------------------------------------------
 //
-// macOS delivers `karttapallo://photo?id=<uuid>` as an `open-url` event. Two
+// macOS delivers `karttapallo://photo/<uuid>` as an `open-url` event. Two
 // arrival times have to work: the app was already running (navigate the
 // window we have), or macOS launched it to handle the link — in which case
 // the event can land before the window exists. Electrobun's native side keeps

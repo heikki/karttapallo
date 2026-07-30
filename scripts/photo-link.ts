@@ -59,6 +59,6 @@ for (const record of matches) {
   const entry = buildItemEntry(record, notInAlbumUuid);
   const where = entry.lat === null ? 'no location' : 'located';
   console.log(
-    `${entry.date} ${entry.tz ?? '     '}  ${where.padEnd(11)}  karttapallo://photo?id=${record.uuid}`
+    `${entry.date} ${entry.tz ?? '     '}  ${where.padEnd(11)}  karttapallo://photo/${record.uuid}`
   );
 }

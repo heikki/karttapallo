@@ -62,7 +62,9 @@ Defaults are omitted. The web version mirrors the URL to `localStorage` (`viewSt
 
 ## Deep links
 
-`karttapallo://photo?id=<uuid>` opens the desktop app on one photo. macOS registers the scheme from `app.urlSchemes` in `electrobun.config.ts` and delivers the URL as Electrobun's `open-url` event; `src/server/deep-link.ts` parses it and `src/server/index.ts` turns it into an in-app URL. Generate links with `bun scripts/photo-link.ts <uuid>`.
+`karttapallo://photo/<uuid>` opens the desktop app on one photo. macOS registers the scheme from `app.urlSchemes` in `electrobun.config.ts` and delivers the URL as Electrobun's `open-url` event; `src/server/deep-link.ts` parses it and `src/server/index.ts` turns it into an in-app URL. Generate links with `bun scripts/photo-link.ts <uuid>`.
+
+The uuid rides in the path, not `?id=`, so the link can be pasted into a shell unquoted — zsh globs on `?` and rejects the command before `open` ever sees it. The older `?id=` form still parses, for links handed out before the switch.
 
 The link resolves to `?id=<uuid>&focus=1`, carrying only `style` and `markers` over from the saved view. `focus` is what makes the difference between a restored selection and a requested one, and it licenses two overrides that plain `id` must never take: `@common/deep-link` widens filters via `data.revealPhoto` until the photo is visible, and `<map-fit>` moves the camera to it instead of fitting all photos. Both matter because the photos most worth linking to are the ones missing a location, which the default GPS filter hides. `focus` is stripped from the URL once acted on, so it can't survive into the persisted view and fire again on the next launch.
 
