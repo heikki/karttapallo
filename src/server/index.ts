@@ -1,11 +1,17 @@
 import { existsSync, mkdirSync, rmSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 
-const { BrowserView, BrowserWindow, ApplicationMenu, Utils } =
-  await import('electrobun/bun');
+const {
+  BrowserView,
+  BrowserWindow,
+  ApplicationMenu,
+  Utils,
+  default: Electrobun
+} = await import('electrobun/bun');
 
 const { createAlbumStore } = await import('./album-store');
 const { createApiHandler } = await import('./api-routes');
+const { parseDeepLink, deepLinkViewUrl } = await import('./deep-link');
 const { openItemStore } = await import('./item-store');
 const { createOrsClient } = await import('./ors-client');
 const {
@@ -18,6 +24,32 @@ const {
 const { createPhotosWriter } = await import('./photos-edit');
 const { createRequestHandler } = await import('./request-handler');
 const { getSetting, setSetting } = await import('./state');
+
+// --- Deep links ------------------------------------------------------------
+//
+// macOS delivers `karttapallo://photo?id=<uuid>` as an `open-url` event. Two
+// arrival times have to work: the app was already running (navigate the
+// window we have), or macOS launched it to handle the link — in which case
+// the event can land before the window exists. Electrobun's native side keeps
+// no queue for that case, so the uuid is buffered here and consumed as the
+// window's initial URL.
+//
+// Registered before everything below because library resolution can sit in a
+// modal for as long as the user leaves it up, and a link that arrives while
+// that dialog is open still has to survive.
+let pendingDeepLinkUuid: string | null = null;
+let deliverDeepLink: ((uuid: string) => void) | null = null;
+
+Electrobun.events.on('open-url', (event: { data: { url: string } }) => {
+  const link = parseDeepLink(event.data.url);
+  if (link === null) {
+    console.log(`[main] Ignoring unparseable deep link: ${event.data.url}`);
+    return;
+  }
+  console.log(`[main] Deep link: ${link.uuid}`);
+  if (deliverDeepLink === null) pendingDeepLinkUuid = link.uuid;
+  else deliverDeepLink(link.uuid);
+});
 
 // Detect dev build from version.json
 const resourcesDir = resolve(dirname(process.argv0), '..', 'Resources');
@@ -295,19 +327,32 @@ const rpc = BrowserView.defineRPC<AppRPC>({
 
 const savedFrame = loadWindowState();
 
-function buildViewUrl() {
+// `view` is per-library (it carries library-specific state — map center,
+// filters, and the selected photo UUID), so it lives in libDir, not the
+// global state.json that holds `window`.
+function savedViewParams(): Record<string, string> {
   try {
-    // `view` is per-library (it carries library-specific state — map center,
-    // filters, and the selected photo UUID), so it lives in libDir, not the
-    // global state.json that holds `window`.
     const raw = getSetting(libDir, 'view');
-    if (raw === null) return baseUrl;
-    const obj = JSON.parse(raw) as Record<string, string>;
-    const qs = new URLSearchParams(obj).toString();
-    return qs === '' ? baseUrl : `${baseUrl}?${qs}`;
+    if (raw === null) return {};
+    return JSON.parse(raw) as Record<string, string>;
   } catch {
-    return baseUrl;
+    return {};
   }
+}
+
+function buildViewUrl() {
+  const qs = new URLSearchParams(savedViewParams()).toString();
+  return qs === '' ? baseUrl : `${baseUrl}?${qs}`;
+}
+
+// A deep link that arrived before the window existed wins over the saved
+// view: the user asked for that photo just now, and the saved state is only
+// where they happened to leave off.
+function initialViewUrl() {
+  if (pendingDeepLinkUuid === null) return buildViewUrl();
+  const url = deepLinkViewUrl(baseUrl, pendingDeepLinkUuid, savedViewParams());
+  pendingDeepLinkUuid = null;
+  return url;
 }
 
 // Create the webview already pointing at the app URL. Electrobun passes the
@@ -317,10 +362,19 @@ function buildViewUrl() {
 // dropped (window stays blank) unless something happens to yield a tick first.
 const win = new BrowserWindow<typeof rpc>({
   title: 'Karttapallo',
-  url: buildViewUrl(),
+  url: initialViewUrl(),
   frame: savedFrame,
   rpc
 });
+
+// From here on links are delivered straight to the window. Assigned in the
+// same synchronous run as the window's construction so an event can't slip
+// into the gap and be dropped by a handler that still thinks it has nowhere
+// to put it.
+deliverDeepLink = (uuid) => {
+  win.webview.loadURL(deepLinkViewUrl(baseUrl, uuid, savedViewParams()));
+  win.focus();
+};
 
 // Save window state on move/resize
 let saveTimer: ReturnType<typeof setTimeout> | null = null;

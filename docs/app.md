@@ -56,8 +56,17 @@ App state persists in URL query params, restored on startup:
 - Map view: `lat`, `lon`, `z`
 - Styles: `style` (basemap), `markers` (marker style)
 - Route: `route` (presence = visible)
+- Deep link: `focus` (one-shot; see below)
 
 Defaults are omitted. The web version mirrors the URL to `localStorage` (`viewState` key); the desktop app debounces a `PUT /api/view-state` to persist under the per-library `view` key (in `data/libraries/{key}/state.json`), so the selected photo and map view restore against the right library.
+
+## Deep links
+
+`karttapallo://photo?id=<uuid>` opens the desktop app on one photo. macOS registers the scheme from `app.urlSchemes` in `electrobun.config.ts` and delivers the URL as Electrobun's `open-url` event; `src/server/deep-link.ts` parses it and `src/server/index.ts` turns it into an in-app URL. Generate links with `bun scripts/photo-link.ts <datetime | filename | uuid>`.
+
+The link resolves to `?id=<uuid>&focus=1`, carrying only `style` and `markers` over from the saved view. `focus` is what makes the difference between a restored selection and a requested one, and it licenses two overrides that plain `id` must never take: `@common/deep-link` widens filters via `data.revealPhoto` until the photo is visible, and `<map-fit>` moves the camera to it instead of fitting all photos. Both matter because the photos most worth linking to are the ones missing a location, which the default GPS filter hides. `focus` is stripped from the URL once acted on, so it can't survive into the persisted view and fire again on the next launch.
+
+Two arrival times are handled: the app was already running (navigate the existing window and focus it), or macOS launched it to serve the link, in which case the event can land before the window exists and the uuid is buffered as the window's initial URL.
 
 ## Where things live
 

@@ -59,7 +59,14 @@ export default {
   app: {
     name: 'Karttapallo',
     identifier: 'com.karttapallo.app',
-    version: '1.0.0'
+    version: '1.0.0',
+
+    // `karttapallo://photo?id=<uuid>` opens the app on one photo — see
+    // src/server/deep-link.ts. macOS registers the scheme from Info.plist
+    // when it sees the bundle, which in practice means the copy in
+    // /Applications that `bun run install:app` puts there; a `bun run
+    // dev:app` build under build/ is not reliably picked up.
+    urlSchemes: ['karttapallo']
   },
 
   runtime: {

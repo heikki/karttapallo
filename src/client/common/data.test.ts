@@ -7,6 +7,7 @@ import {
   filters,
   photos,
   resetFilters,
+  revealPhoto,
   setAlbum,
   setCamera,
   setYear,
@@ -234,6 +235,48 @@ describe('verbs', () => {
     expect(filters.get().media).toEqual(['photo']);
     toggleMedia('video');
     expect(filters.get().media.sort()).toEqual(['photo', 'video']);
+  });
+
+  test('revealPhoto exposes a photo the default GPS filter hides', () => {
+    const target = photo({ uuid: 'lost', gps: null, lat: null, lon: null });
+    photos.set([photo({ uuid: 'a' }), target]);
+    expect(filteredPhotos.get().map((p) => p.uuid)).toEqual(['a']);
+
+    revealPhoto(target);
+    expect(filteredPhotos.get().map((p) => p.uuid)).toContain('lost');
+  });
+
+  test('revealPhoto widens every filter that hides the photo', () => {
+    const target = photo({
+      uuid: 'target',
+      type: 'video',
+      gps: null,
+      date: '2019:07:14 13:22:00',
+      camera: 'Canon EOS',
+      albums: ['Iceland']
+    });
+    photos.set([photo({ uuid: 'a' }), target]);
+    setYear('2024');
+    setAlbum('Helsinki');
+    setCamera('iPhone 15');
+    soloMedia('photo');
+    soloGps('exif');
+
+    revealPhoto(target);
+    expect(filteredPhotos.get().map((p) => p.uuid)).toContain('target');
+  });
+
+  test('revealPhoto leaves filters the photo already passes alone', () => {
+    const target = photo({ uuid: 'target', albums: ['Helsinki'] });
+    photos.set([target, photo({ uuid: 'other', albums: ['Iceland'] })]);
+    setAlbum('Helsinki');
+    soloGps('exif');
+
+    revealPhoto(target);
+    const f = filters.get();
+    expect(f.album).toBe('Helsinki');
+    expect(f.gps).toEqual(['exif']);
+    expect(filteredPhotos.get().map((p) => p.uuid)).toEqual(['target']);
   });
 
   test('resetFilters returns every field to its default', () => {

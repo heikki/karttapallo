@@ -207,6 +207,30 @@ export function soloMedia(value: string) {
   set({ ...cur, media: isSolo ? [...DEFAULT_MEDIA] : [value] });
 }
 
+// Single-choice filters can only be widened all the way to 'all'; the
+// multi-select ones instead gain the photo's own value and keep the rest.
+function widen(current: string, matches: boolean) {
+  return current === 'all' || matches ? current : 'all';
+}
+
+/**
+ * Widen the filters just enough that `p` passes, leaving every dimension it
+ * already satisfies alone. For deep links, which have to land on their photo
+ * whatever filter state came with them — and the photos most worth linking
+ * to (the ones missing a location) are exactly what the default GPS filter
+ * hides.
+ */
+export function revealPhoto(p: Photo) {
+  const cur = _filters.get();
+  set({
+    year: widen(cur.year, getYear(p) === cur.year),
+    album: widen(cur.album, albumsOf(p).includes(cur.album)),
+    camera: widen(cur.camera, (p.camera ?? '(unknown)') === cur.camera),
+    gps: matchesGps(p, cur.gps) ? cur.gps : [...cur.gps, p.gps ?? 'none'],
+    media: matchesMedia(p, cur.media) ? cur.media : [...cur.media, p.type]
+  });
+}
+
 export function resetFilters() {
   _filters.set({
     ...DEFAULTS,
