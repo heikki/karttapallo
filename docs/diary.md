@@ -2,12 +2,12 @@
 
 Geotagged photo map viewer with Apple Photos integration.
 
-## Project Stats (as of 29.07.2026)
+## Project Stats (as of 01.08.2026)
 
-- **TypeScript files**: 77
-- **Lines of code**: 13,798 (+ 3,729 tests)
-- **Total commits**: 614
-- **Total tokens**: ~2,668M | **Total cost**: ~$1,726
+- **TypeScript files**: 87
+- **Lines of code**: 15,931 (+ 4,988 tests)
+- **Total commits**: 627
+- **Total tokens**: ~2,926M | **Total cost**: ~$1,904
 
 ## Updating This Diary
 
@@ -36,6 +36,23 @@ git log --pretty=format:"%ad|%s" --date=format:"%Y-%m-%d" | head -50  # Recent c
 - Skip minor tweaks — only significant features and fixes belong, especially on busy days.
 - Describe final outcomes, not reverted intermediate attempts.
 - Flat list, no sub-bullets or prose.
+
+## 01.08.2026 — Search
+
+**Tokens**: 61M | **Cost**: $42
+
+- Search photos by place name, description or Apple's own scene labels, from the panel or Cmd+F
+- Typing suggests matching terms grouped by kind with counts; picking one filters, fits and selects
+- Matching ignores case and accents and works on word starts, so "naatamo" finds "Näätämö"
+
+## 30.07.2026 — Deep links; floating metadata panel
+
+**Tokens**: 197M | **Cost**: $136
+
+- Links now open the app on a single photo, launching it first if it wasn't running
+- The metadata modal became a floating panel that stays usable while browsing photos
+- Photos storing no timezone offset at all now get one written from their coordinates
+- New script repairs capture times that were derived from a junk stored offset
 
 ## 29.07.2026 — Photos writes under a signed build; timezone from coordinates
 
