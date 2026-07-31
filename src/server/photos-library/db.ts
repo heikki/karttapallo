@@ -31,6 +31,9 @@ export interface PhotoRecord {
   gps_accuracy: number | null;
   albums: string[];
   albumUuids: string[];
+  /** Moment place name, reverse-geocoded by Photos (ADR-0014). */
+  place: string | null;
+  description: string | null;
   directory: string | null;
   filename: string | null;
   originalFilename: string | null;
@@ -55,6 +58,8 @@ interface RawRow {
   ZGPSHORIZONTALACCURACY: number | null;
   ZCAMERAMAKE: string | null;
   ZCAMERAMODEL: string | null;
+  momentPlace: string | null;
+  assetDescription: string | null;
   Z_PK: number;
 }
 
@@ -110,7 +115,8 @@ function validateSchema(db: Database) {
       'ZTRASHEDSTATE',
       'ZADJUSTMENTSSTATE',
       'ZDIRECTORY',
-      'ZFILENAME'
+      'ZFILENAME',
+      'ZMOMENT'
     ],
     ZADDITIONALASSETATTRIBUTES: [
       'ZASSET',
@@ -120,7 +126,9 @@ function validateSchema(db: Database) {
       'ZORIGINALFILENAME'
     ],
     ZEXTENDEDATTRIBUTES: ['ZASSET', 'ZCAMERAMAKE', 'ZCAMERAMODEL'],
-    ZGENERICALBUM: ['Z_PK', 'ZUUID', 'ZTITLE', 'ZKIND']
+    ZGENERICALBUM: ['Z_PK', 'ZUUID', 'ZTITLE', 'ZKIND'],
+    ZMOMENT: ['Z_PK', 'ZTITLE'],
+    ZASSETDESCRIPTION: ['ZASSETATTRIBUTES', 'ZLONGDESCRIPTION']
   };
 
   for (const [table, columns] of Object.entries(required)) {
@@ -282,10 +290,14 @@ const BASE_SQL = `
     aa.ZTIMEZONENAME,
     aa.ZGPSHORIZONTALACCURACY,
     e.ZCAMERAMAKE,
-    e.ZCAMERAMODEL
+    e.ZCAMERAMODEL,
+    m.ZTITLE AS momentPlace,
+    ad.ZLONGDESCRIPTION AS assetDescription
   FROM ZASSET a
   LEFT JOIN ZADDITIONALASSETATTRIBUTES aa ON a.Z_PK = aa.ZASSET
   LEFT JOIN ZEXTENDEDATTRIBUTES e ON a.Z_PK = e.ZASSET
+  LEFT JOIN ZMOMENT m ON a.ZMOMENT = m.Z_PK
+  LEFT JOIN ZASSETDESCRIPTION ad ON aa.Z_PK = ad.ZASSETATTRIBUTES
 `;
 
 function parseCoord(val: number | null): number | null {
@@ -293,6 +305,19 @@ function parseCoord(val: number | null): number | null {
     return null;
   }
   return val;
+}
+
+/**
+ * Free-text metadata destined for search. NFC-normalized because Photos stores
+ * decomposed forms — `Näätämö` and `Egilsstaðir` arrive as base letter plus
+ * combining mark, which no substring match against typed input would find.
+ *
+ * Exported for tests.
+ */
+export function searchableText(val: string | null): string | null {
+  if (val === null) return null;
+  const trimmed = val.trim();
+  return trimmed === '' ? null : trimmed.normalize('NFC');
 }
 
 function parseDuration(kind: number, duration: number | null): number | null {
@@ -321,6 +346,8 @@ function rowToRecord(row: RawRow, albums: AlbumEntry[]): PhotoRecord {
     gps_accuracy: hasGps ? roundAccuracy(row.ZGPSHORIZONTALACCURACY) : null,
     albums: albums.map((a) => a.albumTitle),
     albumUuids: albums.map((a) => a.albumUuid),
+    place: searchableText(row.momentPlace),
+    description: searchableText(row.assetDescription),
     directory: row.ZDIRECTORY,
     filename: row.ZFILENAME,
     originalFilename: row.ZORIGINALFILENAME,

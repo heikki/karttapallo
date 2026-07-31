@@ -51,7 +51,7 @@ Pinned at 1.16.0 — see [ADR-0001](adr/0001-pin-electrobun-1.16.0.md). The laun
 
 App state persists in URL query params, restored on startup:
 
-- Filters: `year`, `album`, `camera`, `gps`, `media`
+- Filters: `year`, `album`, `camera`, `gps`, `media`, `q` (applied search term)
 - Selection: `id` (photo UUID)
 - Map view: `lat`, `lon`, `z`
 - Styles: `style` (basemap), `markers` (marker style)

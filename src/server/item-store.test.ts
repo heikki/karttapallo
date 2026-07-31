@@ -28,6 +28,9 @@ function sampleItem(overrides: Partial<ItemEntry> = {}): ItemEntry {
     gps: 'exif',
     gps_accuracy: 5,
     albums: ['Helsinki'],
+    place: null,
+    description: null,
+    labels: [],
     photos_url: `photos:albums?albumUuid=A&assetUuid=${overrides.uuid ?? 'AAAA'}`,
     ...overrides
   };
@@ -422,6 +425,8 @@ describe('buildItemEntry date/tz derivation (ADR-0013)', () => {
       gps_accuracy: 5,
       albums: [],
       albumUuids: [],
+      place: null,
+      description: null,
       directory: null,
       filename: null,
       originalFilename: null,

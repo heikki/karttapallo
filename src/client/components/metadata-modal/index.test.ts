@@ -187,7 +187,10 @@ describe('<metadata-modal> photo navigation', () => {
         tz: '+03:00',
         camera: 'iPhone 15',
         gps: 'exif',
-        albums: ['Helsinki']
+        albums: ['Helsinki'],
+        place: null,
+        description: null,
+        labels: []
       }
     ]);
     await Bun.sleep(0);

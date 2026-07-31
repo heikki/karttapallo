@@ -12,6 +12,9 @@ export interface Photo {
   camera: string | null;
   gps: string | null;
   albums: string[];
+  place: string | null;
+  description: string | null;
+  labels: string[];
   photos_url?: string;
   duration?: string | null;
   filename?: string;

@@ -1,5 +1,6 @@
 import { computed, signal } from '@lit-labs/signals';
 
+import { matchesTerm } from './search';
 import { effect } from './signals';
 import type { Photo } from './types';
 import { updateUrl } from './url-state';
@@ -11,6 +12,8 @@ export interface Filters {
   media: string[];
   album: string;
   camera: string;
+  /** Applied search term, verbatim from a suggestion; '' when unset. */
+  search: string;
 }
 
 const ALL_GPS = ['exif', 'inferred', 'user', 'none'];
@@ -28,14 +31,15 @@ function albumsOf(p: Photo): string[] {
   return p.albums.length === 0 ? [NO_ALBUM] : p.albums;
 }
 
-const FILTER_KEYS = ['year', 'album', 'camera', 'gps', 'media'] as const;
+const FILTER_KEYS = ['year', 'album', 'camera', 'gps', 'media', 'q'] as const;
 
 const DEFAULTS: Filters = {
   year: 'all',
   gps: [...DEFAULT_GPS],
   media: [...DEFAULT_MEDIA],
   album: 'all',
-  camera: 'all'
+  camera: 'all',
+  search: ''
 };
 
 // --- URL codec --------------------------------------------------------
@@ -49,6 +53,8 @@ function readFiltersFromUrl(): Partial<Filters> {
   if (album !== null) result.album = album;
   const camera = params.get('camera');
   if (camera !== null) result.camera = camera;
+  const search = params.get('q');
+  if (search !== null) result.search = search;
   const gps = params.get('gps');
   if (gps !== null) {
     result.gps = gps.split(',').filter((v) => ALL_GPS.includes(v));
@@ -66,6 +72,7 @@ function writeFiltersToUrl(f: Filters) {
     if (f.year !== 'all') params.set('year', f.year);
     if (f.album !== 'all') params.set('album', f.album);
     if (f.camera !== 'all') params.set('camera', f.camera);
+    if (f.search !== '') params.set('q', f.search);
     if (
       f.gps.length !== ALL_GPS.length ||
       !ALL_GPS.every((v) => f.gps.includes(v))
@@ -107,7 +114,14 @@ function applyCascade(f: Filters, ps: Photo[]): Filters {
   const validCameras = new Set(albumPs.map((p) => p.camera ?? '(unknown)'));
   const camera =
     f.camera !== 'all' && !validCameras.has(f.camera) ? 'all' : f.camera;
-  return { ...f, album, camera };
+  // Validated against the whole library, not the narrowed set: a term the other
+  // filters merely hide is kept, and legitimately shows an empty map. Only a
+  // term no photo carries at all — a URL from a different library — is dropped.
+  const search =
+    f.search !== '' && !ps.some((p) => matchesTerm(p, f.search))
+      ? ''
+      : f.search;
+  return { ...f, album, camera, search };
 }
 
 export const albumOptions = computed(() => {
@@ -145,7 +159,12 @@ function matchesMedia(p: Photo, media: string[]) {
   return media.includes(p.type);
 }
 
-export const filteredPhotos = computed(() => {
+/**
+ * Everything the non-search filters allow. Search suggestions are drawn from
+ * this set so their counts describe what applying a term would actually show,
+ * and so no suggestion can lead to an empty map.
+ */
+export const photosBeforeSearch = computed(() => {
   const ps = photos.get();
   const f = _filters.get();
   return ps.filter((p) => {
@@ -159,6 +178,12 @@ export const filteredPhotos = computed(() => {
     }
     return true;
   });
+});
+
+export const filteredPhotos = computed(() => {
+  const search = _filters.get().search;
+  const ps = photosBeforeSearch.get();
+  return search === '' ? ps : ps.filter((p) => matchesTerm(p, search));
 });
 
 // --- Verbs ------------------------------------------------------------
@@ -177,6 +202,11 @@ export function setAlbum(album: string) {
 
 export function setCamera(camera: string) {
   set({ ..._filters.get(), camera });
+}
+
+/** Apply a suggestion's term, or '' to clear. */
+export function setSearch(search: string) {
+  set({ ..._filters.get(), search });
 }
 
 export function toggleGps(value: string) {
@@ -227,7 +257,8 @@ export function revealPhoto(p: Photo) {
     album: widen(cur.album, albumsOf(p).includes(cur.album)),
     camera: widen(cur.camera, (p.camera ?? '(unknown)') === cur.camera),
     gps: matchesGps(p, cur.gps) ? cur.gps : [...cur.gps, p.gps ?? 'none'],
-    media: matchesMedia(p, cur.media) ? cur.media : [...cur.media, p.type]
+    media: matchesMedia(p, cur.media) ? cur.media : [...cur.media, p.type],
+    search: matchesTerm(p, cur.search) ? cur.search : ''
   });
 }
 
@@ -235,7 +266,8 @@ export function resetFilters() {
   _filters.set({
     ...DEFAULTS,
     gps: [...DEFAULT_GPS],
-    media: [...DEFAULT_MEDIA]
+    media: [...DEFAULT_MEDIA],
+    search: ''
   });
 }
 

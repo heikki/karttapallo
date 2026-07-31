@@ -32,6 +32,9 @@ interface SeedSpec {
   camera: string;
   lat: number;
   lon: number;
+  place?: string;
+  description?: string;
+  labels?: string[];
 }
 
 function seed(s: SeedSpec): ItemEntry {
@@ -48,6 +51,9 @@ function seed(s: SeedSpec): ItemEntry {
     gps: 'exif',
     gps_accuracy: 5,
     albums: s.albums,
+    place: s.place ?? null,
+    description: s.description ?? null,
+    labels: s.labels ?? [],
     photos_url: ''
   };
 }
@@ -64,7 +70,8 @@ const items: ItemEntry[] = [
     albums: ['Helsinki'],
     camera: 'iPhone',
     lat: 60.17,
-    lon: 24.94
+    lon: 24.94,
+    place: 'Kuhmo'
   }),
   seed({
     uuid: 'e2e-2',
@@ -72,7 +79,8 @@ const items: ItemEntry[] = [
     albums: ['Tampere'],
     camera: 'Sony',
     lat: 61.5,
-    lon: 23.78
+    lon: 23.78,
+    place: 'Kuusamo'
   }),
   seed({
     uuid: 'e2e-3',
@@ -80,7 +88,10 @@ const items: ItemEntry[] = [
     albums: ['Tampere'],
     camera: 'iPhone',
     lat: 61.51,
-    lon: 23.79
+    lon: 23.79,
+    place: 'Näätämö',
+    description: 'Käki',
+    labels: ['Lintu', 'Ulkoilma']
   })
 ];
 

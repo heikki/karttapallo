@@ -29,10 +29,12 @@ import {
 } from './date-utils';
 import { defaultPhotosWriter, type PhotosWriter } from './photos-edit';
 import {
+  defaultLibraryPath,
   openPhotosDb,
   queryNotInAlbumUuid,
   queryPhotos,
   queryVideos,
+  readSceneLabels,
   resolveLibrary,
   type ImageCache,
   type LibraryResolution,
@@ -59,6 +61,10 @@ export interface ItemEntry {
   gps: 'user' | 'exif' | 'inferred' | null;
   gps_accuracy: number | null;
   albums: string[];
+  place: string | null;
+  description: string | null;
+  /** Apple's scene labels; empty for assets Photos hasn't analyzed. */
+  labels: string[];
   photos_url: string;
 }
 
@@ -88,28 +94,25 @@ function sortedAlbums(record: PhotoRecord): {
   };
 }
 
-/** Exported for unit testing the date/tz derivation gate (ADR-0013). */
-export function buildItemEntry(
-  record: PhotoRecord,
-  notInAlbumUuid: string
-): ItemEntry {
-  const sorted = sortedAlbums(record);
-  const albumUuid = sorted.albumUuids.find(Boolean) ?? notInAlbumUuid;
-  const photosUrl = `photos:albums?albumUuid=${albumUuid}&assetUuid=${record.uuid}`;
-
-  // Timezone and wall clock are always DERIVED from the durable pair — the UTC
-  // instant and the coordinates — never from the stored ZTIMEZONEOFFSET, which
-  // a restore can silently lose (see docs/adr/0013). Coordinates are the ground
-  // truth for an asset's timezone, unconditionally: a photo's tz label must
-  // reflect where it was taken, so a UK photo/video reads +01:00 (BST), not the
-  // camera's +03:00 (Helsinki), regardless of how its date was set.
-  //
-  // We do NOT gate on date source. If an asset's instant was manually shifted
-  // (a compensating shift, or a video whose date was typed by hand because
-  // .mov files carry no EXIF date), deriving the coords offset can produce a
-  // wrong wall clock — that is a data problem the user fixes by editing the
-  // time, not a reason to fall back to a geographically-wrong stored offset.
-  // The stored offset is only the fallback when there are no coordinates.
+/**
+ * Wall clock and timezone, always DERIVED from the durable pair — the UTC
+ * instant and the coordinates — never from the stored ZTIMEZONEOFFSET, which a
+ * restore can silently lose (see docs/adr/0013). Coordinates are the ground
+ * truth for an asset's timezone, unconditionally: a photo's tz label must
+ * reflect where it was taken, so a UK photo/video reads +01:00 (BST), not the
+ * camera's +03:00 (Helsinki), regardless of how its date was set.
+ *
+ * We do NOT gate on date source. If an asset's instant was manually shifted
+ * (a compensating shift, or a video whose date was typed by hand because .mov
+ * files carry no EXIF date), deriving the coords offset can produce a wrong
+ * wall clock — that is a data problem the user fixes by editing the time, not a
+ * reason to fall back to a geographically-wrong stored offset. The stored
+ * offset is only the fallback when there are no coordinates.
+ */
+function deriveLocalTime(record: PhotoRecord): {
+  date: string;
+  tz: string | null;
+} {
   let date = record.date;
   let tz = record.tz;
   if (record.instant !== null && record.lat !== null && record.lon !== null) {
@@ -122,6 +125,20 @@ export function buildItemEntry(
   if (tz === null && date !== '') {
     tz = tzOffsetFromTzName('Europe/Helsinki', date);
   }
+  return { date, tz };
+}
+
+/** Exported for unit testing the date/tz derivation gate (ADR-0013). */
+export function buildItemEntry(
+  record: PhotoRecord,
+  notInAlbumUuid: string,
+  sceneLabels?: Map<string, string[]>
+): ItemEntry {
+  const sorted = sortedAlbums(record);
+  const albumUuid = sorted.albumUuids.find(Boolean) ?? notInAlbumUuid;
+  const photosUrl = `photos:albums?albumUuid=${albumUuid}&assetUuid=${record.uuid}`;
+
+  const { date, tz } = deriveLocalTime(record);
 
   const base = {
     uuid: record.uuid,
@@ -139,6 +156,9 @@ export function buildItemEntry(
     gps: record.gps,
     gps_accuracy: record.gps_accuracy,
     albums: sorted.albums,
+    place: record.place,
+    description: record.description,
+    labels: sceneLabels?.get(record.uuid) ?? [],
     photos_url: photosUrl
   };
 
@@ -222,11 +242,15 @@ function loadSnapshot(snapshotPath: string): {
 }
 
 function buildFromPhotosDb(libraryPath?: string): ItemEntry[] {
-  const db = openPhotosDb(libraryPath);
+  const resolved = libraryPath ?? defaultLibraryPath();
+  const db = openPhotosDb(resolved);
   try {
     const notInAlbumUuid = queryNotInAlbumUuid(db);
+    // Scene labels live in a second database and are empty for any library
+    // Photos hasn't analyzed — an ordinary case, not a failure (ADR-0014).
+    const labels = readSceneLabels(resolved);
     const records = [...queryPhotos(db), ...queryVideos(db)];
-    return records.map((r) => buildItemEntry(r, notInAlbumUuid));
+    return records.map((r) => buildItemEntry(r, notInAlbumUuid, labels));
   } finally {
     db.close();
   }

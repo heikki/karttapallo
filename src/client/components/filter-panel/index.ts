@@ -1,6 +1,6 @@
 import { SignalWatcher } from '@lit-labs/signals';
 import { css, html, LitElement, nothing } from 'lit';
-import { customElement, state as litState } from 'lit/decorators.js';
+import { customElement, state as litState, query } from 'lit/decorators.js';
 
 import * as actions from '@common/actions';
 import * as data from '@common/data';
@@ -13,7 +13,9 @@ import { getYear, isVideo } from '@common/utils';
 import { viewState } from '@common/view-state';
 
 import './album-controls';
+import '../search-field';
 
+import type { SearchField } from '../search-field';
 import { renderFilterBtns, renderSelect, renderStyleBtns } from './helpers';
 import { styles } from './styles';
 
@@ -52,12 +54,35 @@ function onReset() {
 @customElement('filter-panel')
 export class FilterPanel extends SignalWatcher(LitElement) {
   @litState() private _collapsed = false;
+  @query('search-field') private readonly _searchField?: SearchField;
 
   // 250ms timer separates a single click (toggle) from a double click (solo).
   private _gpsClickTimer: ReturnType<typeof setTimeout> | null = null;
   private _mediaClickTimer: ReturnType<typeof setTimeout> | null = null;
 
   static override styles = [styles, panelStyles];
+
+  // Cmd+F focuses search, expanding the panel first — the field isn't rendered
+  // while collapsed. Capture phase and preventDefault keep the webview's own
+  // find bar from opening over the app.
+  private readonly _onKeydown = (e: KeyboardEvent) => {
+    if (e.key !== 'f' || !(e.metaKey || e.ctrlKey) || e.altKey) return;
+    e.preventDefault();
+    this._collapsed = false;
+    void this.updateComplete.then(() => {
+      this._searchField?.focusInput();
+    });
+  };
+
+  override connectedCallback() {
+    super.connectedCallback();
+    document.addEventListener('keydown', this._onKeydown, true);
+  }
+
+  override disconnectedCallback() {
+    document.removeEventListener('keydown', this._onKeydown, true);
+    super.disconnectedCallback();
+  }
 
   private _onGpsClick(value: string) {
     if (this._gpsClickTimer !== null) return;
@@ -127,6 +152,7 @@ export class FilterPanel extends SignalWatcher(LitElement) {
           ? nothing
           : html`
               <div class="panel-body">
+                <search-field></search-field>
                 ${renderSelect('Year', years, f.year, onYearChange)}
                 ${renderSelect('Album', albumOpts, f.album, onAlbumChange)}
                 ${renderSelect('Camera', cameraOpts, f.camera, onCameraChange)}

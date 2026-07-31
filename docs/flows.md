@@ -13,6 +13,7 @@ Canonical inventory of user-visible flows. Each Tier 5 e2e spec maps to one or m
 
 ## Filter
 
+- **Search by place, description or category** — Cmd+F or the Search box; typing offers matching terms grouped by kind (Places / Descriptions / Categories, the last being Apple's own scene labels like `Lintu` or `Auto`) with photo counts (arrows + Enter, or click); picking one applies it as a token that narrows the map alongside the other filters, then fits to the matches and opens the oldest, like the Fit button. Matching ignores case and accents, on word starts — `naatamo` finds `Näätämö`.
 - **Filter by year** — dropdown; cascades to repopulate album and camera.
 - **Filter by album** — dropdown (limited by year); cascades to camera; loads visible GPX tracks if any.
 - **Filter by camera** — dropdown (limited by year + album).
