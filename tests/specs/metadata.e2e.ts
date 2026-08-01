@@ -384,6 +384,12 @@ test('Toggle the lightbox with Space while the modal is open', async ({
   await expect(lightbox).toBeVisible();
   await expect(modal).toBeVisible();
 
+  // Enter is the playback key now, so on a still it does nothing at all —
+  // it must not be the second way out of the lightbox that Space already is.
+  await page.keyboard.press('Enter');
+  await expect(lightbox).toBeVisible();
+  await expect(modal).toBeVisible();
+
   // Space out: the lightbox closes, the modal is still there on the same photo.
   await page.keyboard.press('Space');
   await expect(lightbox).toHaveCount(0);

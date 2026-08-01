@@ -221,6 +221,18 @@ export class PhotoLightbox extends SignalWatcher(LitElement) {
     if (changed.has('photo')) this._resetTransform();
   }
 
+  /** Flip the open video's playback. False when there is no video to flip. */
+  private _togglePlayback(): boolean {
+    const video = this.shadowRoot?.querySelector('video');
+    if (video === null || video === undefined) return false;
+    if (video.paused) {
+      void video.play();
+    } else {
+      video.pause();
+    }
+    return true;
+  }
+
   private readonly _onKeydown = (e: KeyboardEvent) => {
     if (!this.active) return;
     if (e.key === 'Escape') {
@@ -231,19 +243,18 @@ export class PhotoLightbox extends SignalWatcher(LitElement) {
     }
     if (e.key === 'ArrowRight') this._navigate(1);
     if (e.key === 'ArrowLeft') this._navigate(-1);
+    // Enter plays and pauses; Space always closes. Space used to do both,
+    // which made one key mean "back to the popup" on a photo and "pause" on a
+    // video — so the way out of the lightbox depended on what was in it.
+    if (e.key === 'Enter' && this._togglePlayback()) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      return;
+    }
     if (e.key === ' ') {
       e.preventDefault();
       e.stopImmediatePropagation();
-      const video = this.shadowRoot?.querySelector('video');
-      if (video !== undefined && video !== null) {
-        if (video.paused) {
-          void video.play();
-        } else {
-          video.pause();
-        }
-      } else {
-        this.hide();
-      }
+      this.hide();
     }
   };
 

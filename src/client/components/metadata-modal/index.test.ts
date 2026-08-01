@@ -399,7 +399,8 @@ describe('<metadata-modal> photo navigation', () => {
     }
 
     document.removeEventListener('keydown', listener);
-    expect(seen).toEqual(['ArrowRight', 'ArrowLeft', ' ']);
+    // Enter is one of them: it plays and pauses a video in the lightbox below.
+    expect(seen).toEqual(['ArrowRight', 'ArrowLeft', ' ', 'Enter']);
     el.remove();
   });
 });

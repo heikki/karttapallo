@@ -117,7 +117,9 @@ const METADATA_SECTIONS: Array<{
       ['persons', 'Persons'],
       ['favorite', 'Favorite'],
       ['hidden', 'Hidden'],
-      ['ismovie', 'Video'],
+      // No Video row. It only ever rendered as "Yes" — `isEmptyValue` drops a
+      // false — on a photo you are looking at in a player, with a Duration row
+      // above it. Nothing was left for it to tell you.
       ['screenshot', 'Screenshot'],
       ['place', 'Place'],
       // "Categories" is what the search box calls these, and they are only ever
@@ -183,6 +185,15 @@ const ALWAYS_SHOWN = new Set(['original_date']);
  * a name scrolled off the right edge cannot be clicked.
  */
 const WRAPPED = new Set(['labels', 'albums']);
+
+/**
+ * Keys the panel lets through to the lightbox and popup underneath it, so it
+ * can stay open while the user works: arrows cycle photos (those navigators
+ * call back into `refreshMetadata` to pull the panel along), Space toggles
+ * between the popup and the lightbox, Enter plays or pauses a video there.
+ * Same photo in every case, so nothing to refresh. Every other key stops here.
+ */
+const BROWSING_KEYS = new Set(['ArrowLeft', 'ArrowRight', ' ', 'Enter']);
 
 /** How long a metadata read may take before the panel says it's loading. */
 const LOADING_ANNOUNCE_MS = 200;
@@ -528,14 +539,7 @@ export class MetadataModal extends SignalWatcher(LitElement) {
       this._close();
       return;
     }
-    // Browsing keys fall through to the lightbox / map popup so the modal can
-    // stay open while the user works: arrows cycle photos (those navigators
-    // call back into refreshMetadata() to pull the modal along), Space toggles
-    // between the popup and the lightbox — or plays/pauses a video, whichever
-    // the lightbox decides. Same photo either way, so nothing to refresh.
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === ' ') {
-      return;
-    }
+    if (BROWSING_KEYS.has(e.key)) return;
     e.stopImmediatePropagation();
   };
 
