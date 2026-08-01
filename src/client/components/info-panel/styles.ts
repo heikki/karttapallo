@@ -110,6 +110,20 @@ export const styles = css`
     /* No wrapping: an overlong value scrolls rather than making the row tall,
        which keeps the panel's height tied to its row count. */
     white-space: nowrap;
+    /* The gap exists to separate the two columns; after the last one there is
+       nothing to separate from, and the padding would only stop a right-aligned
+       control short of where the row's rule ends. */
+    padding-right: 0;
+  }
+  /* The UUID and its two buttons: the copy sits with the value it copies, the
+     Photos.app link goes to the far edge, flush with the end of the row rule. */
+  td.uuid {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  td.uuid .photos-btn {
+    margin-left: auto;
   }
   /* Section heading. Spans both columns, so it matches td:first-child and
      td:last-child at once and has to undo what they set. Quiet on purpose:
@@ -134,13 +148,13 @@ export const styles = css`
      The max-width is what forces the break: the table is width: max-content, so
      a cell with nothing to wrap against would just report its unwrapped length
      as the column's preferred width and never break at all. It is everything
-     .content has left once the body's padding and the label column are spent. */
+     .content has left once the body's padding and the label column are spent —
+     the value column carries no padding of its own to subtract. */
   td.wrap {
     white-space: normal;
     overflow-wrap: break-word;
     max-width: calc(
-      var(--panel-width) - 2 *
-        var(--body-padding-x) - var(--label-column) - var(--value-gap)
+      var(--panel-width) - 2 * var(--body-padding-x) - var(--label-column)
     );
   }
   .loading {
@@ -172,7 +186,6 @@ export const styles = css`
     text-decoration: underline;
   }
   .copy-btn {
-    margin-left: 6px;
     padding: 2px;
     background: none;
     color: var(--panel-text-dim);
@@ -186,7 +199,6 @@ export const styles = css`
     color: var(--panel-accent);
   }
   .photos-btn {
-    margin-left: 4px;
     color: var(--panel-text-dim);
     vertical-align: middle;
     line-height: 1;

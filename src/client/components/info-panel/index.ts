@@ -637,8 +637,8 @@ export class InfoPanel extends SignalWatcher(LitElement) {
       const uuid = typeof val === 'string' ? val : '';
       return html`<tr>
         <td>${label}</td>
-        <td>
-          ${uuid}
+        <td class="uuid">
+          <span>${uuid}</span>
           <button
             class="copy-btn"
             @click=${(e: Event) => {
