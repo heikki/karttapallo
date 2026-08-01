@@ -90,12 +90,12 @@ function formatMetadataValue(value: unknown) {
  * app can edit: a date or a latitude reads very differently once you know
  * whether it was recorded or supplied.
  *
- * Order within that is not only cosmetic. Every unbounded row is in `Photos` —
- * Categories alone can wrap to four lines — so putting that group last keeps a
- * growing row from shoving the fixed ones up and down as the user arrows
- * between photos, the same jitter the panel's top-left anchoring and its held
- * height exist to avoid. Categories is last within that group for the same
- * reason: it is the one row with no ceiling on its height.
+ * `Photos` leads because it is what the panel is usually opened to read — the
+ * album, the place, the description — while the exposure figures below it are
+ * reference. It costs something: the only rows with no ceiling on their height
+ * are in it, so a photo carrying four lines of scene labels shifts every row
+ * beneath as the user arrows through. Categories stays last within the group
+ * to keep that to the rows it cannot avoid moving.
  *
  * A section whose every row is empty renders nothing, heading included.
  */
@@ -103,6 +103,26 @@ const METADATA_SECTIONS: Array<{
   title: string;
   fields: Array<[string, string]>;
 }> = [
+  {
+    title: 'Photos',
+    fields: [
+      ['uuid', 'UUID'],
+      ['albums', 'Albums'],
+      ['title', 'Title'],
+      ['description', 'Description'],
+      ['keywords', 'Keywords'],
+      ['persons', 'Persons'],
+      ['favorite', 'Favorite'],
+      ['hidden', 'Hidden'],
+      ['ismovie', 'Video'],
+      ['screenshot', 'Screenshot'],
+      ['place', 'Place'],
+      // "Categories" is what the search box calls these, and they are only ever
+      // met through it — the same word in both places or they read as two
+      // features.
+      ['labels', 'Categories']
+    ]
+  },
   {
     title: 'File',
     fields: [
@@ -139,26 +159,6 @@ const METADATA_SECTIONS: Array<{
       ['latitude', 'Latitude'],
       ['longitude', 'Longitude'],
       ['gps_accuracy', 'GPS accuracy']
-    ]
-  },
-  {
-    title: 'Photos',
-    fields: [
-      ['uuid', 'UUID'],
-      ['albums', 'Albums'],
-      ['title', 'Title'],
-      ['description', 'Description'],
-      ['keywords', 'Keywords'],
-      ['persons', 'Persons'],
-      ['favorite', 'Favorite'],
-      ['hidden', 'Hidden'],
-      ['ismovie', 'Video'],
-      ['screenshot', 'Screenshot'],
-      ['place', 'Place'],
-      // "Categories" is what the search box calls these, and they are only ever
-      // met through it — the same word in both places or they read as two
-      // features.
-      ['labels', 'Categories']
     ]
   }
 ];

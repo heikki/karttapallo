@@ -31,9 +31,9 @@ test('View photo metadata', async ({ page }) => {
   // from the Location group, so that heading stays away rather than standing
   // over an empty run.
   await expect(body.locator('tr.section td')).toHaveText([
+    'Photos',
     'File',
-    'Capture',
-    'Photos'
+    'Capture'
   ]);
 
   // Escape closes the modal; the popup remains open underneath.

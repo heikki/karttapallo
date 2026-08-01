@@ -114,7 +114,7 @@ describe('<metadata-modal>', () => {
     const headings = [
       ...(el.shadowRoot?.querySelectorAll('tr.section td') ?? [])
     ].map((td) => td.textContent);
-    expect(headings).toEqual(['File', 'Capture', 'Location', 'Photos']);
+    expect(headings).toEqual(['Photos', 'File', 'Capture', 'Location']);
     el.remove();
   });
 
@@ -129,7 +129,7 @@ describe('<metadata-modal>', () => {
     const headings = [
       ...(el.shadowRoot?.querySelectorAll('tr.section td') ?? [])
     ].map((td) => td.textContent);
-    expect(headings).toEqual(['File', 'Photos']);
+    expect(headings).toEqual(['Photos', 'File']);
     el.remove();
   });
 
@@ -180,7 +180,10 @@ describe('<metadata-modal>', () => {
     el.remove();
   });
 
-  test('sinks the unbounded Categories row below every fixed one', async () => {
+  // Categories is the one row with no ceiling on its height, so it sits at the
+  // end of its own group — everything above it holds still as the user arrows
+  // between photos carrying different numbers of labels.
+  test('keeps the unbounded Categories row last within its section', async () => {
     const el = await mount();
     (el as unknown as { _data: Record<string, unknown> })._data = {
       filename: 'IMG_0006.HEIC',
@@ -190,11 +193,10 @@ describe('<metadata-modal>', () => {
     };
     el.requestUpdate();
     await el.updateComplete;
-    const labels = [
-      ...(el.shadowRoot?.querySelectorAll('tr:not(.section) td:first-child') ??
-        [])
-    ].map((td) => td.textContent);
-    expect(labels.at(-1)).toBe('Categories');
+    const rows = [...(el.shadowRoot?.querySelectorAll('tr') ?? [])].map(
+      (tr) => tr.querySelector('td')?.textContent
+    );
+    expect(rows.indexOf('Categories')).toBe(rows.indexOf('File') - 1);
     el.remove();
   });
 });
