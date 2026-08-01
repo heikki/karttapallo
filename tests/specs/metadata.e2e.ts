@@ -21,10 +21,30 @@ test('View photo metadata', async ({ page }) => {
   await expect(body.getByText('Camera', { exact: true })).toBeVisible();
   await expect(body.getByText('iPhone', { exact: true })).toBeVisible();
 
+  // Place and Categories come from the client's photo record rather than the
+  // metadata payload, which knows nothing about either — the fake getMetadata
+  // above never mentions Kuhmo.
+  await expect(body.getByText('Place', { exact: true })).toBeVisible();
+  await expect(body.getByText('Kuhmo', { exact: true })).toBeVisible();
+
   // Escape closes the modal; the popup remains open underneath.
   await page.keyboard.press('Escape');
   await expect(page.locator('metadata-modal[active]')).toHaveCount(0);
   await expect(popup).toBeVisible();
+});
+
+test('Every scene label shows in the metadata panel', async ({ page }) => {
+  await page.goto('/?id=e2e-3');
+
+  const popup = page.locator('photo-popup');
+  await expect(popup).toBeVisible();
+  await popup.locator('.overlay-btn.info-btn').click();
+
+  const body = page.locator('metadata-modal[active] .body');
+  await expect(body.getByText('Categories', { exact: true })).toBeVisible();
+  await expect(
+    body.getByText('Lintu, Ulkoilma', { exact: true })
+  ).toBeVisible();
 });
 
 test('Deselecting the photo takes its metadata away', async ({ page }) => {

@@ -2,9 +2,26 @@ import { SignalWatcher } from '@lit-labs/signals';
 import { html, LitElement, nothing } from 'lit';
 import { customElement, state as litState, property } from 'lit/decorators.js';
 
+import * as data from '@common/data';
 import selection from '@common/selection';
 
 import { styles } from './styles';
+
+/**
+ * The two corpus fields `/api/metadata` knows nothing about. `queryMetadata`
+ * reads `Photos.sqlite` alone, but a place name comes from the moment table and
+ * a scene label from `psi.sqlite` (ADR-0014) — both already assembled onto the
+ * client's own photo record by the item store, so they are merged in from there
+ * rather than queried a second time per open.
+ *
+ * A photo missing from the record (or a snapshot written before these fields
+ * existed) yields keys with no value, which `isEmptyValue` drops like any other
+ * empty row.
+ */
+function searchCorpusOf(uuid: string): Record<string, unknown> {
+  const photo = data.photos.get().find((p) => p.uuid === uuid);
+  return { place: photo?.place, labels: photo?.labels };
+}
 
 export function showMetadata(uuid: string) {
   document.querySelector<MetadataModal>('metadata-modal')?.loadMetadata(uuid);
@@ -64,7 +81,11 @@ const METADATA_FIELDS: Array<[string, string]> = [
   ['original_date', 'Original date'],
   ['title', 'Title'],
   ['description', 'Description'],
+  ['place', 'Place'],
   ['keywords', 'Keywords'],
+  // "Categories" is what the search box calls these, and they are only ever
+  // met through it — the same word in both places or they read as two features.
+  ['labels', 'Categories'],
   ['albums', 'Albums'],
   ['persons', 'Persons'],
   ['camera', 'Camera'],
@@ -169,9 +190,9 @@ export class MetadataModal extends SignalWatcher(LitElement) {
         if (!r.ok) throw new Error(`${r.status}`);
         return r.json() as Promise<Record<string, unknown>>;
       })
-      .then((data) => {
+      .then((record) => {
         if (seq !== this._loadSeq) return;
-        this._data = data;
+        this._data = { ...record, ...searchCorpusOf(uuid) };
         this._settleLoading();
       })
       .catch((err: unknown) => {

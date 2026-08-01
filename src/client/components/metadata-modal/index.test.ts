@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 
 import * as data from '@common/data';
 import selection from '@common/selection';
+import type { Photo } from '@common/types';
 
 import { MetadataModal, refreshMetadata } from './index';
 
@@ -97,6 +98,83 @@ describe('<metadata-modal>', () => {
     expect(text).toContain('IMG_0002.HEIC');
     expect(text).not.toContain('Title');
     expect(text).not.toContain('Keywords');
+    el.remove();
+  });
+});
+
+describe('<metadata-modal> search corpus rows', () => {
+  const originalFetch = globalThis.fetch;
+
+  beforeEach(() => {
+    globalThis.fetch = mock(() =>
+      Promise.resolve(jsonResponse({ filename: 'IMG_0003.HEIC' }))
+    ) as unknown as typeof fetch;
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+    data.photos.set([]);
+  });
+
+  async function showPhoto(overrides: Partial<Photo>): Promise<MetadataModal> {
+    const el = await mount();
+    data.photos.set([
+      {
+        uuid: 'p1',
+        type: 'photo',
+        full: 'full/p1.jpg',
+        thumb: 'thumb/p1.jpg',
+        lat: 60.17,
+        lon: 24.94,
+        date: '2024:06:01 12:00:00',
+        tz: '+03:00',
+        camera: 'iPhone 15',
+        gps: 'exif',
+        albums: ['Helsinki'],
+        place: null,
+        description: null,
+        labels: [],
+        ...overrides
+      }
+    ]);
+    el.loadMetadata('p1');
+    await Bun.sleep(0);
+    await el.updateComplete;
+    return el;
+  }
+
+  test('shows the place and every label, from the client photo record', async () => {
+    const el = await showPhoto({
+      place: 'Näätämö',
+      labels: ['Lintu', 'Ulkoilma', 'Vesi']
+    });
+    const text = el.shadowRoot?.textContent ?? '';
+    expect(text).toContain('Place');
+    expect(text).toContain('Näätämö');
+    expect(text).toContain('Categories');
+    expect(text).toContain('Lintu, Ulkoilma, Vesi');
+    el.remove();
+  });
+
+  test('drops both rows for a photo carrying neither', async () => {
+    const el = await showPhoto({});
+    const text = el.shadowRoot?.textContent ?? '';
+    expect(text).toContain('IMG_0003.HEIC');
+    expect(text).not.toContain('Place');
+    expect(text).not.toContain('Categories');
+    el.remove();
+  });
+
+  // The snapshot on disk predates the labels field, so it genuinely arrives
+  // undefined until the startup rebuild swaps in fresh items.
+  test('drops the row when the record has no labels field at all', async () => {
+    const el = await showPhoto({
+      place: 'Kuhmo',
+      labels: undefined
+    });
+    const text = el.shadowRoot?.textContent ?? '';
+    expect(text).toContain('Kuhmo');
+    expect(text).not.toContain('Categories');
     el.remove();
   });
 });
