@@ -7,8 +7,7 @@ test('View photo metadata', async ({ page }) => {
   const popup = page.locator('photo-popup');
   await expect(popup).toBeVisible();
 
-  // Click the info button overlay on the popup image.
-  await popup.locator('.overlay-btn.info-btn').click();
+  await page.keyboard.press('Meta+i');
 
   // Modal becomes active and renders rows from the fake getMetadata payload.
   const modal = page.locator('metadata-modal[active]');
@@ -42,34 +41,50 @@ test('View photo metadata', async ({ page }) => {
   await expect(popup).toBeVisible();
 });
 
-test('Photos.app is reachable from the UUID row, and nowhere else', async ({
+test('Cmd+I toggles the metadata panel, and nothing overlays the photo', async ({
   page
 }) => {
   await page.goto('/?id=e2e-1');
 
   const popup = page.locator('photo-popup');
   await expect(popup).toBeVisible();
+  const modal = page.locator('metadata-modal[active]');
 
-  // The popup used to carry its own overlay link over the photo, and the
-  // lightbox a second one. Both are gone; only the info button is left.
-  await expect(popup.locator('.overlay-btn')).toHaveCount(1);
+  // The popup carried an info button and a Photos.app link over the image, and
+  // the lightbox a second pair. Nothing is left on either — the photo is the
+  // whole surface.
+  await expect(popup.locator('.overlay-btn')).toHaveCount(0);
   await page.keyboard.press(' ');
   const lightbox = page.locator('photo-lightbox[active]');
   await expect(lightbox).toBeVisible();
-  await expect(lightbox.locator('.overlay-btn')).toHaveCount(1);
+  await expect(lightbox.locator('.overlay-btn')).toHaveCount(0);
   await page.keyboard.press(' ');
 
-  // The one that remains sits beside the copy button, on the row that already
-  // holds the photo's identity. Not clicked — following it leaves the browser.
-  await popup.locator('.overlay-btn.info-btn').click();
-  const row = page.locator('metadata-modal[active] .body tr', {
-    hasText: 'UUID'
-  });
+  // Cmd+I opens it, and the same key closes it — with the panel focused or not.
+  await page.keyboard.press('Meta+i');
+  await expect(modal).toBeVisible();
+  await page.keyboard.press('Meta+i');
+  await expect(modal).toHaveCount(0);
+  await page.keyboard.press('Meta+i');
+  await expect(modal).toBeVisible();
+
+  // Photos.app is reachable from the UUID row, beside the copy button. Not
+  // clicked — following it would hand the browser to another app.
+  const row = modal.locator('.body tr', { hasText: 'UUID' });
   await expect(row.locator('.copy-btn')).toBeVisible();
   await expect(row.locator('.photos-btn')).toHaveAttribute(
     'href',
     'photos:albums?albumUuid=E2E&assetUuid=e2e-1'
   );
+});
+
+test('Cmd+I does nothing with no photo selected', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByLabel('Photo stats')).toHaveText('3 photos');
+
+  // The panel describes one photo; with none chosen there is nothing to open.
+  await page.keyboard.press('Meta+i');
+  await expect(page.locator('metadata-modal[active]')).toHaveCount(0);
 });
 
 test('Clicking an album name filters the map to it', async ({ page }) => {
@@ -78,7 +93,7 @@ test('Clicking an album name filters the map to it', async ({ page }) => {
 
   const popup = page.locator('photo-popup');
   await expect(popup).toBeVisible();
-  await popup.locator('.overlay-btn.info-btn').click();
+  await page.keyboard.press('Meta+i');
 
   const body = page.locator('metadata-modal[active] .body');
   await body.getByRole('button', { name: 'Tampere' }).click();
@@ -100,7 +115,7 @@ test('Every scene label shows, wrapped rather than scrolled', async ({
 
   const popup = page.locator('photo-popup');
   await expect(popup).toBeVisible();
-  await popup.locator('.overlay-btn.info-btn').click();
+  await page.keyboard.press('Meta+i');
 
   const body = page.locator('metadata-modal[active] .body');
   await expect(body.getByText('Categories', { exact: true })).toBeVisible();
@@ -132,7 +147,7 @@ test('Deselecting the photo takes its metadata away', async ({ page }) => {
 
   const popup = page.locator('photo-popup');
   await expect(popup).toBeVisible();
-  await popup.locator('.overlay-btn.info-btn').click();
+  await page.keyboard.press('Meta+i');
 
   const modal = page.locator('metadata-modal[active]');
   await expect(modal).toBeVisible();
@@ -156,7 +171,7 @@ test('A filter that excludes the photo takes its metadata away', async ({
 
   const popup = page.locator('photo-popup');
   await expect(popup).toBeVisible();
-  await popup.locator('.overlay-btn.info-btn').click();
+  await page.keyboard.press('Meta+i');
   const modal = page.locator('metadata-modal[active]');
   await expect(modal).toBeVisible();
 
@@ -173,7 +188,7 @@ test('The metadata modal stays put as the table grows', async ({ page }) => {
 
   const popup = page.locator('photo-popup');
   await expect(popup).toBeVisible();
-  await popup.locator('.overlay-btn.info-btn').click();
+  await page.keyboard.press('Meta+i');
 
   const content = page.locator('metadata-modal[active] .content');
   const body = content.locator('.body');
@@ -199,7 +214,7 @@ test('The metadata panel holds its height while the next photo loads', async ({
 
   const popup = page.locator('photo-popup');
   await expect(popup).toBeVisible();
-  await popup.locator('.overlay-btn.info-btn').click();
+  await page.keyboard.press('Meta+i');
 
   const content = page.locator('metadata-modal[active] .content');
   const body = content.locator('.body');
@@ -234,7 +249,7 @@ test('Copy selected text out of the metadata modal', async ({ page }) => {
 
   const popup = page.locator('photo-popup');
   await expect(popup).toBeVisible();
-  await popup.locator('.overlay-btn.info-btn').click();
+  await page.keyboard.press('Meta+i');
 
   const modal = page.locator('metadata-modal[active]');
   await expect(modal).toBeVisible();
@@ -274,7 +289,7 @@ test('Move the metadata modal by its header', async ({ page }) => {
 
   const popup = page.locator('photo-popup');
   await expect(popup).toBeVisible();
-  await popup.locator('.overlay-btn.info-btn').click();
+  await page.keyboard.press('Meta+i');
 
   const content = page.locator('metadata-modal[active] .content');
   const header = content.locator('.header');
@@ -316,7 +331,7 @@ test('Move the metadata modal by its header', async ({ page }) => {
   // Closing forgets where it was dragged: the next open is back in the corner.
   await page.keyboard.press('Escape');
   await expect(page.locator('metadata-modal[active]')).toHaveCount(0);
-  await popup.locator('.overlay-btn.info-btn').click();
+  await page.keyboard.press('Meta+i');
   const reopened = await content.boundingBox();
   if (reopened === null) throw new Error('modal did not reopen');
   expect(reopened.x).toBeCloseTo(before.x, 0);
@@ -328,7 +343,7 @@ test('Browse photos with the metadata modal open', async ({ page }) => {
 
   const popup = page.locator('photo-popup');
   await expect(popup).toBeVisible();
-  await popup.locator('.overlay-btn.info-btn').click();
+  await page.keyboard.press('Meta+i');
 
   const body = page.locator('metadata-modal[active] .body');
   await expect(body.getByText('e2e-1.jpg', { exact: true })).toBeVisible();
@@ -357,7 +372,7 @@ test('Toggle the lightbox with Space while the modal is open', async ({
 
   const popup = page.locator('photo-popup');
   await expect(popup).toBeVisible();
-  await popup.locator('.overlay-btn.info-btn').click();
+  await page.keyboard.press('Meta+i');
 
   const modal = page.locator('metadata-modal[active]');
   const lightbox = page.locator('photo-lightbox[active]');

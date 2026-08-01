@@ -108,34 +108,6 @@ export class PhotoPopup extends SignalWatcher(LitElement) {
       border-width: 10px 0 10px 18px;
       border-color: transparent transparent transparent white;
     }
-    .overlay-buttons {
-      position: absolute;
-      top: 6px;
-      right: 6px;
-      display: flex;
-      gap: 4px;
-      z-index: 5;
-    }
-    .overlay-btn {
-      width: 28px;
-      height: 28px;
-      background: rgba(0, 0, 0, 0.5);
-      border: none;
-      outline: none;
-      border-radius: 6px;
-      cursor: pointer;
-      background-repeat: no-repeat;
-      background-position: center;
-      background-size: 16px;
-      display: block;
-      text-decoration: none;
-    }
-    .overlay-btn:hover {
-      background-color: rgba(0, 0, 0, 0.75);
-    }
-    .info-btn {
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' y1='16' x2='12' y2='12'/%3E%3Cline x1='12' y1='8' x2='12.01' y2='8'/%3E%3C/svg%3E");
-    }
     .action-buttons {
       display: inline-flex;
       gap: 2px;
@@ -178,11 +150,6 @@ export class PhotoPopup extends SignalWatcher(LitElement) {
 
   private _onImgClick() {
     actions.showLightbox(this.index);
-  }
-
-  private _onInfoClick(e: Event) {
-    e.stopPropagation();
-    if (this.photo !== null) actions.showMetadata(this.photo.uuid);
   }
 
   private _onPlacement(e: Event) {
@@ -501,15 +468,6 @@ export class PhotoPopup extends SignalWatcher(LitElement) {
           ${isVideo(photo)
             ? html`<div class="video-indicator"></div>`
             : nothing}
-          <div class="overlay-buttons">
-            <button
-              class="overlay-btn info-btn"
-              @click=${(e: Event) => {
-                this._onInfoClick(e);
-              }}
-              tabindex="-1"
-            ></button>
-          </div>
         </div>
         <div class="info">
           ${this._renderDateLine()}<br />

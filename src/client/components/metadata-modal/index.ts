@@ -39,10 +39,6 @@ function photoRecordFields(uuid: string): Record<string, unknown> {
   };
 }
 
-export function showMetadata(uuid: string) {
-  document.querySelector<MetadataModal>('metadata-modal')?.loadMetadata(uuid);
-}
-
 /**
  * Follow photo navigation that happened underneath an open modal. A no-op
  * when the modal is closed or already showing `uuid`, so navigators can call
@@ -498,7 +494,33 @@ export class MetadataModal extends SignalWatcher(LitElement) {
     e.preventDefault();
   };
 
+  /**
+   * Show the selected photo's metadata, or hide it if it is already up.
+   *
+   * Nothing to show without a selection — the panel describes one photo, and
+   * an empty one would only have to close itself again the moment the
+   * selection effect ran.
+   */
+  private _toggle() {
+    if (this.active) {
+      this._close();
+      return;
+    }
+    const uuid = selection.selectedPhotoUuid.get();
+    if (uuid === null) return;
+    this.loadMetadata(uuid);
+  }
+
   private readonly _onKeydown = (e: KeyboardEvent) => {
+    // Before the active check — this is the key that opens the panel, so it has
+    // to be heard while it is closed. Capture phase and preventDefault keep the
+    // webview's own Cmd+I from acting on the page instead.
+    if (e.key === 'i' && (e.metaKey || e.ctrlKey) && !e.altKey) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      this._toggle();
+      return;
+    }
     if (!this.active) return;
     if (e.key === 'Escape') {
       e.preventDefault();

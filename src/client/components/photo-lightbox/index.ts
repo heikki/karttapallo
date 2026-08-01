@@ -181,34 +181,6 @@ export class PhotoLightbox extends SignalWatcher(LitElement) {
     video::-webkit-media-controls-overlay-enclosure {
       display: none !important;
     }
-    .overlay-buttons {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      display: flex;
-      gap: 4px;
-      z-index: 5;
-    }
-    .overlay-btn {
-      width: 36px;
-      height: 36px;
-      background: rgba(0, 0, 0, 0.5);
-      border: none;
-      outline: none;
-      border-radius: 8px;
-      cursor: pointer;
-      background-repeat: no-repeat;
-      background-position: center;
-      background-size: 20px;
-      display: block;
-      text-decoration: none;
-    }
-    .overlay-btn:hover {
-      background-color: rgba(0, 0, 0, 0.75);
-    }
-    .info-btn {
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' y1='16' x2='12' y2='12'/%3E%3Cline x1='12' y1='8' x2='12.01' y2='8'/%3E%3C/svg%3E");
-    }
     /* Date only. Camera and coordinates are rows in <metadata-modal>, which
        stays open over the lightbox now, so repeating them here just covered
        up the photo. The date earns its place: it reflects pending time
@@ -286,11 +258,6 @@ export class PhotoLightbox extends SignalWatcher(LitElement) {
     }, 3000);
   }
 
-  private _onInfoClick(e: Event) {
-    e.stopPropagation();
-    if (this.photo !== null) actions.showMetadata(this.photo.uuid);
-  }
-
   override render() {
     if (this.photo === null) return nothing;
     const photo = this.photo;
@@ -314,15 +281,6 @@ export class PhotoLightbox extends SignalWatcher(LitElement) {
             ></video>`
           : html`<img src=${getFullUrl(photo)} alt="" />`}
         <div class="top-left">${formatDate(effectiveDate, photo.tz)}</div>
-        <div class="overlay-buttons">
-          <button
-            class="overlay-btn info-btn"
-            @click=${(e: Event) => {
-              this._onInfoClick(e);
-            }}
-            tabindex="-1"
-          ></button>
-        </div>
       </div>
     `;
   }
