@@ -111,6 +111,22 @@ export const styles = css`
        which keeps the panel's height tied to its row count. */
     white-space: nowrap;
   }
+  /* Section heading. Spans both columns, so it matches td:first-child and
+     td:last-child at once and has to undo what they set. Quiet on purpose:
+     it groups the rows below it, it doesn't compete with them. */
+  tr.section td {
+    width: auto;
+    padding: 14px 0 3px;
+    border-bottom: none;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #6d6d72;
+  }
+  tr.section:first-child td {
+    padding-top: 0;
+  }
   /* Categories is the one value with no length bound — dozens of scene labels
      on a single photo. Left to scroll it would drag every other row sideways
      with it, so it wraps instead, and pays for it in height.

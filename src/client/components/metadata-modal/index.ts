@@ -74,40 +74,80 @@ function formatMetadataValue(value: unknown) {
   return '';
 }
 
-const METADATA_FIELDS: Array<[string, string]> = [
-  ['filename', 'Filename'],
-  ['original_filename', 'Original filename'],
-  ['date', 'Date'],
-  ['original_date', 'Original date'],
-  ['title', 'Title'],
-  ['description', 'Description'],
-  ['place', 'Place'],
-  ['keywords', 'Keywords'],
-  // "Categories" is what the search box calls these, and they are only ever
-  // met through it — the same word in both places or they read as two features.
-  ['labels', 'Categories'],
-  ['albums', 'Albums'],
-  ['persons', 'Persons'],
-  ['camera', 'Camera'],
-  ['lens', 'Lens'],
-  ['aperture', 'Aperture'],
-  ['shutter_speed', 'Shutter speed'],
-  ['iso', 'ISO'],
-  ['focal_length', 'Focal length'],
-  ['flash', 'Flash'],
-  ['dimensions', 'Dimensions'],
-  ['original_filesize', 'File size'],
-  ['duration', 'Duration'],
-  ['uti', 'UTI'],
-  ['latitude', 'Latitude'],
-  ['longitude', 'Longitude'],
-  ['gps_accuracy', 'GPS accuracy'],
-  ['favorite', 'Favorite'],
-  ['hidden', 'Hidden'],
-  ['ismovie', 'Video'],
-  ['hdr', 'HDR'],
-  ['screenshot', 'Screenshot'],
-  ['uuid', 'UUID']
+/**
+ * Rows, grouped by where the value comes from — the file, the camera, the
+ * coordinates, or Photos itself. A flat table gave no way to tell a figure the
+ * camera wrote from one a person typed, which matters most for the rows this
+ * app can edit: a date or a latitude reads very differently once you know
+ * whether it was recorded or supplied.
+ *
+ * Order within that is not only cosmetic. Every unbounded row is in `Photos` —
+ * Categories alone can wrap to four lines — so putting that group last keeps a
+ * growing row from shoving the fixed ones up and down as the user arrows
+ * between photos, the same jitter the panel's top-left anchoring and its held
+ * height exist to avoid. Categories sits at the very bottom for that reason,
+ * below even the UUID.
+ *
+ * A section whose every row is empty renders nothing, heading included.
+ */
+const METADATA_SECTIONS: Array<{
+  title: string;
+  fields: Array<[string, string]>;
+}> = [
+  {
+    title: 'File',
+    fields: [
+      ['filename', 'Filename'],
+      ['original_filename', 'Original filename'],
+      ['dimensions', 'Dimensions'],
+      ['original_filesize', 'File size'],
+      ['duration', 'Duration'],
+      ['uti', 'UTI']
+    ]
+  },
+  {
+    title: 'Capture',
+    fields: [
+      ['date', 'Date'],
+      ['original_date', 'Original date'],
+      ['camera', 'Camera'],
+      ['lens', 'Lens'],
+      ['aperture', 'Aperture'],
+      ['shutter_speed', 'Shutter speed'],
+      ['iso', 'ISO'],
+      ['focal_length', 'Focal length'],
+      ['flash', 'Flash'],
+      ['hdr', 'HDR']
+    ]
+  },
+  {
+    title: 'Location',
+    fields: [
+      ['latitude', 'Latitude'],
+      ['longitude', 'Longitude'],
+      ['gps_accuracy', 'GPS accuracy']
+    ]
+  },
+  {
+    title: 'Photos',
+    fields: [
+      ['title', 'Title'],
+      ['description', 'Description'],
+      ['keywords', 'Keywords'],
+      ['albums', 'Albums'],
+      ['persons', 'Persons'],
+      ['favorite', 'Favorite'],
+      ['hidden', 'Hidden'],
+      ['ismovie', 'Video'],
+      ['screenshot', 'Screenshot'],
+      ['place', 'Place'],
+      ['uuid', 'UUID'],
+      // "Categories" is what the search box calls these, and they are only ever
+      // met through it — the same word in both places or they read as two
+      // features.
+      ['labels', 'Categories']
+    ]
+  }
 ];
 
 /**
@@ -489,57 +529,59 @@ export class MetadataModal extends SignalWatcher(LitElement) {
 
   private _renderTable() {
     if (this._data === null) return nothing;
-    const rows = [];
-    for (const [key, label] of METADATA_FIELDS) {
-      if (!(key in this._data)) continue;
-      const val = this._data[key];
-      if (isEmptyValue(val) && !ALWAYS_SHOWN.has(key)) continue;
-      if (key === 'uuid') {
-        const uuid = typeof val === 'string' ? val : '';
-        rows.push(
-          html`<tr>
-            <td>${label}</td>
-            <td>
-              ${uuid}
-              <button
-                class="copy-btn"
-                @click=${(e: Event) => {
-                  onCopyUuid(uuid, e);
-                }}
-                title="Copy UUID"
-              >
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 16 16"
-                  fill="currentColor"
-                >
-                  <path
-                    d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25z"
-                  />
-                  <path
-                    d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25z"
-                  />
-                </svg>
-              </button>
-            </td>
-          </tr>`
-        );
-      } else {
-        // Use innerHTML for values that may contain HTML (em, details, etc.)
-        rows.push(
-          html`<tr>
-            <td>${label}</td>
-            <td
-              class=${WRAPPED.has(key) ? 'wrap' : nothing}
-              .innerHTML=${formatMetadataValue(val)}
-            ></td>
-          </tr>`
-        );
-      }
-    }
+    const sections = METADATA_SECTIONS.map((section) => {
+      const rows = section.fields
+        .map(([key, label]) => this._renderRow(key, label))
+        .filter((row) => row !== null);
+      // No heading for a section every one of whose rows the photo lacks —
+      // a bare "Location" over nothing reads as a failed read.
+      if (rows.length === 0) return nothing;
+      return html`<tr class="section">
+          <td colspan="2">${section.title}</td>
+        </tr>
+        ${rows}`;
+    });
     return html`<table>
-      ${rows}
+      ${sections}
     </table>`;
+  }
+
+  private _renderRow(key: string, label: string) {
+    if (this._data === null || !(key in this._data)) return null;
+    const val = this._data[key];
+    if (isEmptyValue(val) && !ALWAYS_SHOWN.has(key)) return null;
+    if (key === 'uuid') {
+      const uuid = typeof val === 'string' ? val : '';
+      return html`<tr>
+        <td>${label}</td>
+        <td>
+          ${uuid}
+          <button
+            class="copy-btn"
+            @click=${(e: Event) => {
+              onCopyUuid(uuid, e);
+            }}
+            title="Copy UUID"
+          >
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+              <path
+                d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25z"
+              />
+              <path
+                d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25z"
+              />
+            </svg>
+          </button>
+        </td>
+      </tr>`;
+    }
+    // Use innerHTML for values that may contain HTML (em, details, etc.)
+    return html`<tr>
+      <td>${label}</td>
+      <td
+        class=${WRAPPED.has(key) ? 'wrap' : nothing}
+        .innerHTML=${formatMetadataValue(val)}
+      ></td>
+    </tr>`;
   }
 }

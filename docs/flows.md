@@ -8,7 +8,7 @@ Canonical inventory of user-visible flows. Each Tier 5 e2e spec maps to one or m
 - **Find a photo on the map** — click marker → popup; arrow keys cycle filtered items; Space or thumbnail click → lightbox.
 - **View a photo full size** — lightbox shows date/timezone; arrows cycle; Escape/Space/backdrop closes; trackpad pinch zooms.
 - **Watch a video** — videos play inline in lightbox; native controls auto-hide; Space toggles play/pause; mute persists across videos.
-- **View photo metadata** — info button → modal with all fields from `Photos.sqlite`, plus the two searchable ones it doesn't hold: Place, and Categories (every scene label the photo carries, which can run to a few dozen); UUID has copy button; movable, non-blocking; close with X / Escape.
+- **View photo metadata** — info button → modal with all fields from `Photos.sqlite`, plus the two searchable ones it doesn't hold: Place, and Categories (every scene label the photo carries, which can run to a few dozen). Rows are grouped under File / Capture / Location / Photos by where the value came from, and a group the photo has nothing in is left out entirely. UUID has copy button; movable, non-blocking; close with X / Escape.
 - **Open a photo from a link** — a `karttapallo://photo/<uuid>` link opens the app (launching it if needed) on that photo: filters widen so it's visible, the map moves to it, and the popup opens.
 
 ## Filter

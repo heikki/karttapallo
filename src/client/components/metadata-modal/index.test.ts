@@ -100,6 +100,56 @@ describe('<metadata-modal>', () => {
     expect(text).not.toContain('Keywords');
     el.remove();
   });
+
+  test('heads each group of rows with where the values come from', async () => {
+    const el = await mount();
+    (el as unknown as { _data: Record<string, unknown> })._data = {
+      filename: 'IMG_0004.HEIC',
+      camera: 'iPhone 15',
+      latitude: 60.17,
+      labels: ['Lintu']
+    };
+    el.requestUpdate();
+    await el.updateComplete;
+    const headings = [
+      ...(el.shadowRoot?.querySelectorAll('tr.section td') ?? [])
+    ].map((td) => td.textContent);
+    expect(headings).toEqual(['File', 'Capture', 'Location', 'Photos']);
+    el.remove();
+  });
+
+  test('drops a section heading when the photo has none of its rows', async () => {
+    const el = await mount();
+    (el as unknown as { _data: Record<string, unknown> })._data = {
+      filename: 'IMG_0005.HEIC',
+      uuid: 'u5'
+    };
+    el.requestUpdate();
+    await el.updateComplete;
+    const headings = [
+      ...(el.shadowRoot?.querySelectorAll('tr.section td') ?? [])
+    ].map((td) => td.textContent);
+    expect(headings).toEqual(['File', 'Photos']);
+    el.remove();
+  });
+
+  test('sinks the unbounded Categories row below every fixed one', async () => {
+    const el = await mount();
+    (el as unknown as { _data: Record<string, unknown> })._data = {
+      filename: 'IMG_0006.HEIC',
+      camera: 'iPhone 15',
+      labels: ['Lintu', 'Ulkoilma'],
+      uuid: 'u6'
+    };
+    el.requestUpdate();
+    await el.updateComplete;
+    const labels = [
+      ...(el.shadowRoot?.querySelectorAll('tr:not(.section) td:first-child') ??
+        [])
+    ].map((td) => td.textContent);
+    expect(labels.at(-1)).toBe('Categories');
+    el.remove();
+  });
 });
 
 describe('<metadata-modal> search corpus rows', () => {

@@ -27,6 +27,15 @@ test('View photo metadata', async ({ page }) => {
   await expect(body.getByText('Place', { exact: true })).toBeVisible();
   await expect(body.getByText('Kuhmo', { exact: true })).toBeVisible();
 
+  // Rows are grouped by where the value came from. The fixture carries nothing
+  // from the Location group, so that heading stays away rather than standing
+  // over an empty run.
+  await expect(body.locator('tr.section td')).toHaveText([
+    'File',
+    'Capture',
+    'Photos'
+  ]);
+
   // Escape closes the modal; the popup remains open underneath.
   await page.keyboard.press('Escape');
   await expect(page.locator('metadata-modal[active]')).toHaveCount(0);
