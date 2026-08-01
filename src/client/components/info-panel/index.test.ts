@@ -4,7 +4,7 @@ import * as data from '@common/data';
 import selection from '@common/selection';
 import type { Photo } from '@common/types';
 
-import { MetadataModal, refreshMetadata } from './index';
+import { InfoPanel, refreshInfo } from './index';
 
 const sampleData = {
   filename: 'IMG_0001.HEIC',
@@ -19,21 +19,21 @@ function jsonResponse(data: Record<string, unknown>): Response {
   });
 }
 
-async function mount(): Promise<MetadataModal> {
-  const el = new MetadataModal();
+async function mount(): Promise<InfoPanel> {
+  const el = new InfoPanel();
   document.body.appendChild(el);
   await el.updateComplete;
   return el;
 }
 
-function query(el: MetadataModal, selector: string): HTMLElement {
+function query(el: InfoPanel, selector: string): HTMLElement {
   const found = el.shadowRoot?.querySelector<HTMLElement>(selector) ?? null;
   if (found === null) throw new Error(`missing ${selector}`);
   return found;
 }
 
 /** Press on the header, move by (dx, dy), release. */
-function dragHeader(el: MetadataModal, dx: number, dy: number) {
+function dragHeader(el: InfoPanel, dx: number, dy: number) {
   const header = query(el, '.header');
   header.dispatchEvent(
     new PointerEvent('pointerdown', {
@@ -52,7 +52,7 @@ function dragHeader(el: MetadataModal, dx: number, dy: number) {
   window.dispatchEvent(new PointerEvent('pointerup', {}));
 }
 
-describe('<metadata-modal>', () => {
+describe('<info-panel>', () => {
   test('mounts and starts hidden (active=false)', async () => {
     const el = await mount();
     expect(el.active).toBe(false);
@@ -201,7 +201,7 @@ describe('<metadata-modal>', () => {
   });
 });
 
-describe('<metadata-modal> search corpus rows', () => {
+describe('<info-panel> search corpus rows', () => {
   const originalFetch = globalThis.fetch;
 
   beforeEach(() => {
@@ -215,7 +215,7 @@ describe('<metadata-modal> search corpus rows', () => {
     data.photos.set([]);
   });
 
-  async function showPhoto(overrides: Partial<Photo>): Promise<MetadataModal> {
+  async function showPhoto(overrides: Partial<Photo>): Promise<InfoPanel> {
     const el = await mount();
     data.photos.set([
       {
@@ -236,7 +236,7 @@ describe('<metadata-modal> search corpus rows', () => {
         ...overrides
       }
     ]);
-    el.loadMetadata('p1');
+    el.load('p1');
     await Bun.sleep(0);
     await el.updateComplete;
     return el;
@@ -278,7 +278,7 @@ describe('<metadata-modal> search corpus rows', () => {
   });
 });
 
-describe('<metadata-modal> photo navigation', () => {
+describe('<info-panel> photo navigation', () => {
   const originalFetch = globalThis.fetch;
   let fetched: string[] = [];
 
@@ -296,18 +296,18 @@ describe('<metadata-modal> photo navigation', () => {
     globalThis.fetch = originalFetch;
   });
 
-  test('refreshMetadata does nothing while the modal is closed', async () => {
+  test('refreshInfo does nothing while the modal is closed', async () => {
     const el = await mount();
-    refreshMetadata('other-uuid');
+    refreshInfo('other-uuid');
     expect(fetched).toEqual([]);
     expect(el.active).toBe(false);
     el.remove();
   });
 
-  test('refreshMetadata loads the new photo while the modal is open', async () => {
+  test('refreshInfo loads the new photo while the modal is open', async () => {
     const el = await mount();
-    el.loadMetadata('first-uuid');
-    refreshMetadata('second-uuid');
+    el.load('first-uuid');
+    refreshInfo('second-uuid');
     expect(el.shownUuid).toBe('second-uuid');
     expect(fetched).toEqual([
       '/api/metadata/first-uuid',
@@ -316,10 +316,10 @@ describe('<metadata-modal> photo navigation', () => {
     el.remove();
   });
 
-  test('refreshMetadata skips a refetch of the photo already shown', async () => {
+  test('refreshInfo skips a refetch of the photo already shown', async () => {
     const el = await mount();
-    el.loadMetadata('first-uuid');
-    refreshMetadata('first-uuid');
+    el.load('first-uuid');
+    refreshInfo('first-uuid');
     expect(fetched).toEqual(['/api/metadata/first-uuid']);
     el.remove();
   });
@@ -333,8 +333,8 @@ describe('<metadata-modal> photo navigation', () => {
         : Promise.resolve(jsonResponse({ filename: 'second.jpg' }))
     ) as unknown as typeof fetch;
 
-    el.loadMetadata('first-uuid');
-    refreshMetadata('second-uuid');
+    el.load('first-uuid');
+    refreshInfo('second-uuid');
     await Bun.sleep(0);
     // The stale response lands last and must not win.
     first.resolve(jsonResponse({ filename: 'first.jpg' }));
@@ -372,7 +372,7 @@ describe('<metadata-modal> photo navigation', () => {
     ]);
     await Bun.sleep(0);
     selection.selectPhoto('p1');
-    el.loadMetadata('p1');
+    el.load('p1');
     await el.updateComplete;
     expect(el.active).toBe(true);
 
@@ -387,7 +387,7 @@ describe('<metadata-modal> photo navigation', () => {
 
   test('browsing keys reach navigators underneath, other keys do not', async () => {
     const el = await mount();
-    el.loadMetadata('first-uuid');
+    el.load('first-uuid');
     const seen: string[] = [];
     function listener(e: Event) {
       seen.push((e as KeyboardEvent).key);
@@ -405,7 +405,7 @@ describe('<metadata-modal> photo navigation', () => {
   });
 });
 
-describe('<metadata-modal> header drag', () => {
+describe('<info-panel> header drag', () => {
   test('dragging the header offsets the modal', async () => {
     const el = await mount();
     el.active = true;
@@ -465,8 +465,8 @@ describe('<metadata-modal> header drag', () => {
   });
 });
 
-describe('<metadata-modal> copying text', () => {
-  function selectBody(el: MetadataModal) {
+describe('<info-panel> copying text', () => {
+  function selectBody(el: InfoPanel) {
     const range = document.createRange();
     range.selectNodeContents(query(el, '.body'));
     const selection = window.getSelection();
@@ -484,7 +484,7 @@ describe('<metadata-modal> copying text', () => {
     return event;
   }
 
-  async function mountWithTable(): Promise<MetadataModal> {
+  async function mountWithTable(): Promise<InfoPanel> {
     const el = await mount();
     el.active = true;
     (el as unknown as { _data: Record<string, unknown> })._data = sampleData;

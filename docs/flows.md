@@ -8,7 +8,7 @@ Canonical inventory of user-visible flows. Each Tier 5 e2e spec maps to one or m
 - **Find a photo on the map** — click marker → popup; arrow keys cycle filtered items; Space or thumbnail click → lightbox.
 - **View a photo full size** — lightbox shows the photo and nothing else; arrows cycle; Escape/Space/backdrop closes; trackpad pinch zooms.
 - **Watch a video** — videos play inline in lightbox; native controls auto-hide; Enter toggles play/pause (Space closes the lightbox, whatever is in it); mute persists across videos.
-- **View photo metadata** — Cmd+I toggles a floating panel: fields from `Photos.sqlite` plus Place and Categories, grouped under Photos / File / Capture / Location by where the value came from, empty groups omitted. Album names filter the map to that album; UUID copies and links to Photos.app. Movable, non-blocking; Cmd+I / X / Escape closes.
+- **View photo info** — Cmd+I toggles a floating panel: fields from `Photos.sqlite` plus Place and Categories, grouped under Photos / File / Capture / Location by where the value came from, empty groups omitted. Album names filter the map to that album; UUID copies and links to Photos.app. Movable, non-blocking; Cmd+I / X / Escape closes.
 - **Open a photo from a link** — a `karttapallo://photo/<uuid>` link opens the app (launching it if needed) on that photo: filters widen so it's visible, the map moves to it, and the popup opens.
 
 ## Filter
@@ -36,7 +36,7 @@ Canonical inventory of user-visible flows. Each Tier 5 e2e spec maps to one or m
 - **Copy and paste a date** — copy on one photo, paste on another (computes the hour offset).
 - **Save edits** — "Save to Photos" pushes pending edits to Photos.app; data reloads, popup reopens with the date edit row closed; alert on error.
 - **Discard edits** — clears all pending location and time edits.
-- **Open a photo in Apple Photos** — link button in the metadata panel's UUID row, beside the copy button.
+- **Open a photo in Apple Photos** — link button in the info panel's UUID row, beside the copy button.
 
 ## Album extras
 
@@ -52,4 +52,4 @@ Canonical inventory of user-visible flows. Each Tier 5 e2e spec maps to one or m
 
 ## Dismiss
 
-Priority order: metadata panel > date edit > placement > route edit > measurement > lightbox > popup. Escape works in every context; clicking outside the active surface, or pressing the key or button that opened it, also dismisses.
+Priority order: info panel > date edit > placement > route edit > measurement > lightbox > popup. Escape works in every context; clicking outside the active surface, or pressing the key or button that opened it, also dismisses.

@@ -28,14 +28,18 @@ A coord or time change buffered client-side via `@common/edits` signals, not yet
 **Location precision**:
 The GPS-source classification on each item: `Exif` (camera-set), `Inferred` (Photos.app guessed), `User` (manually set), or `None` (no GPS). Drives marker color and the Location filter.
 
+**Info panel**:
+The floating panel describing the selected photo (`<info-panel>`), toggled with Cmd+I. Named for what Photos.app and Finder call the same thing under the same key, and because it acts as well as reports — album names filter the map, the UUID copies and links out. The server side of it keeps the older name: `/api/metadata` really does serve metadata.
+_Avoid_: metadata modal, inspector.
+
 **Place**:
 The name Photos gives a moment — `Näätämö`, `Kemiö ja Karuna` — read from its own moment table, not reverse-geocoded by this app. A named area, so it is unrelated to an item's coordinates or its **Location precision**: an item can carry a Place and no GPS at all, which is why Place reaches assets the map cannot plot.
 
 **Scene label**:
-One of Apple's own image classifications for an item (`Lintu`, `Ulkoilma`), read from the search index Photos.app builds. Called `labels` in code and **Categories** in the UI, in both the search suggestions and the metadata panel. An analyzed item carries roughly ten; an unanalyzed one carries none.
+One of Apple's own image classifications for an item (`Lintu`, `Ulkoilma`), read from the search index Photos.app builds. Called `labels` in code and **Categories** in the UI, in both the search suggestions and the info panel. An analyzed item carries roughly ten; an unanalyzed one carries none.
 
 **Search corpus**:
-The three fields a search term is matched against — **Place**, description, **Scene label**. Assembled onto each item by the item store, so both the search box and the metadata panel read them from the same client-side record.
+The three fields a search term is matched against — **Place**, description, **Scene label**. Assembled onto each item by the item store, so both the search box and the info panel read them from the same client-side record.
 
 **Route**:
 A chronologically-ordered line connecting an album's filtered photos. Owned by the app, editable by the user (waypoints, per-segment routing method: straight / driving / hiking / none), persisted server-side as `_route.json`. Distinct from a **GPX Track**.

@@ -736,7 +736,7 @@ function queryMetaRelations(db: Database, uuid: string, set: SetFn) {
   if (persons.length > 0) set('persons', [...new Set(persons)].join(', '));
 }
 
-/** Rich metadata for a single asset — used by the metadata modal. */
+/** Rich metadata for a single asset — used by the info panel. */
 export function queryMetadata(
   db: Database,
   uuid: string

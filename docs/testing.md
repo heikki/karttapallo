@@ -35,7 +35,7 @@ Seed: `src/server/item-store.test.ts`.
 
 Lit elements instantiated and mounted into a happy-dom document via `bunfig.toml` `[test] preload = ["./src/client/test-setup.ts"]`. Tests construct elements with `new ComponentClass()` (rather than `document.createElement`, since happy-dom doesn't auto-upgrade unregistered tags), append them to `document.body`, await `updateComplete`, then assert against `shadowRoot.textContent` or attributes. Suitable for leaf components with no transitive map/MapLibre dependencies; heavier components are best left to Tier 5 in WebKit.
 
-Seed: `src/client/components/metadata-modal/index.test.ts`.
+Seed: `src/client/components/info-panel/index.test.ts`.
 
 ### Tier 4 — native smoke (`bun:test`, gated)
 
@@ -45,7 +45,7 @@ Seed: `resources/native/native-bridge.test.ts`.
 
 ### Tier 5 — end-to-end (Playwright)
 
-`tests/server.ts` boots the same `createApiHandler` + `createRequestHandler` the production servers (`src/server/dev.ts`, `src/server/index.ts`) use, but against a tempdir (`tests/output/data/`) pre-seeded with three fake items and a stub `PhotosLibrary`: `resolveImagePath` points every UUID at a checked-in fixture (`tests/fixtures/sample.jpg`), and `getMetadata` returns a small canned record so the metadata modal renders. Playwright drives WebKit against the running server.
+`tests/server.ts` boots the same `createApiHandler` + `createRequestHandler` the production servers (`src/server/dev.ts`, `src/server/index.ts`) use, but against a tempdir (`tests/output/data/`) pre-seeded with three fake items and a stub `PhotosLibrary`: `resolveImagePath` points every UUID at a checked-in fixture (`tests/fixtures/sample.jpg`), and `getMetadata` returns a small canned record so the info panel renders. Playwright drives WebKit against the running server.
 
 Specs are organised by user journey, not by component. Each one mirrors one or more flows from `docs/flows.md` and is named after its dominant flow; see `tests/specs/` for the current set, with the journey scope documented in each spec's header comment.
 

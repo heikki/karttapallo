@@ -4,7 +4,7 @@ Lit + signals client (`src/client/`), Bun server (`src/server/`), ObjC++ native 
 
 ## Client
 
-- **Components** — `<filter-panel>`, `<photo-popup>`, `<photo-lightbox>`, `<metadata-modal>`, `<files-modal>`, `<app-root>`, `<map-view>` and the `<map-*>` map features. Built on Lit ([ADR-0003](adr/0003-lit-web-components-for-ui.md)).
+- **Components** — `<filter-panel>`, `<photo-popup>`, `<photo-lightbox>`, `<info-panel>`, `<files-modal>`, `<app-root>`, `<map-view>` and the `<map-*>` map features. Built on Lit ([ADR-0003](adr/0003-lit-web-components-for-ui.md)).
 - **Map features** — each `<map-*>` element extends `MapFeatureElement`, gets the map handle via `@consume(mapContext)`, and lives in `src/client/components/map-*/`. `<map-view>` owns `setupMap()` and the basemap-style effect.
 - **Cross-feature ops** go through the `MapApi` interface — see [ADR-0007](adr/0007-mapapi-cross-feature-seam.md). Adding one is a deliberate two-step: declare in `MapApi`, implement the forwarder.
 - **Layer order** = template order — see [ADR-0008](adr/0008-dom-order-as-z-order.md). `<map-markers>` keeps its z-position across runtime layer swaps via the invisible `markers-anchor` symbol layer.

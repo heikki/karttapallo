@@ -55,7 +55,7 @@ export class PhotoLightbox extends SignalWatcher(LitElement) {
     const photo = data.filteredPhotos.get()[newIndex] ?? null;
     this.photo = photo;
     this.totalCount = total;
-    if (photo !== null) actions.refreshMetadata(photo.uuid);
+    if (photo !== null) actions.refreshInfo(photo.uuid);
   }
 
   private _resetTransform() {

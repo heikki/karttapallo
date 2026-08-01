@@ -66,7 +66,7 @@ export class AppRoot extends LitElement {
       <map-view></map-view>
       <filter-panel></filter-panel>
       <photo-lightbox id="lightbox"></photo-lightbox>
-      <metadata-modal id="metadata-modal"></metadata-modal>
+      <info-panel id="info-panel"></info-panel>
       <files-modal id="files-modal"></files-modal>
     `;
   }

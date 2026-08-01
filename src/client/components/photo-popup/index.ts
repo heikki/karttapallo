@@ -272,8 +272,8 @@ export class PhotoPopup extends SignalWatcher(LitElement) {
     if (uuid !== this._lastSeenUuid) {
       if (this._lastSeenUuid !== null) this._dateEditMode = false;
       this._lastSeenUuid = uuid;
-      // Keep an open metadata modal on the photo the popup now shows.
-      if (uuid !== null) actions.refreshMetadata(uuid);
+      // Keep an open info panel on the photo the popup now shows.
+      if (uuid !== null) actions.refreshInfo(uuid);
     }
     if (changed.has('_dateEditMode') && this._dateEditMode) {
       const input = this.shadowRoot?.getElementById(

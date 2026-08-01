@@ -40,16 +40,16 @@ function photoRecordFields(uuid: string): Record<string, unknown> {
 }
 
 /**
- * Follow photo navigation that happened underneath an open modal. A no-op
- * when the modal is closed or already showing `uuid`, so navigators can call
+ * Follow photo navigation that happened underneath an open panel. A no-op
+ * when the panel is closed or already showing `uuid`, so navigators can call
  * it unconditionally — and so the lightbox and the popup both pushing the
  * same uuid on one arrow key costs a single fetch.
  */
-export function refreshMetadata(uuid: string) {
-  const modal = document.querySelector<MetadataModal>('metadata-modal');
-  if (modal === null) return;
-  if (!modal.active || modal.shownUuid === uuid) return;
-  modal.loadMetadata(uuid);
+export function refreshInfo(uuid: string) {
+  const panel = document.querySelector<InfoPanel>('info-panel');
+  if (panel === null) return;
+  if (!panel.active || panel.shownUuid === uuid) return;
+  panel.load(uuid);
 }
 
 function escapeHtml(s: string) {
@@ -64,7 +64,7 @@ function formatSimpleValue(value: boolean | string | number) {
   return String(value);
 }
 
-function formatMetadataValue(value: unknown) {
+function formatValue(value: unknown) {
   if (value === null || value === undefined) return '<em>—</em>';
   if (
     typeof value === 'boolean' ||
@@ -102,7 +102,7 @@ function formatMetadataValue(value: unknown) {
  *
  * A section whose every row is empty renders nothing, heading included.
  */
-const METADATA_SECTIONS: Array<{
+const INFO_SECTIONS: Array<{
   title: string;
   fields: Array<[string, string]>;
 }> = [
@@ -189,7 +189,7 @@ const WRAPPED = new Set(['labels', 'albums']);
 /**
  * Keys the panel lets through to the lightbox and popup underneath it, so it
  * can stay open while the user works: arrows cycle photos (those navigators
- * call back into `refreshMetadata` to pull the panel along), Space toggles
+ * call back into `refreshInfo` to pull the panel along), Space toggles
  * between the popup and the lightbox, Enter plays or pauses a video there.
  * Same photo in every case, so nothing to refresh. Every other key stops here.
  */
@@ -218,14 +218,14 @@ function onCopyUuid(uuid: string, e: Event) {
   });
 }
 
-@customElement('metadata-modal')
-export class MetadataModal extends SignalWatcher(LitElement) {
+@customElement('info-panel')
+export class InfoPanel extends SignalWatcher(LitElement) {
   @property({ type: Boolean, reflect: true }) active = false;
   @litState() private _data: Record<string, unknown> | null = null;
   @litState() private _loading = false;
   @litState() private _error: string | null = null;
 
-  /** Photo the modal is showing (or loading). */
+  /** Photo the panel is showing (or loading). */
   shownUuid: string | null = null;
   // Bumped per load so a slow response for a photo the user has already
   // navigated past can't overwrite the current one.
@@ -249,7 +249,7 @@ export class MetadataModal extends SignalWatcher(LitElement) {
 
   static override styles = styles;
 
-  loadMetadata(uuid: string) {
+  load(uuid: string) {
     const seq = ++this._loadSeq;
     this.shownUuid = uuid;
     // Hold the height the outgoing table had, before dropping its rows: a
@@ -395,7 +395,7 @@ export class MetadataModal extends SignalWatcher(LitElement) {
   }
 
   /**
-   * Keep the modal grabbable: the header can't leave the top of the viewport,
+   * Keep the panel grabbable: the header can't leave the top of the viewport,
    * and a strip of the box always stays inside the other three edges.
    */
   private _clampOffset(base: { left: number; top: number; width: number }) {
@@ -466,7 +466,7 @@ export class MetadataModal extends SignalWatcher(LitElement) {
   }
 
   /**
-   * The text currently selected inside this modal, or '' if the selection is
+   * The text currently selected inside this panel, or '' if the selection is
    * empty or lives elsewhere on the page.
    */
   private _selectedText() {
@@ -519,7 +519,7 @@ export class MetadataModal extends SignalWatcher(LitElement) {
     }
     const uuid = selection.selectedPhotoUuid.get();
     if (uuid === null) return;
-    this.loadMetadata(uuid);
+    this.load(uuid);
   }
 
   private readonly _onKeydown = (e: KeyboardEvent) => {
@@ -551,7 +551,7 @@ export class MetadataModal extends SignalWatcher(LitElement) {
           title="Drag to move"
           @pointerdown=${this._onHeaderPointerDown}
         >
-          <span>Metadata</span>
+          <span>Info</span>
           <span
             class="close"
             @click=${() => {
@@ -577,7 +577,7 @@ export class MetadataModal extends SignalWatcher(LitElement) {
 
   private _renderTable() {
     if (this._data === null) return nothing;
-    const sections = METADATA_SECTIONS.map((section) => {
+    const sections = INFO_SECTIONS.map((section) => {
       const rows = section.fields
         .map(([key, label]) => this._renderRow(key, label))
         .filter((row) => row !== null);
@@ -683,7 +683,7 @@ export class MetadataModal extends SignalWatcher(LitElement) {
       <td>${label}</td>
       <td
         class=${WRAPPED.has(key) ? 'wrap' : nothing}
-        .innerHTML=${formatMetadataValue(val)}
+        .innerHTML=${formatValue(val)}
       ></td>
     </tr>`;
   }

@@ -75,7 +75,7 @@ WebKit highlights the selection and dispatches a `copy` event, but hands it an
 clipboard silently keeps whatever it held before. Any component with selectable
 text inside its shadow root has to fill the payload in itself: listen for `copy`,
 read the selection, `clipboardData.setData('text/plain', …)`, `preventDefault()`.
-See `_onCopy` in `src/client/components/metadata-modal/index.ts`.
+See `_onCopy` in `src/client/components/info-panel/index.ts`.
 
 Reading the selection needs care too. `document.getSelection()` reports a
 collapsed caret retargeted to the light-DOM host (`APP-ROOT` here), so it can't
@@ -85,7 +85,7 @@ locate the range; `ShadowRoot.getSelection()` is Chrome-only. What works is
 also tells you whether the selection is inside your root at all, which
 `Selection.toString()` cannot.
 
-Verified 2026-07-30 in Playwright WebKit against the metadata modal: the `copy`
+Verified 2026-07-30 in Playwright WebKit against the info panel: the `copy`
 event arrived with `''` while `getComposedRanges` returned the right text.
 
 ## MapLibre basemap swap

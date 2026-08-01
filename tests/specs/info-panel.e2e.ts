@@ -1,7 +1,7 @@
 import { setTimeout as sleep } from 'node:timers/promises';
 import { expect, test } from '@playwright/test';
 
-test('View photo metadata', async ({ page }) => {
+test('View photo info', async ({ page }) => {
   await page.goto('/?id=e2e-1');
 
   const popup = page.locator('photo-popup');
@@ -10,7 +10,7 @@ test('View photo metadata', async ({ page }) => {
   await page.keyboard.press('Meta+i');
 
   // Modal becomes active and renders rows from the fake getMetadata payload.
-  const modal = page.locator('metadata-modal[active]');
+  const modal = page.locator('info-panel[active]');
   await expect(modal).toBeVisible();
 
   // Rows render in METADATA_FIELDS order; assert the labels we seeded.
@@ -37,18 +37,18 @@ test('View photo metadata', async ({ page }) => {
 
   // Escape closes the modal; the popup remains open underneath.
   await page.keyboard.press('Escape');
-  await expect(page.locator('metadata-modal[active]')).toHaveCount(0);
+  await expect(page.locator('info-panel[active]')).toHaveCount(0);
   await expect(popup).toBeVisible();
 });
 
-test('Cmd+I toggles the metadata panel, and nothing overlays the photo', async ({
+test('Cmd+I toggles the info panel, and nothing overlays the photo', async ({
   page
 }) => {
   await page.goto('/?id=e2e-1');
 
   const popup = page.locator('photo-popup');
   await expect(popup).toBeVisible();
-  const modal = page.locator('metadata-modal[active]');
+  const modal = page.locator('info-panel[active]');
 
   // The popup carried an info button and a Photos.app link over the image, and
   // the lightbox a second pair. Nothing is left on either — the photo is the
@@ -84,7 +84,7 @@ test('Cmd+I does nothing with no photo selected', async ({ page }) => {
 
   // The panel describes one photo; with none chosen there is nothing to open.
   await page.keyboard.press('Meta+i');
-  await expect(page.locator('metadata-modal[active]')).toHaveCount(0);
+  await expect(page.locator('info-panel[active]')).toHaveCount(0);
 });
 
 test('Clicking an album name filters the map to it', async ({ page }) => {
@@ -95,7 +95,7 @@ test('Clicking an album name filters the map to it', async ({ page }) => {
   await expect(popup).toBeVisible();
   await page.keyboard.press('Meta+i');
 
-  const body = page.locator('metadata-modal[active] .body');
+  const body = page.locator('info-panel[active] .body');
   await body.getByRole('button', { name: 'Tampere' }).click();
 
   await expect(page.getByLabel('Album')).toHaveValue('Tampere');
@@ -117,7 +117,7 @@ test('Every scene label shows, wrapped rather than scrolled', async ({
   await expect(popup).toBeVisible();
   await page.keyboard.press('Meta+i');
 
-  const body = page.locator('metadata-modal[active] .body');
+  const body = page.locator('info-panel[active] .body');
   await expect(body.getByText('Categories', { exact: true })).toBeVisible();
 
   // All twelve, first to last — the row is not truncated to fit. Scoped to its
@@ -142,14 +142,14 @@ test('Every scene label shows, wrapped rather than scrolled', async ({
   expect(overflow).toBeLessThanOrEqual(1);
 });
 
-test('Deselecting the photo takes its metadata away', async ({ page }) => {
+test('Deselecting the photo takes its info away', async ({ page }) => {
   await page.goto('/?id=e2e-1');
 
   const popup = page.locator('photo-popup');
   await expect(popup).toBeVisible();
   await page.keyboard.press('Meta+i');
 
-  const modal = page.locator('metadata-modal[active]');
+  const modal = page.locator('info-panel[active]');
   await expect(modal).toBeVisible();
 
   // Click empty map, well clear of the panel. That the popup closes at all
@@ -164,7 +164,7 @@ test('Deselecting the photo takes its metadata away', async ({ page }) => {
   await expect(modal).toHaveCount(0);
 });
 
-test('A filter that excludes the photo takes its metadata away', async ({
+test('A filter that excludes the photo takes its info away', async ({
   page
 }) => {
   await page.goto('/?id=e2e-1');
@@ -172,7 +172,7 @@ test('A filter that excludes the photo takes its metadata away', async ({
   const popup = page.locator('photo-popup');
   await expect(popup).toBeVisible();
   await page.keyboard.press('Meta+i');
-  const modal = page.locator('metadata-modal[active]');
+  const modal = page.locator('info-panel[active]');
   await expect(modal).toBeVisible();
 
   // e2e-1 is the only Helsinki photo; switching to Tampere drops it from the
@@ -183,14 +183,14 @@ test('A filter that excludes the photo takes its metadata away', async ({
   await expect(modal).toHaveCount(0);
 });
 
-test('The metadata modal stays put as the table grows', async ({ page }) => {
+test('The info panel stays put as the table grows', async ({ page }) => {
   await page.goto('/?id=e2e-1');
 
   const popup = page.locator('photo-popup');
   await expect(popup).toBeVisible();
   await page.keyboard.press('Meta+i');
 
-  const content = page.locator('metadata-modal[active] .content');
+  const content = page.locator('info-panel[active] .content');
   const body = content.locator('.body');
   await expect(body.getByText('e2e-1.jpg', { exact: true })).toBeVisible();
   const before = await content.boundingBox();
@@ -207,7 +207,7 @@ test('The metadata modal stays put as the table grows', async ({ page }) => {
   expect(after.y).toBeCloseTo(before.y, 0);
 });
 
-test('The metadata panel holds its height while the next photo loads', async ({
+test('The info panel holds its height while the next photo loads', async ({
   page
 }) => {
   await page.goto('/?id=e2e-1');
@@ -216,7 +216,7 @@ test('The metadata panel holds its height while the next photo loads', async ({
   await expect(popup).toBeVisible();
   await page.keyboard.press('Meta+i');
 
-  const content = page.locator('metadata-modal[active] .content');
+  const content = page.locator('info-panel[active] .content');
   const body = content.locator('.body');
   await expect(body.getByText('e2e-1.jpg', { exact: true })).toBeVisible();
   const before = await content.boundingBox();
@@ -244,14 +244,14 @@ test('The metadata panel holds its height while the next photo loads', async ({
   expect(after.height).toBeGreaterThan(before.height);
 });
 
-test('Copy selected text out of the metadata modal', async ({ page }) => {
+test('Copy selected text out of the info panel', async ({ page }) => {
   await page.goto('/?id=e2e-1');
 
   const popup = page.locator('photo-popup');
   await expect(popup).toBeVisible();
   await page.keyboard.press('Meta+i');
 
-  const modal = page.locator('metadata-modal[active]');
+  const modal = page.locator('info-panel[active]');
   await expect(modal).toBeVisible();
   const cell = modal.locator('.body td', { hasText: '4032x3024' }).first();
   const box = await cell.boundingBox();
@@ -284,14 +284,14 @@ test('Copy selected text out of the metadata modal', async ({ page }) => {
   expect(copied).toContain('4032x3024');
 });
 
-test('Move the metadata modal by its header', async ({ page }) => {
+test('Move the info panel by its header', async ({ page }) => {
   await page.goto('/?id=e2e-1');
 
   const popup = page.locator('photo-popup');
   await expect(popup).toBeVisible();
   await page.keyboard.press('Meta+i');
 
-  const content = page.locator('metadata-modal[active] .content');
+  const content = page.locator('info-panel[active] .content');
   const header = content.locator('.header');
   const before = await content.boundingBox();
   const grab = await header.boundingBox();
@@ -330,7 +330,7 @@ test('Move the metadata modal by its header', async ({ page }) => {
 
   // Closing forgets where it was dragged: the next open is back in the corner.
   await page.keyboard.press('Escape');
-  await expect(page.locator('metadata-modal[active]')).toHaveCount(0);
+  await expect(page.locator('info-panel[active]')).toHaveCount(0);
   await page.keyboard.press('Meta+i');
   const reopened = await content.boundingBox();
   if (reopened === null) throw new Error('modal did not reopen');
@@ -338,14 +338,14 @@ test('Move the metadata modal by its header', async ({ page }) => {
   expect(reopened.y).toBeCloseTo(before.y, 0);
 });
 
-test('Browse photos with the metadata modal open', async ({ page }) => {
+test('Browse photos with the info panel open', async ({ page }) => {
   await page.goto('/?id=e2e-1');
 
   const popup = page.locator('photo-popup');
   await expect(popup).toBeVisible();
   await page.keyboard.press('Meta+i');
 
-  const body = page.locator('metadata-modal[active] .body');
+  const body = page.locator('info-panel[active] .body');
   await expect(body.getByText('e2e-1.jpg', { exact: true })).toBeVisible();
 
   // Arrow keys still cycle the selection underneath, and the modal follows.
@@ -365,7 +365,7 @@ test('Browse photos with the metadata modal open', async ({ page }) => {
   await expect(body.getByText('e2e-1.jpg', { exact: true })).toBeVisible();
 });
 
-test('Toggle the lightbox with Space while the modal is open', async ({
+test('Toggle the lightbox with Space while the info panel is open', async ({
   page
 }) => {
   await page.goto('/?id=e2e-1');
@@ -374,7 +374,7 @@ test('Toggle the lightbox with Space while the modal is open', async ({
   await expect(popup).toBeVisible();
   await page.keyboard.press('Meta+i');
 
-  const modal = page.locator('metadata-modal[active]');
+  const modal = page.locator('info-panel[active]');
   const lightbox = page.locator('photo-lightbox[active]');
   await expect(modal).toBeVisible();
   await expect(lightbox).toHaveCount(0);

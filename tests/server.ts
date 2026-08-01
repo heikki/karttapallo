@@ -54,7 +54,7 @@ function seed(s: SeedSpec): ItemEntry {
     place: s.place ?? null,
     description: s.description ?? null,
     labels: s.labels ?? [],
-    // Shaped like the real thing so the metadata panel's "Open in Photos" link
+    // Shaped like the real thing so the info panel's "Open in Photos" link
     // has an href to assert. Never followed in a spec — it would hand the
     // browser off to Photos.app.
     photos_url: `photos:albums?albumUuid=E2E&assetUuid=${s.uuid}`
@@ -143,7 +143,7 @@ itemStore.rebuildComplete.catch(() => {
 
 // Fake Photos library: every UUID resolves to the same fixture JPEG so popup /
 // lightbox <img> tags load real bytes. Metadata returns a small canned record
-// so the metadata modal renders rows; video stays unimplemented.
+// so the info panel renders rows; video stays unimplemented.
 const photosLibrary: PhotosLibrary = {
   resolveImagePath: () => fixtureJpeg,
   resolveVideoPath: () => null,

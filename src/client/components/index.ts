@@ -9,7 +9,7 @@ import './map-placement';
 import './map-popup';
 import './map-route';
 import './map-view';
-import './metadata-modal';
+import './info-panel';
 import './photo-lightbox';
 import './photo-popup';
 import './search-field';
