@@ -8,19 +8,28 @@ import selection from '@common/selection';
 import { styles } from './styles';
 
 /**
- * The two corpus fields `/api/metadata` knows nothing about. `queryMetadata`
- * reads `Photos.sqlite` alone, but a place name comes from the moment table and
- * a scene label from `psi.sqlite` (ADR-0014) — both already assembled onto the
- * client's own photo record by the item store, so they are merged in from there
- * rather than queried a second time per open.
+ * Rows taken from the client's own photo record rather than from the metadata
+ * response, which `queryMetadata` builds out of `Photos.sqlite` alone.
+ *
+ * Place and Categories are there because it has neither: a place name comes
+ * from the moment table and a scene label from `psi.sqlite` (ADR-0014), both
+ * already assembled onto the record by the item store, so re-querying them per
+ * open would be a second source for data in hand.
+ *
+ * Albums are there for a different reason — the response carries them
+ * pre-joined into one string, which cannot be split back into chips without
+ * guessing (an album named `Kemiö, Karuna` would split into two that don't
+ * exist). The record holds the real array, and it is the same array
+ * `albumsOf()` filters on, so a name clicked here is exactly a name the filter
+ * accepts rather than one that merely looks like it.
  *
  * A photo missing from the record (or a snapshot written before these fields
  * existed) yields keys with no value, which `isEmptyValue` drops like any other
  * empty row.
  */
-function searchCorpusOf(uuid: string): Record<string, unknown> {
+function photoRecordFields(uuid: string): Record<string, unknown> {
   const photo = data.photos.get().find((p) => p.uuid === uuid);
-  return { place: photo?.place, labels: photo?.labels };
+  return { place: photo?.place, labels: photo?.labels, albums: photo?.albums };
 }
 
 export function showMetadata(uuid: string) {
@@ -85,8 +94,8 @@ function formatMetadataValue(value: unknown) {
  * Categories alone can wrap to four lines — so putting that group last keeps a
  * growing row from shoving the fixed ones up and down as the user arrows
  * between photos, the same jitter the panel's top-left anchoring and its held
- * height exist to avoid. Categories sits at the very bottom for that reason,
- * below even the UUID.
+ * height exist to avoid. Categories is last within that group for the same
+ * reason: it is the one row with no ceiling on its height.
  *
  * A section whose every row is empty renders nothing, heading included.
  */
@@ -101,8 +110,12 @@ const METADATA_SECTIONS: Array<{
       ['original_filename', 'Original filename'],
       ['dimensions', 'Dimensions'],
       ['original_filesize', 'File size'],
-      ['duration', 'Duration'],
-      ['uti', 'UTI']
+      ['duration', 'Duration']
+      // No UTI row. `/api/metadata` still returns it, but the filename above
+      // already ends in .jpg or .HEIC and Video already says which it is, so
+      // `public.jpeg` only restated them. Its one unique signal — an asset
+      // Photos converted, where the UTI disagrees with the original filename's
+      // extension — is not worth a row on every photo that has nothing to say.
     ]
   },
   {
@@ -131,17 +144,17 @@ const METADATA_SECTIONS: Array<{
   {
     title: 'Photos',
     fields: [
+      ['uuid', 'UUID'],
+      ['albums', 'Albums'],
       ['title', 'Title'],
       ['description', 'Description'],
       ['keywords', 'Keywords'],
-      ['albums', 'Albums'],
       ['persons', 'Persons'],
       ['favorite', 'Favorite'],
       ['hidden', 'Hidden'],
       ['ismovie', 'Video'],
       ['screenshot', 'Screenshot'],
       ['place', 'Place'],
-      ['uuid', 'UUID'],
       // "Categories" is what the search box calls these, and they are only ever
       // met through it — the same word in both places or they read as two
       // features.
@@ -161,10 +174,12 @@ const ALWAYS_SHOWN = new Set(['original_date']);
 
 /**
  * Fields whose value wraps onto as many lines as it needs instead of scrolling
- * sideways. Only the unbounded one: every other value is a filename, a camera
- * or a number, where a tall row would cost more than a rare sideways scroll.
+ * sideways. Only the two with no bound on their length: every other value is a
+ * filename, a camera or a number, where a tall row would cost more than a rare
+ * sideways scroll. Albums is here so its clickable names stay reachable —
+ * a name scrolled off the right edge cannot be clicked.
  */
-const WRAPPED = new Set(['labels']);
+const WRAPPED = new Set(['labels', 'albums']);
 
 /** How long a metadata read may take before the panel says it's loading. */
 const LOADING_ANNOUNCE_MS = 200;
@@ -239,7 +254,7 @@ export class MetadataModal extends SignalWatcher(LitElement) {
       })
       .then((record) => {
         if (seq !== this._loadSeq) return;
-        this._data = { ...record, ...searchCorpusOf(uuid) };
+        this._data = { ...record, ...photoRecordFields(uuid) };
         this._settleLoading();
       })
       .catch((err: unknown) => {
@@ -572,6 +587,25 @@ export class MetadataModal extends SignalWatcher(LitElement) {
               />
             </svg>
           </button>
+        </td>
+      </tr>`;
+    }
+    if (key === 'albums') {
+      return html`<tr>
+        <td>${label}</td>
+        <td class=${WRAPPED.has(key) ? 'wrap' : nothing}>
+          ${(val as string[]).map(
+            (album, i) =>
+              html`${i === 0 ? nothing : ', '}<button
+                  class="album-btn"
+                  title="Filter the map to this album"
+                  @click=${() => {
+                    data.setAlbum(album);
+                  }}
+                >
+                  ${album}
+                </button>`
+          )}
         </td>
       </tr>`;
     }

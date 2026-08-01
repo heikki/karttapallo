@@ -42,6 +42,27 @@ test('View photo metadata', async ({ page }) => {
   await expect(popup).toBeVisible();
 });
 
+test('Clicking an album name filters the map to it', async ({ page }) => {
+  // e2e-3 is in Tampere, alongside e2e-2; e2e-1 is the lone Helsinki photo.
+  await page.goto('/?id=e2e-3');
+
+  const popup = page.locator('photo-popup');
+  await expect(popup).toBeVisible();
+  await popup.locator('.overlay-btn.info-btn').click();
+
+  const body = page.locator('metadata-modal[active] .body');
+  await body.getByRole('button', { name: 'Tampere' }).click();
+
+  await expect(page.getByLabel('Album')).toHaveValue('Tampere');
+  await expect(page.getByLabel('Photo stats')).toHaveText('2 photos');
+  await expect(page).toHaveURL(/album=Tampere/);
+
+  // The photo is in the album it just filtered to, so it stays selected and
+  // the panel stays open on it rather than closing under the click.
+  await expect(popup).toBeVisible();
+  await expect(body.getByText('e2e-3.jpg', { exact: true })).toBeVisible();
+});
+
 test('Every scene label shows, wrapped rather than scrolled', async ({
   page
 }) => {
@@ -54,8 +75,12 @@ test('Every scene label shows, wrapped rather than scrolled', async ({
   const body = page.locator('metadata-modal[active] .body');
   await expect(body.getByText('Categories', { exact: true })).toBeVisible();
 
-  // All twelve, first to last — the row is not truncated to fit.
-  const value = body.locator('td.wrap');
+  // All twelve, first to last — the row is not truncated to fit. Scoped to its
+  // own row: Albums wraps too, so `td.wrap` alone matches both.
+  const value = body
+    .locator('tr')
+    .filter({ hasText: 'Categories' })
+    .locator('td.wrap');
   await expect(value).toContainText('Lintu');
   await expect(value).toContainText('Silta');
 

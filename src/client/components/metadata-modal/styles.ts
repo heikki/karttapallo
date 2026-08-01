@@ -156,6 +156,21 @@ export const styles = css`
     color: #0a84ff;
     font-size: 11px;
   }
+  /* Reads as text until pointed at — a table of values shouldn't sprout
+     buttons. It wraps with its row (the cell is .wrap) so a photo in several
+     albums doesn't push the table sideways. */
+  .album-btn {
+    padding: 0;
+    background: none;
+    border: none;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+  }
+  .album-btn:hover {
+    color: #0a84ff;
+    text-decoration: underline;
+  }
   .copy-btn {
     margin-left: 6px;
     padding: 2px;

@@ -133,6 +133,53 @@ describe('<metadata-modal>', () => {
     el.remove();
   });
 
+  test('each album name filters the map to it when clicked', async () => {
+    const el = await mount();
+    data.resetFilters();
+    data.photos.set([
+      {
+        uuid: 'p1',
+        type: 'photo',
+        full: 'full/p1.jpg',
+        thumb: 'thumb/p1.jpg',
+        lat: 60.17,
+        lon: 24.94,
+        date: '2024:06:01 12:00:00',
+        tz: '+03:00',
+        camera: 'iPhone 15',
+        gps: 'exif',
+        albums: ['Helsinki', 'Kemiö, Karuna'],
+        place: null,
+        description: null,
+        labels: []
+      }
+    ]);
+    await Bun.sleep(0);
+    (el as unknown as { _data: Record<string, unknown> })._data = {
+      albums: ['Helsinki', 'Kemiö, Karuna']
+    };
+    el.requestUpdate();
+    await el.updateComplete;
+
+    const buttons = [
+      ...(el.shadowRoot?.querySelectorAll<HTMLButtonElement>('.album-btn') ??
+        [])
+    ];
+    // A comma inside an album name stays inside one button — the array is
+    // rendered per entry, never split back out of a joined string.
+    expect(buttons.map((b) => b.textContent.trim())).toEqual([
+      'Helsinki',
+      'Kemiö, Karuna'
+    ]);
+
+    buttons[1]?.click();
+    expect(data.filters.get().album).toBe('Kemiö, Karuna');
+
+    data.photos.set([]);
+    data.resetFilters();
+    el.remove();
+  });
+
   test('sinks the unbounded Categories row below every fixed one', async () => {
     const el = await mount();
     (el as unknown as { _data: Record<string, unknown> })._data = {
