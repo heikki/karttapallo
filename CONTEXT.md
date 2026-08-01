@@ -20,13 +20,22 @@ The Apple Photos `.photoslibrary` bundle the app reads from. Always the **active
 _Avoid_: Photos DB, catalog.
 
 **Album**:
-An Apple Photos album. Read-only on the client; on the server (`AlbumStore`), the same name keys an augmented filesystem subtree under `data/albums/{album}/` containing GPX/markdown files, per-file visibility (`_files.json`), and a saved route (`_route.json`). Server **Album** = Photos album + sidecar data.
+An Apple Photos album. Read-only on the client; on the server (`AlbumStore`), the same name keys an augmented filesystem subtree under `data/libraries/{key}/albums/{album}/` containing GPX/markdown files, per-file visibility (`_files.json`), and a saved route (`_route.json`). Server **Album** = Photos album + sidecar data.
 
 **Pending Edit**:
 A coord or time change buffered client-side via `@common/edits` signals, not yet persisted back to Photos.app. Cleared on Save (writes through to `Photos.sqlite` via NSAppleScript) or Discard.
 
 **Location precision**:
 The GPS-source classification on each item: `Exif` (camera-set), `Inferred` (Photos.app guessed), `User` (manually set), or `None` (no GPS). Drives marker color and the Location filter.
+
+**Place**:
+The name Photos gives a moment — `Näätämö`, `Kemiö ja Karuna` — read from its own moment table, not reverse-geocoded by this app. A named area, so it is unrelated to an item's coordinates or its **Location precision**: an item can carry a Place and no GPS at all, which is why Place reaches assets the map cannot plot.
+
+**Scene label**:
+One of Apple's own image classifications for an item (`Lintu`, `Ulkoilma`), read from the search index Photos.app builds. Called `labels` in code and **Categories** in the UI, in both the search suggestions and the metadata panel. An analyzed item carries roughly ten; an unanalyzed one carries none.
+
+**Search corpus**:
+The three fields a search term is matched against — **Place**, description, **Scene label**. Assembled onto each item by the item store, so both the search box and the metadata panel read them from the same client-side record.
 
 **Route**:
 A chronologically-ordered line connecting an album's filtered photos. Owned by the app, editable by the user (waypoints, per-segment routing method: straight / driving / hiking / none), persisted server-side as `_route.json`. Distinct from a **GPX Track**.
@@ -55,3 +64,5 @@ The marker rendering — `Classic` (color-coded circles) or `Points` (white WebG
 
 - **"Album"** means two related things: the read-only Photos album (same name and ID across the app) and the server's augmented version with sidecar files. Code distinguishes by location; CONTEXT.md treats them as one term with two aspects.
 - **"Photo" / "Item"** are the same thing seen from different sides. Keep server code on **Item** and client code on **Photo**; the boundary is `/api/items`.
+- **"Scene label" / "labels" / "Categories"** are one thing under three names — the concept, the field, and the word the UI shows. The UI word is deliberate: users only ever meet these through search, and two names there would read as two features.
+- **"Place"** is a name, **"Location"** is coordinates. The Location filter and the Place row answer different questions, and an item can have either without the other.

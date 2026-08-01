@@ -5,9 +5,9 @@ Geotagged photo map viewer with Apple Photos integration.
 ## Project Stats (as of 01.08.2026)
 
 - **TypeScript files**: 87
-- **Lines of code**: 15,931 (+ 4,988 tests)
-- **Total commits**: 627
-- **Total tokens**: ~2,926M | **Total cost**: ~$1,904
+- **Lines of code**: 16,132 (+ 5,456 tests)
+- **Total commits**: 639
+- **Total tokens**: ~2,984M | **Total cost**: ~$1,938
 
 ## Updating This Diary
 
@@ -37,13 +37,18 @@ git log --pretty=format:"%ad|%s" --date=format:"%Y-%m-%d" | head -50  # Recent c
 - Describe final outcomes, not reverted intermediate attempts.
 - Flat list, no sub-bullets or prose.
 
-## 01.08.2026 — Search
+## 01.08.2026 — Search, and the metadata panel it fed
 
-**Tokens**: 61M | **Cost**: $42
+**Tokens**: 119M | **Cost**: $76
 
 - Search photos by place name, description or Apple's own scene labels, from the panel or Cmd+F
 - Typing suggests matching terms grouped by kind with counts; picking one filters, fits and selects
 - Matching ignores case and accents and works on word starts, so "naatamo" finds "Näätämö"
+- Search now always covers the whole library, and the year, album and camera dropdowns follow it
+- The metadata panel shows a photo's place and every scene label it carries — the terms search matches
+- Its rows are grouped by where the value came from, and a group the photo has nothing in is left out
+- Clicking an album name in the panel filters the map to that album
+- Cmd+I toggles the panel, Enter plays and pauses a video, and nothing covers the photo any more
 
 ## 30.07.2026 — Deep links; floating metadata panel
 

@@ -8,12 +8,12 @@ Canonical inventory of user-visible flows. Each Tier 5 e2e spec maps to one or m
 - **Find a photo on the map** — click marker → popup; arrow keys cycle filtered items; Space or thumbnail click → lightbox.
 - **View a photo full size** — lightbox shows date/timezone; arrows cycle; Escape/Space/backdrop closes; trackpad pinch zooms.
 - **Watch a video** — videos play inline in lightbox; native controls auto-hide; Enter toggles play/pause (Space closes the lightbox, whatever is in it); mute persists across videos.
-- **View photo metadata** — Cmd+I toggles a panel with all fields from `Photos.sqlite`, plus the two searchable ones it doesn't hold: Place, and Categories (every scene label the photo carries, which can run to a few dozen). Rows are grouped under File / Capture / Location / Photos by where the value came from, and a group the photo has nothing in is left out entirely. Each album name is clickable and filters the map to that album; UUID has copy button; movable, non-blocking; close with Cmd+I / X / Escape.
+- **View photo metadata** — Cmd+I toggles a floating panel: fields from `Photos.sqlite` plus Place and Categories, grouped under Photos / File / Capture / Location by where the value came from, empty groups omitted. Album names filter the map to that album; UUID copies and links to Photos.app. Movable, non-blocking; Cmd+I / X / Escape closes.
 - **Open a photo from a link** — a `karttapallo://photo/<uuid>` link opens the app (launching it if needed) on that photo: filters widen so it's visible, the map moves to it, and the popup opens.
 
 ## Filter
 
-- **Search by place, description or category** — Cmd+F or the Search box; typing offers matching terms grouped by kind (Places / Descriptions / Categories, the last being Apple's own scene labels like `Lintu` or `Auto`) with photo counts (arrows + Enter, or click); picking one applies it as a token, then fits to the matches and opens the oldest, like the Fit button. Matching ignores case and accents, on word starts — `naatamo` finds `Näätämö`. Search always runs over the whole library: the year / album / camera dropdowns never limit what it finds, and applying a term clears them, so the count on a suggestion is what lands on the map. Afterwards those dropdowns list only the years, albums and cameras the term appears in, to narrow within the result.
+- **Search by place, description or category** — Cmd+F or the Search box; typing offers matching terms grouped by kind (Places / Descriptions / Categories) with photo counts, taken by arrows + Enter or click; picking one applies it as a token, then fits and opens the oldest match, like the Fit button. Case- and accent-insensitive on word starts — `naatamo` finds `Näätämö`. Always searches the whole library: applying a term clears the three dropdowns below, so a suggestion's count is what lands on the map, and they then list only what the term covers.
 - **Filter by year** — dropdown (limited by search); cascades to repopulate album and camera.
 - **Filter by album** — dropdown (limited by search + year); cascades to camera; loads visible GPX tracks if any.
 - **Filter by camera** — dropdown (limited by search + year + album).
@@ -52,4 +52,4 @@ Canonical inventory of user-visible flows. Each Tier 5 e2e spec maps to one or m
 
 ## Dismiss
 
-Priority order: metadata modal > date edit > placement > route edit > measurement > lightbox > popup. Escape works in every context; clicking outside the active surface or pressing the toggle button also dismisses.
+Priority order: metadata panel > date edit > placement > route edit > measurement > lightbox > popup. Escape works in every context; clicking outside the active surface, or pressing the key or button that opened it, also dismisses.
