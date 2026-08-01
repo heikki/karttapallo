@@ -116,15 +116,56 @@ test('Search composes with the other filters', async ({ page }) => {
   await expect(page).toHaveURL(/q=Kuhmo/);
   await expect(page.getByLabel('Photo stats')).toHaveText('1 photos');
 
-  // Pivoting to a year the term can't appear in yields an honest empty map
-  // rather than silently widening the search.
-  await page.getByLabel('Year').selectOption('2023');
+  // A year the term can't appear in is no longer offered — the selects sit
+  // below the box and narrow with it.
+  await expect(page.getByLabel('Year').locator('option')).toHaveText([
+    'All',
+    '2024'
+  ]);
+
+  // The multi-select filters stay outside that cascade, so over-constraining
+  // through them still yields an honest empty map rather than silently
+  // widening the search.
+  await page.getByRole('button', { name: 'Photos' }).click();
   await expect(page.getByLabel('Photo stats')).toHaveText('No results');
+  await expect(page).toHaveURL(/q=Kuhmo/);
+  await page.getByRole('button', { name: 'Photos' }).click();
 
   // Reset clears the search along with everything else.
   await page.getByRole('button', { name: 'Reset' }).click();
   await expect(page.getByLabel('Photo stats')).toHaveText('3 photos');
   await expect(page).not.toHaveURL(/q=/);
+});
+
+test('An applied term narrows the selects below it', async ({ page }) => {
+  await page.goto('/');
+
+  const search = page.getByRole('combobox', { name: 'Search' });
+  const suggestions = page.getByRole('listbox', { name: 'Search suggestions' });
+  const year = page.getByLabel('Year');
+  const album = page.getByLabel('Album');
+  const camera = page.getByLabel('Camera');
+
+  await expect(year.locator('option')).toHaveText(['All', '2023', '2024']);
+  await expect(album.locator('option')).toHaveText([
+    'All',
+    'Helsinki',
+    'Tampere'
+  ]);
+
+  // Kuusamo is the 2023 / Tampere / Sony photo alone, so the selects below the
+  // box stop offering choices that would empty the map, and start describing
+  // where the term appears.
+  await search.fill('kuusamo');
+  await suggestions.getByRole('option').first().click();
+  await expect(year.locator('option')).toHaveText(['All', '2023']);
+  await expect(album.locator('option')).toHaveText(['All', 'Tampere']);
+  await expect(camera.locator('option')).toHaveText(['All', 'Sony']);
+
+  // Clearing restores them — narrowing hides options, it never drops them.
+  await page.getByRole('button', { name: 'Clear search' }).click();
+  await expect(year.locator('option')).toHaveText(['All', '2023', '2024']);
+  await expect(camera.locator('option')).toHaveText(['All', 'Sony', 'iPhone']);
 });
 
 test('Keyboard drives the suggestion list, and Cmd+F focuses it', async ({

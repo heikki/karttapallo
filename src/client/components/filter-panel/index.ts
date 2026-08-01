@@ -9,7 +9,7 @@ import { HAS_MML } from '@common/features';
 import * as interactionMode from '@common/interaction-mode';
 import selection from '@common/selection';
 import { resetUrl } from '@common/url-state';
-import { getYear, isVideo } from '@common/utils';
+import { isVideo } from '@common/utils';
 import { viewState } from '@common/view-state';
 
 import './album-controls';
@@ -126,11 +126,8 @@ export class FilterPanel extends SignalWatcher(LitElement) {
   }
 
   override render() {
-    const allPhotos = data.photos.get();
-    const years = [
-      ...new Set(allPhotos.map(getYear).filter((y): y is string => y !== null))
-    ].sort();
     const f = data.filters.get();
+    const years = data.yearOptions.get();
     const albumOpts = data.albumOptions.get();
     const cameraOpts = data.cameraOptions.get();
     const editCount = edits.editCount.get();

@@ -31,6 +31,10 @@ function albumsOf(p: Photo): string[] {
   return p.albums.length === 0 ? [NO_ALBUM] : p.albums;
 }
 
+function cameraOf(p: Photo): string {
+  return p.camera ?? '(unknown)';
+}
+
 const FILTER_KEYS = ['year', 'album', 'camera', 'gps', 'media', 'q'] as const;
 
 const DEFAULTS: Filters = {
@@ -101,47 +105,72 @@ export const filters = computed(() => _filters.get());
 
 // --- Cascade and option lists -----------------------------------------
 
+/**
+ * The single-choice filters form a cascade, search → year → album → camera,
+ * in the order the panel stacks them. Each one's options are drawn from the
+ * photos the ones above it allow, and a selection the ones above it invalidate
+ * falls back to 'all'.
+ *
+ * The multi-select filters (gps, media) sit outside it: they narrow the map but
+ * not each other's options, and not the selects above them.
+ */
+function bySearch(ps: Photo[], search: string): Photo[] {
+  return search === '' ? ps : ps.filter((p) => matchesTerm(p, search));
+}
+
+function byYear(ps: Photo[], year: string): Photo[] {
+  return year === 'all' ? ps : ps.filter((p) => getYear(p) === year);
+}
+
+function byAlbum(ps: Photo[], album: string): Photo[] {
+  return album === 'all' ? ps : ps.filter((p) => albumsOf(p).includes(album));
+}
+
+/** Options for one rung, sorted and deduped; year drops its nulls. */
+function sortedUnique(values: Array<string | null>): string[] {
+  return [...new Set(values.filter((v): v is string => v !== null))].sort();
+}
+
+function keepIfValid(value: string, valid: Set<string | null>): string {
+  return value !== 'all' && !valid.has(value) ? 'all' : value;
+}
+
 function applyCascade(f: Filters, ps: Photo[]): Filters {
-  const yearPs =
-    f.year === 'all' ? ps : ps.filter((p) => getYear(p) === f.year);
-  const validAlbums = new Set(yearPs.flatMap(albumsOf));
-  const album =
-    f.album !== 'all' && !validAlbums.has(f.album) ? 'all' : f.album;
-  const albumPs =
-    album === 'all'
-      ? yearPs
-      : yearPs.filter((p) => albumsOf(p).includes(album));
-  const validCameras = new Set(albumPs.map((p) => p.camera ?? '(unknown)'));
-  const camera =
-    f.camera !== 'all' && !validCameras.has(f.camera) ? 'all' : f.camera;
-  // Validated against the whole library, not the narrowed set: a term the other
-  // filters merely hide is kept, and legitimately shows an empty map. Only a
-  // term no photo carries at all — a URL from a different library — is dropped.
+  // Search is the top rung, so it is validated against the whole library rather
+  // than a narrowed set: a term the multi-select filters merely hide is kept,
+  // and legitimately shows an empty map. Only a term no photo carries at all —
+  // a URL from a different library — is dropped.
   const search =
     f.search !== '' && !ps.some((p) => matchesTerm(p, f.search))
       ? ''
       : f.search;
-  return { ...f, album, camera, search };
+  const searchPs = bySearch(ps, search);
+  const year = keepIfValid(f.year, new Set(searchPs.map(getYear)));
+  const yearPs = byYear(searchPs, year);
+  const album = keepIfValid(f.album, new Set(yearPs.flatMap(albumsOf)));
+  const albumPs = byAlbum(yearPs, album);
+  const camera = keepIfValid(f.camera, new Set(albumPs.map(cameraOf)));
+  return { ...f, year, album, camera, search };
 }
 
-export const albumOptions = computed(() => {
-  const ps = photos.get();
+export const yearOptions = computed(() => {
   const f = _filters.get();
-  const yearPs =
-    f.year === 'all' ? ps : ps.filter((p) => getYear(p) === f.year);
-  return [...new Set(yearPs.flatMap(albumsOf))].sort();
+  return sortedUnique(bySearch(photos.get(), f.search).map(getYear));
+});
+
+export const albumOptions = computed(() => {
+  const f = _filters.get();
+  const yearPs = byYear(bySearch(photos.get(), f.search), f.year);
+  return sortedUnique(yearPs.flatMap(albumsOf));
 });
 
 export const cameraOptions = computed(() => {
-  const ps = photos.get();
   const f = _filters.get();
-  const yearPs =
-    f.year === 'all' ? ps : ps.filter((p) => getYear(p) === f.year);
-  const albumPs =
-    f.album === 'all'
-      ? yearPs
-      : yearPs.filter((p) => albumsOf(p).includes(f.album));
-  return [...new Set(albumPs.map((p) => p.camera ?? '(unknown)'))].sort();
+  const albumPs = byAlbum(
+    byYear(bySearch(photos.get(), f.search), f.year),
+    f.album
+  );
+  return sortedUnique(albumPs.map(cameraOf));
 });
 
 // --- Filtered projection ----------------------------------------------
@@ -172,10 +201,7 @@ export const photosBeforeSearch = computed(() => {
     if (!matchesGps(p, f.gps)) return false;
     if (!matchesMedia(p, f.media)) return false;
     if (f.album !== 'all' && !albumsOf(p).includes(f.album)) return false;
-    if (f.camera !== 'all') {
-      const pc = p.camera ?? '(unknown)';
-      if (pc !== f.camera) return false;
-    }
+    if (f.camera !== 'all' && cameraOf(p) !== f.camera) return false;
     return true;
   });
 });
@@ -255,7 +281,7 @@ export function revealPhoto(p: Photo) {
   set({
     year: widen(cur.year, getYear(p) === cur.year),
     album: widen(cur.album, albumsOf(p).includes(cur.album)),
-    camera: widen(cur.camera, (p.camera ?? '(unknown)') === cur.camera),
+    camera: widen(cur.camera, cameraOf(p) === cur.camera),
     gps: matchesGps(p, cur.gps) ? cur.gps : [...cur.gps, p.gps ?? 'none'],
     media: matchesMedia(p, cur.media) ? cur.media : [...cur.media, p.type],
     search: matchesTerm(p, cur.search) ? cur.search : ''

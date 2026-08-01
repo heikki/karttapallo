@@ -10,11 +10,13 @@ import {
   revealPhoto,
   setAlbum,
   setCamera,
+  setSearch,
   setYear,
   soloGps,
   soloMedia,
   toggleGps,
-  toggleMedia
+  toggleMedia,
+  yearOptions
 } from './data';
 import type { Photo } from './types';
 
@@ -176,6 +178,50 @@ describe('option cascades', () => {
     expect(albumOptions.get()).toEqual(['Helsinki', 'Tampere']);
   });
 
+  test('yearOptions are sorted unique years, skipping undated photos', () => {
+    photos.set([
+      photo({ uuid: 'a', date: '2024:01:01 00:00:00' }),
+      photo({ uuid: 'b', date: '2019:01:01 00:00:00' }),
+      photo({ uuid: 'c', date: '2024:07:01 00:00:00' }),
+      photo({ uuid: 'd', date: '' })
+    ]);
+    expect(yearOptions.get()).toEqual(['2019', '2024']);
+  });
+
+  test('an active search narrows every select below it', () => {
+    photos.set([
+      photo({
+        uuid: 'a',
+        date: '2019:01:01 00:00:00',
+        place: 'Näätämö',
+        albums: ['Lappi'],
+        camera: 'iPhone'
+      }),
+      photo({
+        uuid: 'b',
+        date: '2024:01:01 00:00:00',
+        place: 'Kuhmo',
+        albums: ['Kainuu'],
+        camera: 'Sony'
+      })
+    ]);
+    setSearch('Näätämö');
+    expect(yearOptions.get()).toEqual(['2019']);
+    expect(albumOptions.get()).toEqual(['Lappi']);
+    expect(cameraOptions.get()).toEqual(['iPhone']);
+  });
+
+  test('clearing the search restores the full option lists', () => {
+    photos.set([
+      photo({ uuid: 'a', place: 'Näätämö', albums: ['Lappi'] }),
+      photo({ uuid: 'b', place: 'Kuhmo', albums: ['Kainuu'] })
+    ]);
+    setSearch('Näätämö');
+    expect(albumOptions.get()).toEqual(['Lappi']);
+    setSearch('');
+    expect(albumOptions.get()).toEqual(['Kainuu', 'Lappi']);
+  });
+
   test('cameraOptions narrow to albumless photos when album is "(no album)"', () => {
     photos.set([
       photo({ uuid: 'a', albums: ['Helsinki'], camera: 'iPhone' }),
@@ -215,6 +261,55 @@ describe('cascade on verb', () => {
     expect(filters.get().camera).toBe('Sony');
     setAlbum('Helsinki');
     expect(filters.get().camera).toBe('all');
+  });
+
+  // Picking a suggestion cannot reach this state: suggestions are drawn from the
+  // photos the other filters already allow, so an offered term always has at
+  // least one photo in the current year/album/camera. A restored `?q=` can.
+  test('setSearch clears the selects the term does not cover', () => {
+    photos.set([
+      photo({
+        uuid: 'a',
+        date: '2019:01:01 00:00:00',
+        place: 'Näätämö',
+        albums: ['Lappi'],
+        camera: 'iPhone'
+      }),
+      photo({
+        uuid: 'b',
+        date: '2024:01:01 00:00:00',
+        place: 'Kuhmo',
+        albums: ['Kainuu'],
+        camera: 'Sony'
+      })
+    ]);
+    setYear('2024');
+    setAlbum('Kainuu');
+    setCamera('Sony');
+    setSearch('Näätämö');
+    expect(filters.get()).toMatchObject({
+      search: 'Näätämö',
+      year: 'all',
+      album: 'all',
+      camera: 'all'
+    });
+  });
+
+  test('a term the multi-select filters hide is kept, and shows nothing', () => {
+    photos.set([
+      photo({ uuid: 'a', type: 'video', place: 'Näätämö' }),
+      photo({ uuid: 'b', place: 'Kuhmo' })
+    ]);
+    setSearch('Näätämö');
+    toggleMedia('video');
+    expect(filters.get().search).toBe('Näätämö');
+    expect(filteredPhotos.get()).toEqual([]);
+  });
+
+  test('a term no photo in the library carries is dropped', () => {
+    photos.set([photo({ uuid: 'a', place: 'Kuhmo' })]);
+    setSearch('Näätämö');
+    expect(filters.get().search).toBe('');
   });
 });
 
