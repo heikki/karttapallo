@@ -4,9 +4,8 @@ import { customElement, property } from 'lit/decorators.js';
 
 import * as actions from '@common/actions';
 import * as data from '@common/data';
-import * as edits from '@common/edits';
 import type { Photo } from '@common/types';
-import { formatDate, getFullUrl, getVideoUrl, isVideo } from '@common/utils';
+import { getFullUrl, getVideoUrl, isVideo } from '@common/utils';
 
 function stopPropagation(e: Event) {
   e.stopPropagation();
@@ -181,22 +180,6 @@ export class PhotoLightbox extends SignalWatcher(LitElement) {
     video::-webkit-media-controls-overlay-enclosure {
       display: none !important;
     }
-    /* Date only. Camera and coordinates are rows in <metadata-modal>, which
-       stays open over the lightbox now, so repeating them here just covered
-       up the photo. The date earns its place: it reflects pending time
-       offsets, which the panel's stored values don't. */
-    .top-left {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      background: rgba(0, 0, 0, 0.5);
-      color: white;
-      font-size: 12px;
-      padding: 4px 8px;
-      border-radius: 6px;
-      z-index: 5;
-      pointer-events: none;
-    }
   `;
 
   override connectedCallback() {
@@ -272,7 +255,6 @@ export class PhotoLightbox extends SignalWatcher(LitElement) {
   override render() {
     if (this.photo === null) return nothing;
     const photo = this.photo;
-    const effectiveDate = edits.getEffectiveDate(photo);
 
     return html`
       <div class="image-wrap" @click=${stopPropagation}>
@@ -291,7 +273,6 @@ export class PhotoLightbox extends SignalWatcher(LitElement) {
               .muted=${this._videoMuted}
             ></video>`
           : html`<img src=${getFullUrl(photo)} alt="" />`}
-        <div class="top-left">${formatDate(effectiveDate, photo.tz)}</div>
       </div>
     `;
   }
