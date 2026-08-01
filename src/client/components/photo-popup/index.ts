@@ -133,9 +133,6 @@ export class PhotoPopup extends SignalWatcher(LitElement) {
     .overlay-btn:hover {
       background-color: rgba(0, 0, 0, 0.75);
     }
-    .photos-btn {
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6'/%3E%3Cpolyline points='15 3 21 3 21 9'/%3E%3Cline x1='10' y1='14' x2='21' y2='3'/%3E%3C/svg%3E");
-    }
     .info-btn {
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' y1='16' x2='12' y2='12'/%3E%3Cline x1='12' y1='8' x2='12.01' y2='8'/%3E%3C/svg%3E");
     }
@@ -512,17 +509,6 @@ export class PhotoPopup extends SignalWatcher(LitElement) {
               }}
               tabindex="-1"
             ></button>
-            ${photo.photos_url !== undefined && photo.photos_url !== ''
-              ? html`<a
-                  class="overlay-btn photos-btn"
-                  href=${photo.photos_url}
-                  target="_blank"
-                  tabindex="-1"
-                  @click=${(e: Event) => {
-                    e.stopPropagation();
-                  }}
-                ></a>`
-              : nothing}
           </div>
         </div>
         <div class="info">

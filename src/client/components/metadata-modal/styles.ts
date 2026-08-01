@@ -181,8 +181,15 @@ export const styles = css`
     vertical-align: middle;
     line-height: 1;
   }
-  .copy-btn:hover {
+  .copy-btn:hover,
+  .photos-btn:hover {
     color: #0a84ff;
+  }
+  .photos-btn {
+    margin-left: 4px;
+    color: #98989d;
+    vertical-align: middle;
+    line-height: 1;
   }
   .copy-btn.copied {
     color: #30d158;

@@ -54,7 +54,10 @@ function seed(s: SeedSpec): ItemEntry {
     place: s.place ?? null,
     description: s.description ?? null,
     labels: s.labels ?? [],
-    photos_url: ''
+    // Shaped like the real thing so the metadata panel's "Open in Photos" link
+    // has an href to assert. Never followed in a spec — it would hand the
+    // browser off to Photos.app.
+    photos_url: `photos:albums?albumUuid=E2E&assetUuid=${s.uuid}`
   };
 }
 

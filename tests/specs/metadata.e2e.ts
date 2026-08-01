@@ -42,6 +42,36 @@ test('View photo metadata', async ({ page }) => {
   await expect(popup).toBeVisible();
 });
 
+test('Photos.app is reachable from the UUID row, and nowhere else', async ({
+  page
+}) => {
+  await page.goto('/?id=e2e-1');
+
+  const popup = page.locator('photo-popup');
+  await expect(popup).toBeVisible();
+
+  // The popup used to carry its own overlay link over the photo, and the
+  // lightbox a second one. Both are gone; only the info button is left.
+  await expect(popup.locator('.overlay-btn')).toHaveCount(1);
+  await page.keyboard.press(' ');
+  const lightbox = page.locator('photo-lightbox[active]');
+  await expect(lightbox).toBeVisible();
+  await expect(lightbox.locator('.overlay-btn')).toHaveCount(1);
+  await page.keyboard.press(' ');
+
+  // The one that remains sits beside the copy button, on the row that already
+  // holds the photo's identity. Not clicked — following it leaves the browser.
+  await popup.locator('.overlay-btn.info-btn').click();
+  const row = page.locator('metadata-modal[active] .body tr', {
+    hasText: 'UUID'
+  });
+  await expect(row.locator('.copy-btn')).toBeVisible();
+  await expect(row.locator('.photos-btn')).toHaveAttribute(
+    'href',
+    'photos:albums?albumUuid=E2E&assetUuid=e2e-1'
+  );
+});
+
 test('Clicking an album name filters the map to it', async ({ page }) => {
   // e2e-3 is in Tampere, alongside e2e-2; e2e-1 is the lone Helsinki photo.
   await page.goto('/?id=e2e-3');

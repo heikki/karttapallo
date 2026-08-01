@@ -36,7 +36,7 @@ Canonical inventory of user-visible flows. Each Tier 5 e2e spec maps to one or m
 - **Copy and paste a date** — copy on one photo, paste on another (computes the hour offset).
 - **Save edits** — "Save to Photos" pushes pending edits to Photos.app; data reloads, popup reopens with the date edit row closed; alert on error.
 - **Discard edits** — clears all pending location and time edits.
-- **Open a photo in Apple Photos** — Photos.app link button on popup and lightbox.
+- **Open a photo in Apple Photos** — link button in the metadata panel's UUID row, beside the copy button.
 
 ## Album extras
 

@@ -29,7 +29,14 @@ import { styles } from './styles';
  */
 function photoRecordFields(uuid: string): Record<string, unknown> {
   const photo = data.photos.get().find((p) => p.uuid === uuid);
-  return { place: photo?.place, labels: photo?.labels, albums: photo?.albums };
+  return {
+    place: photo?.place,
+    labels: photo?.labels,
+    albums: photo?.albums,
+    // Not a row of its own — it is the UUID row's second action. Listing it in
+    // no section is what keeps it out of the table.
+    photos_url: photo?.photos_url
+  };
 }
 
 export function showMetadata(uuid: string) {
@@ -561,6 +568,41 @@ export class MetadataModal extends SignalWatcher(LitElement) {
     </table>`;
   }
 
+  /**
+   * Hand the photo over to Photos.app, next to the button that copies its
+   * UUID — the two things you can do with an asset's identity, in one place.
+   * It used to be an overlay on the popup and again on the lightbox, where it
+   * sat over the photo and had to be duplicated to be reachable from both.
+   *
+   * Absent for a library whose assets have no such URL, and for a snapshot
+   * written before the field existed.
+   */
+  private _renderPhotosLink() {
+    const url = this._data?.photos_url;
+    if (typeof url !== 'string' || url === '') return nothing;
+    return html`<a
+      class="photos-btn"
+      href=${url}
+      target="_blank"
+      title="Open in Photos"
+    >
+      <svg
+        width="12"
+        height="12"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+        <polyline points="15 3 21 3 21 9" />
+        <line x1="10" y1="14" x2="21" y2="3" />
+      </svg>
+    </a>`;
+  }
+
   private _renderRow(key: string, label: string) {
     if (this._data === null || !(key in this._data)) return null;
     const val = this._data[key];
@@ -587,6 +629,7 @@ export class MetadataModal extends SignalWatcher(LitElement) {
               />
             </svg>
           </button>
+          ${this._renderPhotosLink()}
         </td>
       </tr>`;
     }
