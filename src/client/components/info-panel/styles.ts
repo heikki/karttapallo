@@ -115,14 +115,16 @@ export const styles = css`
        control short of where the row's rule ends. */
     padding-right: 0;
   }
-  /* The UUID and its two buttons: the copy sits with the value it copies, the
-     Photos.app link goes to the far edge, flush with the end of the row rule. */
+  /* The UUID and its two buttons. Both buttons travel to the far edge as a
+     pair — the auto margin is on the first of them, so everything after it
+     goes along — with the Photos.app link outermost, flush with where the row
+     rule ends. */
   td.uuid {
     display: flex;
     align-items: center;
     gap: 6px;
   }
-  td.uuid .photos-btn {
+  td.uuid .copy-btn {
     margin-left: auto;
   }
   /* Section heading. Spans both columns, so it matches td:first-child and
