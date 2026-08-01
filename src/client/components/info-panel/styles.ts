@@ -41,9 +41,9 @@ export const styles = css`
   }
   .content {
     pointer-events: auto;
-    background: #1c1c1e;
-    color: #e5e5e7;
-    border-radius: 12px;
+    background: var(--panel-surface);
+    color: var(--panel-text);
+    border-radius: var(--panel-radius);
     /* Sized for the rows that matter — filename, camera, UUID on one line —
        rather than for the widest value in the table. Anything longer (a lens
        description, a dumped object) scrolls sideways in .body instead of
@@ -55,14 +55,14 @@ export const styles = css`
     display: flex;
     flex-direction: column;
     /* Carries its own separation from the map now that no dim does it. */
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
+    box-shadow: var(--panel-shadow);
   }
   .header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 12px 16px;
-    border-bottom: 1px solid #333;
+    border-bottom: 1px solid var(--panel-line);
     font-weight: 600;
     font-size: 14px;
     cursor: move;
@@ -97,16 +97,16 @@ export const styles = css`
   td {
     padding: 3px var(--value-gap) 3px 0;
     vertical-align: top;
-    border-bottom: 1px solid #2c2c2e;
+    border-bottom: 1px solid var(--panel-raised);
   }
   td:first-child {
     font-weight: 600;
-    color: #98989d;
+    color: var(--panel-text-dim);
     white-space: nowrap;
     width: var(--label-column);
   }
   td:last-child {
-    color: #e5e5e7;
+    color: var(--panel-text);
     /* No wrapping: an overlong value scrolls rather than making the row tall,
        which keeps the panel's height tied to its row count. */
     white-space: nowrap;
@@ -122,7 +122,7 @@ export const styles = css`
     font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: #6d6d72;
+    color: var(--panel-text-faint);
   }
   tr.section:first-child td {
     padding-top: 0;
@@ -153,7 +153,7 @@ export const styles = css`
   }
   summary {
     cursor: pointer;
-    color: #0a84ff;
+    color: var(--panel-accent);
     font-size: 11px;
   }
   /* Reads as text until pointed at — a table of values shouldn't sprout
@@ -168,14 +168,14 @@ export const styles = css`
     cursor: pointer;
   }
   .album-btn:hover {
-    color: #0a84ff;
+    color: var(--panel-accent);
     text-decoration: underline;
   }
   .copy-btn {
     margin-left: 6px;
     padding: 2px;
     background: none;
-    color: #98989d;
+    color: var(--panel-text-dim);
     border: none;
     cursor: pointer;
     vertical-align: middle;
@@ -183,11 +183,11 @@ export const styles = css`
   }
   .copy-btn:hover,
   .photos-btn:hover {
-    color: #0a84ff;
+    color: var(--panel-accent);
   }
   .photos-btn {
     margin-left: 4px;
-    color: #98989d;
+    color: var(--panel-text-dim);
     vertical-align: middle;
     line-height: 1;
   }

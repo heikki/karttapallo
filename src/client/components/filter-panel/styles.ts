@@ -13,19 +13,19 @@ export const styles = css`
       -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
   .wrapper {
-    background: #2c2c2e;
+    background: var(--panel-surface);
     padding: 15px;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    border-radius: var(--panel-radius);
+    box-shadow: var(--panel-shadow);
   }
   h2 {
     font-size: 16px;
     margin: 0 0 10px 0;
-    color: #e5e5e7;
+    color: var(--panel-text);
   }
   p {
     font-size: 13px;
-    color: #98989d;
+    color: var(--panel-text-dim);
     margin: 4px 0;
   }
   .panel-header {
@@ -34,21 +34,21 @@ export const styles = css`
   }
   .panel-body {
     margin-top: 12px;
-    border-top: 1px solid #3a3a3c;
+    border-top: 1px solid var(--panel-raised);
     padding-top: 12px;
   }
   label {
     font-size: 12px;
-    color: #98989d;
+    color: var(--panel-text-dim);
     display: block;
     margin-bottom: 4px;
   }
   select {
     width: 100%;
     padding: 6px 8px;
-    background: #3a3a3c;
-    color: #e5e5e7;
-    border: 1px solid #48484a;
+    background: var(--panel-raised);
+    color: var(--panel-text);
+    border: 1px solid var(--panel-line);
     border-radius: 6px;
     font-size: 13px;
     cursor: pointer;
@@ -61,16 +61,16 @@ export const styles = css`
     margin-bottom: 8px;
     border-radius: 6px;
     overflow: hidden;
-    border: 1px solid #48484a;
+    border: 1px solid var(--panel-line);
   }
   .map-type-btn,
   .filter-btn {
     flex: 1;
     padding: 5px 0;
     border: none;
-    border-right: 1px solid #48484a;
-    background: #3a3a3c;
-    color: #98989d;
+    border-right: 1px solid var(--panel-line);
+    background: var(--panel-raised);
+    color: var(--panel-text-dim);
     font-size: 11px;
     cursor: pointer;
     transition:
@@ -83,14 +83,14 @@ export const styles = css`
   }
   .map-type-btn:hover,
   .filter-btn:hover {
-    background: #48484a;
+    background: var(--panel-line);
   }
   .map-type-btn.active {
-    background: #007aff;
+    background: var(--panel-accent);
     color: white;
   }
   .filter-btn.active {
-    background: var(--btn-color, #007aff);
+    background: var(--btn-color, var(--panel-accent));
     color: white;
   }
   .view-buttons {
@@ -98,21 +98,21 @@ export const styles = css`
     gap: 6px;
     margin-top: 12px;
     padding-top: 12px;
-    border-top: 1px solid #3a3a3c;
+    border-top: 1px solid var(--panel-raised);
   }
   .view-btn {
     flex: 1;
     padding: 5px 10px;
-    border: 1px solid #48484a;
+    border: 1px solid var(--panel-line);
     border-radius: 6px;
-    background: #3a3a3c;
-    color: #e5e5e7;
+    background: var(--panel-raised);
+    color: var(--panel-text);
     font-size: 12px;
     cursor: pointer;
   }
   .view-btn:hover {
-    background: #48484a;
-    border-color: #48484a;
+    background: var(--panel-line);
+    border-color: var(--panel-line);
   }
   .view-btn:disabled {
     opacity: 0.4;
@@ -120,16 +120,16 @@ export const styles = css`
     pointer-events: none;
   }
   .view-btn.active {
-    background: #007aff;
+    background: var(--panel-accent);
     color: white;
-    border-color: #007aff;
+    border-color: var(--panel-accent);
   }
   .edit-section {
     margin-top: 12px;
     padding-top: 12px;
-    border-top: 1px solid #3a3a3c;
+    border-top: 1px solid var(--panel-raised);
     font-size: 13px;
-    color: #e5e5e7;
+    color: var(--panel-text);
   }
   .count {
     font-weight: bold;
@@ -147,18 +147,18 @@ export const styles = css`
     border-radius: 6px;
     font-size: 12px;
     cursor: pointer;
-    background: #007aff;
+    background: var(--panel-accent);
     color: white;
   }
   .edit-buttons button:hover {
     opacity: 0.9;
   }
   .edit-buttons button.secondary {
-    background: #3a3a3c;
-    color: #e5e5e7;
+    background: var(--panel-raised);
+    color: var(--panel-text);
   }
   .edit-buttons button.secondary:hover {
-    background: #48484a;
+    background: var(--panel-line);
   }
   .edit-buttons button:disabled {
     opacity: 0.5;

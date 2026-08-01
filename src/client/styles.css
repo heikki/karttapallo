@@ -1,3 +1,22 @@
+/* The floating panels' shared surface. Custom properties inherit through
+   shadow roots, so this is the one place the palette lives — <filter-panel>
+   and <info-panel> read it rather than each keeping its own hexes, which is
+   how the two drifted apart in the first place. Values are the info panel's. */
+:root {
+  --panel-surface: #1c1c1e;
+  /* One step up from the surface: controls that sit on it, and the rules
+     between rows. */
+  --panel-raised: #2c2c2e;
+  /* Borders around those controls, and the rule under a panel header. */
+  --panel-line: #3a3a3c;
+  --panel-text: #e5e5e7;
+  --panel-text-dim: #98989d;
+  --panel-text-faint: #6d6d72;
+  --panel-accent: #0a84ff;
+  --panel-radius: 12px;
+  --panel-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
+}
+
 * {
   margin: 0;
   padding: 0;
