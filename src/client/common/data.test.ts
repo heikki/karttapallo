@@ -6,6 +6,7 @@ import {
   filteredPhotos,
   filters,
   photos,
+  photosForSearch,
   resetFilters,
   revealPhoto,
   setAlbum,
@@ -232,6 +233,29 @@ describe('option cascades', () => {
   });
 });
 
+describe('photosForSearch', () => {
+  test('ignores the selects, so no select can hide a term', () => {
+    photos.set([
+      photo({ uuid: 'a', date: '2019:01:01 00:00:00', albums: ['Lappi'] }),
+      photo({ uuid: 'b', date: '2024:01:01 00:00:00', albums: ['Kainuu'] })
+    ]);
+    setYear('2019');
+    setAlbum('Lappi');
+    expect(photosForSearch.get().map((p) => p.uuid)).toEqual(['a', 'b']);
+  });
+
+  test('honours gps and media, which decide what the map can plot', () => {
+    photos.set([
+      photo({ uuid: 'a' }),
+      photo({ uuid: 'b', gps: null }),
+      photo({ uuid: 'c', type: 'video' })
+    ]);
+    expect(photosForSearch.get().map((p) => p.uuid)).toEqual(['a', 'c']);
+    toggleMedia('video');
+    expect(photosForSearch.get().map((p) => p.uuid)).toEqual(['a']);
+  });
+});
+
 describe('cascade on verb', () => {
   test('setYear clears album that no longer exists in the new year', () => {
     photos.set([
@@ -263,10 +287,7 @@ describe('cascade on verb', () => {
     expect(filters.get().camera).toBe('all');
   });
 
-  // Picking a suggestion cannot reach this state: suggestions are drawn from the
-  // photos the other filters already allow, so an offered term always has at
-  // least one photo in the current year/album/camera. A restored `?q=` can.
-  test('setSearch clears the selects the term does not cover', () => {
+  test('setSearch clears the selects below it, even ones the term covers', () => {
     photos.set([
       photo({
         uuid: 'a',
@@ -277,15 +298,17 @@ describe('cascade on verb', () => {
       }),
       photo({
         uuid: 'b',
-        date: '2024:01:01 00:00:00',
-        place: 'Kuhmo',
+        date: '2019:02:01 00:00:00',
+        place: 'Näätämö',
         albums: ['Kainuu'],
         camera: 'Sony'
       })
     ]);
-    setYear('2024');
+    setYear('2019');
     setAlbum('Kainuu');
     setCamera('Sony');
+    // Kainuu holds a Näätämö photo, so the cascade alone would have kept it —
+    // and shown 1 of the 2 the suggestion counted.
     setSearch('Näätämö');
     expect(filters.get()).toMatchObject({
       search: 'Näätämö',
@@ -293,6 +316,18 @@ describe('cascade on verb', () => {
       album: 'all',
       camera: 'all'
     });
+    expect(filteredPhotos.get()).toHaveLength(2);
+  });
+
+  test('clearing the search leaves the selects alone', () => {
+    photos.set([
+      photo({ uuid: 'a', place: 'Näätämö', albums: ['Lappi'] }),
+      photo({ uuid: 'b', place: 'Kuhmo', albums: ['Kainuu'] })
+    ]);
+    setSearch('Näätämö');
+    setAlbum('Lappi');
+    setSearch('');
+    expect(filters.get()).toMatchObject({ search: '', album: 'Lappi' });
   });
 
   test('a term the multi-select filters hide is kept, and shows nothing', () => {

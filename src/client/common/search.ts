@@ -76,9 +76,9 @@ export function matchesTerm(photo: Photo, term: string): boolean {
 /**
  * Terms matching `query`, grouped by field and most photos first within each.
  *
- * Callers pass the photos that already satisfy every *other* filter, so counts
- * describe what applying the term would actually show and no suggestion can
- * lead to an empty map.
+ * Callers pass the whole library, less what the map cannot plot — a search must
+ * not be confined to the slice the selects happen to allow. Applying a term
+ * clears those selects, so the counts here are exactly what picking one shows.
  *
  * Slots are dealt round-robin across fields rather than by raw count, because
  * the corpora are wildly different sizes: places run to hundreds of photos each

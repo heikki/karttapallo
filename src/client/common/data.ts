@@ -111,6 +111,9 @@ export const filters = computed(() => _filters.get());
  * photos the ones above it allow, and a selection the ones above it invalidate
  * falls back to 'all'.
  *
+ * It runs one way only. The rungs below search never limit what search can
+ * find, and applying a term clears them outright — see `setSearch`.
+ *
  * The multi-select filters (gps, media) sit outside it: they narrow the map but
  * not each other's options, and not the selects above them.
  */
@@ -124,6 +127,10 @@ function byYear(ps: Photo[], year: string): Photo[] {
 
 function byAlbum(ps: Photo[], album: string): Photo[] {
   return album === 'all' ? ps : ps.filter((p) => albumsOf(p).includes(album));
+}
+
+function byCamera(ps: Photo[], camera: string): Photo[] {
+  return camera === 'all' ? ps : ps.filter((p) => cameraOf(p) === camera);
 }
 
 /** Options for one rung, sorted and deduped; year drops its nulls. */
@@ -189,27 +196,29 @@ function matchesMedia(p: Photo, media: string[]) {
 }
 
 /**
- * Everything the non-search filters allow. Search suggestions are drawn from
- * this set so their counts describe what applying a term would actually show,
- * and so no suggestion can lead to an empty map.
+ * What search searches: the whole library, less only the two toggles that sit
+ * outside the cascade. Searching a slice of the library is the one thing a
+ * search box must never do — a term you can see in Photos has to be findable
+ * here whatever the selects happen to be set to, and applying it clears them
+ * anyway, so drawing suggestions from their slice would hide terms for the sake
+ * of filters that are about to be discarded.
+ *
+ * Gps and media are excluded rather than searched through because they decide
+ * what the map can plot at all: a photo carrying no location is not a pin, and
+ * counting it would promise markers that cannot appear. That keeps a
+ * suggestion's count exactly what picking it puts on the map.
  */
-export const photosBeforeSearch = computed(() => {
-  const ps = photos.get();
+export const photosForSearch = computed(() => {
   const f = _filters.get();
-  return ps.filter((p) => {
-    if (f.year !== 'all' && getYear(p) !== f.year) return false;
-    if (!matchesGps(p, f.gps)) return false;
-    if (!matchesMedia(p, f.media)) return false;
-    if (f.album !== 'all' && !albumsOf(p).includes(f.album)) return false;
-    if (f.camera !== 'all' && cameraOf(p) !== f.camera) return false;
-    return true;
-  });
+  return photos
+    .get()
+    .filter((p) => matchesGps(p, f.gps) && matchesMedia(p, f.media));
 });
 
 export const filteredPhotos = computed(() => {
-  const search = _filters.get().search;
-  const ps = photosBeforeSearch.get();
-  return search === '' ? ps : ps.filter((p) => matchesTerm(p, search));
+  const f = _filters.get();
+  const searchPs = bySearch(photosForSearch.get(), f.search);
+  return byCamera(byAlbum(byYear(searchPs, f.year), f.album), f.camera);
 });
 
 // --- Verbs ------------------------------------------------------------
@@ -230,9 +239,22 @@ export function setCamera(camera: string) {
   set({ ..._filters.get(), camera });
 }
 
-/** Apply a suggestion's term, or '' to clear. */
+/**
+ * Apply a suggestion's term, or '' to clear.
+ *
+ * Applying clears the three selects below it rather than intersecting with
+ * them. A search runs over the whole library, so its suggestion counted every
+ * match in the library; keeping a leftover album would land you on a fraction
+ * of the number you just clicked. Clearing the term leaves them alone — there
+ * is nothing above them to have contradicted.
+ */
 export function setSearch(search: string) {
-  set({ ..._filters.get(), search });
+  const cur = _filters.get();
+  if (search === '') {
+    set({ ...cur, search });
+    return;
+  }
+  set({ ...cur, search, year: 'all', album: 'all', camera: 'all' });
 }
 
 export function toggleGps(value: string) {

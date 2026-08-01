@@ -97,38 +97,36 @@ test("Search finds Apple's scene labels", async ({ page }) => {
   await expect(page).toHaveURL(/q=Lintu/);
 });
 
-test('Search composes with the other filters', async ({ page }) => {
+test('Search runs over the library, whatever the selects are set to', async ({
+  page
+}) => {
   await page.goto('/');
 
   const search = page.getByRole('combobox', { name: 'Search' });
   const suggestions = page.getByRole('listbox', { name: 'Search suggestions' });
 
-  // Kuusamo is the 2023 photo, so narrowing to 2024 must drop it from the
-  // suggestions — they describe what applying a term would actually show.
+  // Kuusamo is the 2023 photo. Narrowing to 2024 must not hide it: a term you
+  // can see in Photos is findable here whatever the selects say.
   await page.getByLabel('Year').selectOption('2024');
   await search.fill('ku');
-  await expect(suggestions.getByRole('option')).toHaveCount(1);
-  await expect(suggestions.getByRole('option').first()).toContainText('Kuhmo');
+  await expect(suggestions.getByRole('option')).toHaveCount(2);
+  await expect(suggestions.getByRole('option', { name: /Kuusamo/ })).toHaveText(
+    /1/
+  );
 
-  // Applying it composes rather than replacing: both filters stay in the URL.
-  await suggestions.getByRole('option').first().click();
-  await expect(page).toHaveURL(/year=2024/);
-  await expect(page).toHaveURL(/q=Kuhmo/);
+  // Picking it drops the year rather than intersecting with it, so the map
+  // shows the photo that was just counted instead of none of it.
+  await suggestions.getByRole('option', { name: /Kuusamo/ }).click();
+  await expect(page).not.toHaveURL(/year=/);
+  await expect(page).toHaveURL(/q=Kuusamo/);
   await expect(page.getByLabel('Photo stats')).toHaveText('1 photos');
 
-  // A year the term can't appear in is no longer offered — the selects sit
-  // below the box and narrow with it.
-  await expect(page.getByLabel('Year').locator('option')).toHaveText([
-    'All',
-    '2024'
-  ]);
-
-  // The multi-select filters stay outside that cascade, so over-constraining
-  // through them still yields an honest empty map rather than silently
-  // widening the search.
+  // Media and Location stay outside the cascade — they decide what the map can
+  // plot at all, so over-constraining through them still shows an honest empty
+  // map rather than silently widening the search.
   await page.getByRole('button', { name: 'Photos' }).click();
   await expect(page.getByLabel('Photo stats')).toHaveText('No results');
-  await expect(page).toHaveURL(/q=Kuhmo/);
+  await expect(page).toHaveURL(/q=Kuusamo/);
   await page.getByRole('button', { name: 'Photos' }).click();
 
   // Reset clears the search along with everything else.

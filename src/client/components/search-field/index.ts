@@ -30,7 +30,7 @@ export class SearchField extends SignalWatcher(LitElement) {
   static override styles = styles;
 
   private get _suggestions(): Suggestion[] {
-    return suggest(data.photosBeforeSearch.get(), this._query);
+    return suggest(data.photosForSearch.get(), this._query);
   }
 
   /**
