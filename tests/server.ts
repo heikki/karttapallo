@@ -91,7 +91,23 @@ const items: ItemEntry[] = [
     lon: 23.79,
     place: 'Näätämö',
     description: 'Käki',
-    labels: ['Lintu', 'Ulkoilma']
+    // Long enough to wrap the Categories row over several lines, which is the
+    // shape a real analyzed photo has — the working library averages ten scene
+    // labels each. None share a prefix with a query the search specs type.
+    labels: [
+      'Lintu',
+      'Ulkoilma',
+      'Vesistö',
+      'Maisema',
+      'Ranta',
+      'Metsä',
+      'Taivas',
+      'Pilvi',
+      'Auringonlasku',
+      'Niitty',
+      'Polku',
+      'Silta'
+    ]
   })
 ];
 

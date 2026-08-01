@@ -33,7 +33,9 @@ test('View photo metadata', async ({ page }) => {
   await expect(popup).toBeVisible();
 });
 
-test('Every scene label shows in the metadata panel', async ({ page }) => {
+test('Every scene label shows, wrapped rather than scrolled', async ({
+  page
+}) => {
   await page.goto('/?id=e2e-3');
 
   const popup = page.locator('photo-popup');
@@ -42,9 +44,23 @@ test('Every scene label shows in the metadata panel', async ({ page }) => {
 
   const body = page.locator('metadata-modal[active] .body');
   await expect(body.getByText('Categories', { exact: true })).toBeVisible();
-  await expect(
-    body.getByText('Lintu, Ulkoilma', { exact: true })
-  ).toBeVisible();
+
+  // All twelve, first to last — the row is not truncated to fit.
+  const value = body.locator('td.wrap');
+  await expect(value).toContainText('Lintu');
+  await expect(value).toContainText('Silta');
+
+  // It wraps: the row runs to more than the one line every other row takes.
+  const wrapped = await value.boundingBox();
+  const oneLine = await body
+    .getByText('e2e-3.jpg', { exact: true })
+    .boundingBox();
+  if (wrapped === null || oneLine === null) throw new Error('no layout');
+  expect(wrapped.height).toBeGreaterThan(oneLine.height);
+
+  // And it wraps instead of dragging every other row sideways with it.
+  const overflow = await body.evaluate((el) => el.scrollWidth - el.clientWidth);
+  expect(overflow).toBeLessThanOrEqual(1);
 });
 
 test('Deselecting the photo takes its metadata away', async ({ page }) => {

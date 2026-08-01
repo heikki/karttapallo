@@ -119,6 +119,13 @@ const METADATA_FIELDS: Array<[string, string]> = [
  */
 const ALWAYS_SHOWN = new Set(['original_date']);
 
+/**
+ * Fields whose value wraps onto as many lines as it needs instead of scrolling
+ * sideways. Only the unbounded one: every other value is a filename, a camera
+ * or a number, where a tall row would cost more than a rare sideways scroll.
+ */
+const WRAPPED = new Set(['labels']);
+
 /** How long a metadata read may take before the panel says it's loading. */
 const LOADING_ANNOUNCE_MS = 200;
 
@@ -523,7 +530,10 @@ export class MetadataModal extends SignalWatcher(LitElement) {
         rows.push(
           html`<tr>
             <td>${label}</td>
-            <td .innerHTML=${formatMetadataValue(val)}></td>
+            <td
+              class=${WRAPPED.has(key) ? 'wrap' : nothing}
+              .innerHTML=${formatMetadataValue(val)}
+            ></td>
           </tr>`
         );
       }

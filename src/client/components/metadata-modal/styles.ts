@@ -7,6 +7,14 @@ export const styles = css`
     box-sizing: border-box;
   }
   :host {
+    /* Named so the one wrapping column can be sized against the panel it has
+       to fit inside, rather than against a number that silently stops matching
+       when the panel or the label column is retuned. */
+    --panel-width: 480px;
+    --body-padding-x: 16px;
+    --label-column: 130px;
+    --value-gap: 8px;
+
     display: none;
     position: fixed;
     top: 0;
@@ -40,7 +48,7 @@ export const styles = css`
        rather than for the widest value in the table. Anything longer (a lens
        description, a dumped object) scrolls sideways in .body instead of
        widening the panel over the photo. */
-    max-width: 480px;
+    max-width: var(--panel-width);
     width: calc(100% - 20px);
     margin: 10px;
     max-height: calc(100vh - 20px);
@@ -73,7 +81,7 @@ export const styles = css`
     color: #ccc;
   }
   .body {
-    padding: 12px 16px;
+    padding: 12px var(--body-padding-x);
     overflow: auto;
     font-size: 12px;
     line-height: 1.5;
@@ -87,7 +95,7 @@ export const styles = css`
     border-collapse: collapse;
   }
   td {
-    padding: 3px 8px 3px 0;
+    padding: 3px var(--value-gap) 3px 0;
     vertical-align: top;
     border-bottom: 1px solid #2c2c2e;
   }
@@ -95,13 +103,29 @@ export const styles = css`
     font-weight: 600;
     color: #98989d;
     white-space: nowrap;
-    width: 130px;
+    width: var(--label-column);
   }
   td:last-child {
     color: #e5e5e7;
     /* No wrapping: an overlong value scrolls rather than making the row tall,
        which keeps the panel's height tied to its row count. */
     white-space: nowrap;
+  }
+  /* Categories is the one value with no length bound — dozens of scene labels
+     on a single photo. Left to scroll it would drag every other row sideways
+     with it, so it wraps instead, and pays for it in height.
+
+     The max-width is what forces the break: the table is width: max-content, so
+     a cell with nothing to wrap against would just report its unwrapped length
+     as the column's preferred width and never break at all. It is everything
+     .content has left once the body's padding and the label column are spent. */
+  td.wrap {
+    white-space: normal;
+    overflow-wrap: break-word;
+    max-width: calc(
+      var(--panel-width) - 2 *
+        var(--body-padding-x) - var(--label-column) - var(--value-gap)
+    );
   }
   .loading {
     text-align: center;
