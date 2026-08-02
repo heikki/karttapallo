@@ -24,6 +24,7 @@ export type { SearchTerms } from './search-index';
 export {
   resolveLibrary,
   libraryDataDir,
+  libraryTitle,
   markLibraryDir,
   volumeOf
 } from './resolve-library';

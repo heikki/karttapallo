@@ -14,7 +14,7 @@
 import { createHash } from 'node:crypto';
 import { closeSync, existsSync, openSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 import {
   resolveActiveLibraryPath,
   type ActiveLibraryResult
@@ -66,6 +66,38 @@ export function markLibraryDir(libDir: string, libraryPath: string) {
 export function volumeOf(libraryPath: string): string | null {
   const m = /^\/Volumes\/(?<volume>[^/]+)\//.exec(libraryPath);
   return m?.groups?.volume ?? null;
+}
+
+/** Path with the home directory written `~`, the way macOS shows one. */
+function withTilde(path: string): string {
+  const home = homedir();
+  return path.startsWith(`${home}/`) ? `~${path.slice(home.length)}` : path;
+}
+
+/**
+ * How a library identifies itself in the window title.
+ *
+ * Two libraries can be indistinguishable once the window is open — a working
+ * one and a copy taken to test a rebuild show the same photos, since a copy
+ * carries the same asset UUIDs — while edits go to whichever was resolved at
+ * startup. This is the only thing on screen that says which.
+ *
+ * Three cases, by how much it takes to identify the library:
+ *
+ * - **External disk** — name plus volume. The volume is the half of the
+ *   identity that a name on its own is missing, and it is short.
+ * - **The default Photos directory** — the bare name. There is only one such
+ *   directory, so its path says nothing a reader doesn't already assume.
+ * - **Anywhere else on the internal disk** — the whole path. This is where
+ *   copies get made, and two of them can share a name in different folders, so
+ *   the folder is the only thing that tells them apart. `~` keeps it short.
+ */
+export function libraryTitle(libraryPath: string): string {
+  const name = basename(libraryPath).replace(/\.photoslibrary$/, '');
+  const volume = volumeOf(libraryPath);
+  if (volume !== null) return `${name} (${volume})`;
+  if (dirname(libraryPath) === dirname(defaultLibraryPath())) return name;
+  return withTilde(libraryPath);
 }
 
 function hasDatabase(libraryPath: string) {

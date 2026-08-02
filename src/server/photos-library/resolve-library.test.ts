@@ -1,10 +1,10 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { ActiveLibraryResult } from '@native/native-bridge';
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 
-import { resolveLibrary, volumeOf } from './resolve-library';
+import { libraryTitle, resolveLibrary, volumeOf } from './resolve-library';
 
 let tmp = '';
 
@@ -97,6 +97,43 @@ describe('volumeOf', () => {
   test('null for an internal-disk path', () => {
     expect(volumeOf('/Users/x/Pictures/Photos Library.photoslibrary')).toBe(
       null
+    );
+  });
+});
+
+describe('libraryTitle', () => {
+  const home = homedir();
+
+  test('names the volume for a library on an external disk', () => {
+    expect(
+      libraryTitle('/Volumes/Crucial X10/Rebuild Test.photoslibrary')
+    ).toBe('Rebuild Test (Crucial X10)');
+  });
+
+  test('bare name in the default Photos directory, where a path adds nothing', () => {
+    expect(
+      libraryTitle(join(home, 'Pictures/Photos Library.photoslibrary'))
+    ).toBe('Photos Library');
+  });
+
+  // Copies get made here, and two of them can share a name — the folder is the
+  // only thing that tells them apart.
+  test('whole path elsewhere on the internal disk, home written as ~', () => {
+    expect(libraryTitle(join(home, 'Desktop/Rebuild Test.photoslibrary'))).toBe(
+      '~/Desktop/Rebuild Test.photoslibrary'
+    );
+  });
+
+  test('distinguishes same-named libraries in different local folders', () => {
+    const a = libraryTitle(join(home, 'Desktop/Rebuild Test.photoslibrary'));
+    const b = libraryTitle(join(home, 'tmp/Rebuild Test.photoslibrary'));
+
+    expect(a).not.toBe(b);
+  });
+
+  test('leaves a path outside home alone', () => {
+    expect(libraryTitle('/opt/photos/Archive.photoslibrary')).toBe(
+      '/opt/photos/Archive.photoslibrary'
     );
   });
 });
