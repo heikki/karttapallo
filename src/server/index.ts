@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, rmSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 
 const {
   BrowserView,
@@ -19,7 +19,8 @@ const {
   openPhotosLibrary,
   resolveLibrary,
   libraryDataDir,
-  markLibraryDir
+  markLibraryDir,
+  volumeOf
 } = await import('./photos-library');
 const { createPhotosWriter } = await import('./photos-edit');
 const { createRequestHandler } = await import('./request-handler');
@@ -375,13 +376,38 @@ function initialViewUrl() {
   return url;
 }
 
+/**
+ * Window title, naming the library this session is bound to.
+ *
+ * Two libraries can be indistinguishable once the window is open — a working
+ * one and a copy taken to test a rebuild show the same photos — while edits go
+ * to whichever was resolved at startup. The title is the only place that says
+ * which, short of reading the terminal.
+ *
+ * The library's name, not its path: a path fills the title bar and truncates
+ * from the wrong end, hiding the very part that differs. The volume comes along
+ * only for a library on an external disk, where it is the other half of the
+ * identity — `volumeOf` returns null for the internal one.
+ *
+ * Set at construction, with no `setTitle` follow-up, because the active library
+ * is resolved once per launch and cannot change under a running window
+ * (ADR-0012).
+ */
+function windowTitle(libraryPath: string) {
+  const name = basename(libraryPath).replace(/\.photoslibrary$/, '');
+  const volume = volumeOf(libraryPath);
+  return volume === null
+    ? `Karttapallo — ${name}`
+    : `Karttapallo — ${name} (${volume})`;
+}
+
 // Create the webview already pointing at the app URL. Electrobun passes the
 // constructor `url` to the native webview at creation (see BrowserView.init),
 // so this is race-free. Do NOT switch back to `about:blank` + a later
 // `win.webview.loadURL()` — that second load races webview creation and gets
 // dropped (window stays blank) unless something happens to yield a tick first.
 const win = new BrowserWindow<typeof rpc>({
-  title: 'Karttapallo',
+  title: windowTitle(libraryPath),
   url: initialViewUrl(),
   frame: savedFrame,
   rpc
