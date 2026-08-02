@@ -10,7 +10,6 @@
 export {
   defaultLibraryPath,
   openPhotosDb,
-  queryAlbums,
   queryNotInAlbumUuid,
   queryPhotos,
   queryVideos,
@@ -23,5 +22,5 @@ export { openPhotosLibrary } from './library';
 export type { PhotosLibrary } from './library';
 export { readSearchTerms, termsFor } from './search-index';
 export type { SearchTerms } from './search-index';
-export { resolveLibrary, libraryTitle, volumeOf } from './resolve-library';
+export { resolveLibrary, libraryTitle } from './resolve-library';
 export type { LibraryResolution } from './resolve-library';

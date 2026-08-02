@@ -90,7 +90,7 @@ function hasDatabase(libraryPath: string) {
  * container read at all, rather than letting macOS put its own dialog on screen
  * (see `resolveLibrary`).
  */
-export function hasFullDiskAccess() {
+function hasFullDiskAccess() {
   try {
     const fd = openSync(
       join(homedir(), 'Library/Application Support/com.apple.TCC/TCC.db'),

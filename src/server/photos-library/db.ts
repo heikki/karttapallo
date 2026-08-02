@@ -435,7 +435,7 @@ export interface AlbumRoster {
  * Titles come back NFC-normalised, because Photos stores them decomposed and
  * everything else here is composed (docs/gotchas.md).
  */
-export function queryAlbums(db: Database): AlbumRoster[] {
+function queryAlbums(db: Database): AlbumRoster[] {
   return db
     .query<{ ZUUID: string | null; ZTITLE: string | null }, []>(
       `SELECT ZUUID, ZTITLE FROM ZGENERICALBUM WHERE ZKIND = 2`
