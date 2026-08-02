@@ -6,9 +6,15 @@ import { layerVisibility, sourceFeatureCount } from './_helpers';
 // The autosave-and-load tests below mutate `_route.json` on disk. Without a
 // reset, state leaks between tests: a previous run's waypoint sits at the
 // canvas centre, and the next click would hit and remove it.
+//
+// Album data lives inside the library bundle, so this must track the
+// `bundleDir` that `tests/server.ts` builds.
 test.beforeEach(() => {
   const dataDir = process.env.E2E_DATA_DIR ?? 'tests/output/data';
-  rmSync(`${dataDir}/albums/Tampere/_route.json`, { force: true });
+  rmSync(
+    `${dataDir}/library.photoslibrary/karttapallo/albums/Tampere/_route.json`,
+    { force: true }
+  );
 });
 
 // Route polyline lives in the `photo-route` MapLibre source, rendered by the

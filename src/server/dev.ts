@@ -5,19 +5,18 @@ import { serve } from 'bun';
 
 import { createAlbumStore } from './album-store';
 import { createApiHandler, type EditResultEvent } from './api-routes';
+import { claimCacheRoot } from './cache-root';
 import { openItemStore } from './item-store';
 import { createOrsClient } from './ors-client';
 import { createPhotosWriter } from './photos-edit';
 import {
   createImageCache,
-  libraryDataDir,
-  markLibraryDir,
   openPhotosLibrary,
   resolveLibrary
 } from './photos-library';
 import { createRequestHandler } from './request-handler';
 
-const dataDir = '.data';
+const supportDir = '.data';
 
 // Resolve the active Photos library, failing loud (ADR 0012) — the dev server
 // has no UI to recover, so a clear message + non-zero exit is the right move.
@@ -39,25 +38,29 @@ if (!resolved.ok) {
   process.exit(1);
 }
 const libraryPath = resolved.path;
-const libDir = libraryDataDir(dataDir, libraryPath);
-mkdirSync(libDir, { recursive: true });
-markLibraryDir(libDir, libraryPath);
+mkdirSync(supportDir, { recursive: true });
+
+// Handmade data inside the library, derived data beside the dev support dir —
+// the same split the desktop entry makes, just without ~/Library.
+const bundleDir = join(libraryPath, 'karttapallo');
+const cacheRoot = claimCacheRoot(join(supportDir, 'derived'), libraryPath);
 console.log(`[main] Library: ${libraryPath}`);
-console.log(`[main] Library data: ${libDir}`);
+console.log(`[main] Library data: ${bundleDir}`);
+console.log(`[main] Derived data: ${cacheRoot}`);
 
 const imageCache = createImageCache({
-  cacheDir: join(libDir, 'cache'),
+  cacheDir: join(cacheRoot, 'cache'),
   libraryPath
 });
 const photosLibrary = openPhotosLibrary({ imageCache, libraryPath });
 const itemStore = openItemStore({
-  dataDir: libDir,
+  dataDir: cacheRoot,
   imageCache,
   libraryPath,
   photosWriter: createPhotosWriter(libraryPath)
 });
-const albumStore = createAlbumStore(libDir);
-const orsClient = createOrsClient(dataDir);
+const albumStore = createAlbumStore(bundleDir);
+const orsClient = createOrsClient(supportDir);
 
 function logEditResult(event: EditResultEvent) {
   const dim = '\x1b[2m';
@@ -83,7 +86,7 @@ itemStore.rebuildComplete
     console.error('[item-store] Rebuild failed:', err);
   });
 
-const { routeApiRequest } = createApiHandler(libDir, {
+const { routeApiRequest } = createApiHandler(bundleDir, {
   itemStore,
   photosLibrary,
   albumStore,
@@ -117,7 +120,7 @@ function logRequest(
 
 const fetch = createRequestHandler({
   routeApi: routeApiRequest,
-  staticRoots: [libDir, 'src/client'],
+  staticRoots: [bundleDir, 'src/client'],
   vendorFiles: {
     '/maplibre-gl.css': 'node_modules/maplibre-gl/dist/maplibre-gl.css'
   },

@@ -23,7 +23,15 @@ const port = Number(process.env.E2E_PORT ?? 4757);
 const dataDir = process.env.E2E_DATA_DIR ?? 'tests/output/data';
 const fixtureJpeg = 'tests/fixtures/sample.jpg';
 
-mkdirSync(dataDir, { recursive: true });
+// The two roots the production entries build: handmade data inside the library
+// bundle, derived data outside it. There is no real bundle here — the stub
+// PhotosLibrary stands in for one — so both are directories under the test data
+// dir, wired the same way round as in `src/server/index.ts`.
+const bundleDir = join(dataDir, 'library.photoslibrary', 'karttapallo');
+const cacheRoot = join(dataDir, 'derived');
+
+mkdirSync(bundleDir, { recursive: true });
+mkdirSync(cacheRoot, { recursive: true });
 
 interface SeedSpec {
   uuid: string;
@@ -118,18 +126,18 @@ const items: ItemEntry[] = [
 // Pre-seed the snapshot so /api/items returns immediately. The buildFreshItems
 // override returns the same list so rebuild detects no changes — no Apple
 // Photos library is touched.
-writeFileSync(join(dataDir, 'items.json'), JSON.stringify(items));
+writeFileSync(join(cacheRoot, 'items.json'), JSON.stringify(items));
 
 // Seed the Tampere album with a small GPX track so map-gpx has a route to
 // load + parse + render. Visibility defaults to true (no _files.json sidecar).
-const tampereDir = join(dataDir, 'albums', 'Tampere');
+const tampereDir = join(bundleDir, 'albums', 'Tampere');
 mkdirSync(tampereDir, { recursive: true });
 copyFileSync('tests/fixtures/track.gpx', join(tampereDir, 'track.gpx'));
 
 // No-op PhotosWriter so /api/save-edits succeeds in E2E without touching the
 // real Photos.app via AppleScript.
 const itemStore = openItemStore({
-  dataDir,
+  dataDir: cacheRoot,
   buildFreshItems: () => items,
   photosWriter: {
     setLocation: () => undefined,
@@ -167,9 +175,9 @@ const photosLibrary: PhotosLibrary = {
   })
 };
 
-const albumStore = createAlbumStore(dataDir);
+const albumStore = createAlbumStore(bundleDir);
 const orsClient = createOrsClient(dataDir);
-const { routeApiRequest } = createApiHandler(dataDir, {
+const { routeApiRequest } = createApiHandler(bundleDir, {
   itemStore,
   photosLibrary,
   albumStore,
@@ -178,7 +186,7 @@ const { routeApiRequest } = createApiHandler(dataDir, {
 
 const fetch = createRequestHandler({
   routeApi: routeApiRequest,
-  staticRoots: [dataDir, 'src/client'],
+  staticRoots: [bundleDir, 'src/client'],
   vendorFiles: {
     '/maplibre-gl.css': 'node_modules/maplibre-gl/dist/maplibre-gl.css'
   }

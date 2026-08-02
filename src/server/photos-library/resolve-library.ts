@@ -11,8 +11,7 @@
  * no bookmark at all (a machine that has only ever used the system library).
  */
 
-import { createHash } from 'node:crypto';
-import { closeSync, existsSync, openSync, writeFileSync } from 'node:fs';
+import { closeSync, existsSync, openSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { basename, dirname, join } from 'node:path';
 import {
@@ -31,36 +30,6 @@ export type LibraryResolution =
       libraryPath: string;
       volume: string | null;
     };
-
-/**
- * Per-library data subtree. UUIDs and album names aren't stable across
- * libraries, so each library's cache, item snapshot, and album sidecars live
- * under their own hashed dir; only truly global state (`state.json`) stays at
- * the top level of `dataDir`.
- */
-export function libraryDataDir(dataDir: string, libraryPath: string) {
-  const hash = createHash('sha256')
-    .update(libraryPath)
-    .digest('hex')
-    .slice(0, 8);
-  return join(dataDir, 'libraries', hash);
-}
-
-/**
- * Drops a `library.json` marker inside a hashed library dir so the otherwise
- * opaque hash is traceable back to its library path — read the `library.json`
- * files under `data/libraries/` to see the mapping. Best-effort, never fatal.
- */
-export function markLibraryDir(libDir: string, libraryPath: string) {
-  try {
-    writeFileSync(
-      join(libDir, 'library.json'),
-      `${JSON.stringify({ path: libraryPath }, null, 2)}\n`
-    );
-  } catch {
-    /* marker is a convenience, not load-bearing */
-  }
-}
 
 /** Volume name for a `/Volumes/<name>/…` path, else null (internal disk). */
 export function volumeOf(libraryPath: string): string | null {

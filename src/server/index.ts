@@ -11,17 +11,12 @@ const {
 
 const { createAlbumStore } = await import('./album-store');
 const { createApiHandler } = await import('./api-routes');
+const { claimCacheRoot } = await import('./cache-root');
 const { parseDeepLink, deepLinkViewUrl } = await import('./deep-link');
 const { openItemStore } = await import('./item-store');
 const { createOrsClient } = await import('./ors-client');
-const {
-  createImageCache,
-  openPhotosLibrary,
-  resolveLibrary,
-  libraryDataDir,
-  libraryTitle,
-  markLibraryDir
-} = await import('./photos-library');
+const { createImageCache, openPhotosLibrary, resolveLibrary, libraryTitle } =
+  await import('./photos-library');
 const { createPhotosWriter } = await import('./photos-edit');
 const { createRequestHandler } = await import('./request-handler');
 const { getSetting, setSetting } = await import('./state');
@@ -75,7 +70,11 @@ function findProjectRoot(): string | null {
 
 const projectRoot = findProjectRoot();
 
-function findDataDir() {
+function defaultSupportDir() {
+  return join(process.env.HOME!, 'Library/Application Support/Karttapallo');
+}
+
+function findSupportDir() {
   if (
     process.env.KARTTAPALLO_DATA_DIR !== undefined &&
     process.env.KARTTAPALLO_DATA_DIR !== ''
@@ -90,13 +89,33 @@ function findDataDir() {
     }
   }
 
-  return join(process.env.HOME!, 'Library/Application Support/Karttapallo');
+  return defaultSupportDir();
 }
 
-const dataDir = findDataDir();
-console.log(`[main] Data directory: ${dataDir}`);
+/**
+ * Where derived data goes: the item snapshot and the converted-image cache.
+ *
+ * A real install puts it in `~/Library/Caches`, which macOS excludes from Time
+ * Machine by path *policy* rather than the per-item `excludeItem` xattr. The
+ * difference matters: policy is inherited by fresh subdirectories and survives
+ * the cache being cleared, where the xattr does not come back with a directory
+ * that was deleted and recreated. This is several gigabytes of regenerable
+ * JPEGs, and none of it belongs in a backup.
+ *
+ * A run that redirected the support dir keeps its derived data beside it, so
+ * one directory still holds everything that run created.
+ */
+function findCacheRoot(supportDir: string) {
+  if (supportDir !== defaultSupportDir()) return join(supportDir, 'derived');
+  return join(process.env.HOME!, 'Library/Caches/Karttapallo');
+}
 
-mkdirSync(dataDir, { recursive: true });
+// Machine-scoped settings only — window geometry and the ORS API key. Anything
+// belonging to a library lives inside the library (see `bundleDir` below).
+const supportDir = findSupportDir();
+console.log(`[main] Support directory: ${supportDir}`);
+
+mkdirSync(supportDir, { recursive: true });
 
 // Deep link to the Full Disk Access list. Must be the System Settings anchor:
 // the pre-Ventura `com.apple.preference.security?Privacy_AllFiles` form is not
@@ -160,26 +179,33 @@ async function resolveLibraryOrExit() {
 }
 
 const libraryPath = await resolveLibraryOrExit();
-const libDir = libraryDataDir(dataDir, libraryPath);
-mkdirSync(libDir, { recursive: true });
-markLibraryDir(libDir, libraryPath);
+
+// Routes, GPX files and notes are the only things here the user made by hand,
+// and they live inside the library bundle so that they travel with it. A move,
+// a rename or a copy to another Mac carries them along; nothing has to work out
+// which stored directory belongs to which library, because being inside it is
+// the answer. Photos preserves a foreign top-level directory across a full
+// rebuild (docs/gotchas.md).
+const bundleDir = join(libraryPath, 'karttapallo');
+const cacheRoot = claimCacheRoot(findCacheRoot(supportDir), libraryPath);
 console.log(`[main] Library: ${libraryPath}`);
-console.log(`[main] Library data: ${libDir}`);
+console.log(`[main] Library data: ${bundleDir}`);
+console.log(`[main] Derived data: ${cacheRoot}`);
 
 const imageCache = createImageCache({
-  cacheDir: join(libDir, 'cache'),
+  cacheDir: join(cacheRoot, 'cache'),
   libraryPath
 });
 const photosLibrary = openPhotosLibrary({ imageCache, libraryPath });
 const itemStore = openItemStore({
-  dataDir: libDir,
+  dataDir: cacheRoot,
   imageCache,
   libraryPath,
   photosWriter: createPhotosWriter(libraryPath)
 });
-const albumStore = createAlbumStore(libDir);
-const orsClient = createOrsClient(dataDir);
-const { routeApiRequest } = createApiHandler(libDir, {
+const albumStore = createAlbumStore(bundleDir);
+const orsClient = createOrsClient(supportDir);
+const { routeApiRequest } = createApiHandler(bundleDir, {
   itemStore,
   photosLibrary,
   albumStore,
@@ -281,7 +307,7 @@ async function checkFullDiskAccess(response: Response, pathname: string) {
 
 const fetch = createRequestHandler({
   routeApi: routeApiRequest,
-  staticRoots: [viewsDir, libDir],
+  staticRoots: [viewsDir, bundleDir],
   onResponse: async (req, res, pathname) => {
     if (pathname.startsWith('/api/')) {
       await checkFullDiskAccess(res, pathname);
@@ -304,7 +330,7 @@ function loadWindowState(): {
   height: number;
 } {
   try {
-    const raw = getSetting(dataDir, 'window');
+    const raw = getSetting(supportDir, 'window');
     if (raw === null) return defaultFrame;
     return JSON.parse(raw) as {
       x: number;
@@ -323,7 +349,7 @@ function saveWindowState(frame: {
   width: number;
   height: number;
 }) {
-  setSetting(dataDir, 'window', JSON.stringify(frame));
+  setSetting(supportDir, 'window', JSON.stringify(frame));
 }
 
 // RPC type definition for Electrobun communication
@@ -349,11 +375,12 @@ const rpc = BrowserView.defineRPC<AppRPC>({
 const savedFrame = loadWindowState();
 
 // `view` is per-library (it carries library-specific state — map center,
-// filters, and the selected photo UUID), so it lives in libDir, not the
-// global state.json that holds `window`.
+// filters, and the selected photo UUID), so it lives in the bundle, not the
+// machine-scoped state.json that holds `window`. Storing it with the library
+// means the view restores on whichever Mac the library is opened on.
 function savedViewParams(): Record<string, string> {
   try {
-    const raw = getSetting(libDir, 'view');
+    const raw = getSetting(bundleDir, 'view');
     if (raw === null) return {};
     return JSON.parse(raw) as Record<string, string>;
   } catch {
@@ -499,8 +526,8 @@ async function syncPhotos() {
 
 /** Delete cached images and reload webview. */
 function clearCache() {
-  const cacheFullDir = join(libDir, 'cache', 'full');
-  const cacheThumbDir = join(libDir, 'cache', 'thumb');
+  const cacheFullDir = join(cacheRoot, 'cache', 'full');
+  const cacheThumbDir = join(cacheRoot, 'cache', 'thumb');
 
   if (existsSync(cacheFullDir)) rmSync(cacheFullDir, { recursive: true });
   if (existsSync(cacheThumbDir)) rmSync(cacheThumbDir, { recursive: true });
