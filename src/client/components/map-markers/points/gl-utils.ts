@@ -1,4 +1,4 @@
-export function initTex(
+function initTex(
   gl: WebGL2RenderingContext,
   tex: WebGLTexture,
   w: number,

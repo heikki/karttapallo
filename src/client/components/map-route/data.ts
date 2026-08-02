@@ -31,10 +31,7 @@ export interface RouteData {
 
 // ---------- Construction ----------
 
-export function makeStraightSegment(
-  from: RoutePoint,
-  to: RoutePoint
-): RouteSegment {
+function makeStraightSegment(from: RoutePoint, to: RoutePoint): RouteSegment {
   return {
     method: 'straight',
     geometry: [
