@@ -110,7 +110,17 @@ describe('libraryTitle', () => {
     ).toBe('Rebuild Test (Crucial X10)');
   });
 
-  test('bare name in the default Photos directory, where a path adds nothing', () => {
+  // A library filed inside a backup needs every level to be located, and the
+  // volume name alone would point at the wrong copy.
+  test('keeps the nested path under a volume', () => {
+    expect(
+      libraryTitle(
+        '/Volumes/Crucial X10/Backups/2018-08-02/Pictures/Photos Library.photoslibrary'
+      )
+    ).toBe('Photos Library (Crucial X10/Backups/2018-08-02/Pictures)');
+  });
+
+  test('bare name in the default Photos directory, where a location adds nothing', () => {
     expect(
       libraryTitle(join(home, 'Pictures/Photos Library.photoslibrary'))
     ).toBe('Photos Library');
@@ -118,10 +128,13 @@ describe('libraryTitle', () => {
 
   // Copies get made here, and two of them can share a name — the folder is the
   // only thing that tells them apart.
-  test('whole path elsewhere on the internal disk, home written as ~', () => {
+  test('names the folder elsewhere on the internal disk, home written as ~', () => {
     expect(libraryTitle(join(home, 'Desktop/Rebuild Test.photoslibrary'))).toBe(
-      '~/Desktop/Rebuild Test.photoslibrary'
+      'Rebuild Test (~/Desktop)'
     );
+    expect(
+      libraryTitle(join(home, 'tmp/scratch/Rebuild Test.photoslibrary'))
+    ).toBe('Rebuild Test (~/tmp/scratch)');
   });
 
   test('distinguishes same-named libraries in different local folders', () => {
@@ -131,9 +144,15 @@ describe('libraryTitle', () => {
     expect(a).not.toBe(b);
   });
 
-  test('leaves a path outside home alone', () => {
+  test('bare ~ for a library sitting directly in the home directory', () => {
+    expect(libraryTitle(join(home, 'Archive.photoslibrary'))).toBe(
+      'Archive (~)'
+    );
+  });
+
+  test('leaves a directory outside home alone', () => {
     expect(libraryTitle('/opt/photos/Archive.photoslibrary')).toBe(
-      '/opt/photos/Archive.photoslibrary'
+      'Archive (/opt/photos)'
     );
   });
 });
