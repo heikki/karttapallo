@@ -47,7 +47,9 @@ Three further costs stand independent of that. `runAppleScript` in the native br
 
 All three are lists, because the index attaches terms rather than a value — a photo sits in a point of interest and a street and a city at once. The snapshot grows by roughly four short strings per item.
 
-Places stop at the city. Photos also indexes region (7), state (10, 11) and country (12, 13), which are true of a photo but useless as search terms here: `Suomi` matches 2817 of 4841 items, so it would head every suggestion list while narrowing almost nothing. Terms are ordered specific-first within each field, which is what lets the info panel's Place row read outward as `Kälkäsentie, Kuhmo`.
+Places span the full hierarchy Photos names, point of interest through country. The broad levels are how a trip is actually reached — `Islanti` and `Portugali` are the terms for a journey with no album of its own — at the cost of matching thousands of items each (`Suomi`: 2817 of 4841), which puts them at the head of the Places group whenever they match. Only the two-letter codes are dropped (11, 13): `FI` duplicates `Suomi` at an identical count under a worse label, so a query for `fi` would offer the code above the name it stands for.
+
+Terms are ordered specific-first within each field, which is what lets the info panel's Place row read outward as `Kälkäsentie, Kuhmo, Kainuu, Suomi`.
 
 Search is a filter dimension, not a separate result list. It composes with the existing cascade and reuses `filteredPhotos`, marker rendering, fit-to-view and the stats line, so there is exactly one model of "what the map is showing". It follows the other filters into URL state, and `revealPhoto` must clear it for the same reason it widens the GPS filter — a deep link has to land on its photo whatever filter state arrived with it.
 

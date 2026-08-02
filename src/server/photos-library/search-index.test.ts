@@ -17,6 +17,8 @@ const CITY = 5;
 const DESCRIPTION = 1202;
 const LABEL = 1500;
 const COUNTRY = 12;
+const COUNTRY_CODE = 13;
+const STATE_CODE = 11;
 
 let libraryDir = '';
 
@@ -111,6 +113,7 @@ describe('readSearchTerms', () => {
   test('orders places most specific first, not alphabetically', () => {
     const uuid = 'D592800C-7F25-4D50-8277-4082E19B568F';
     seedIndex([
+      { uuid, category: COUNTRY, term: 'Suomi' },
       { uuid, category: CITY, term: 'Inari' },
       { uuid, category: POI, term: 'Siida' },
       { uuid, category: STREET, term: 'Inarintie' }
@@ -119,19 +122,22 @@ describe('readSearchTerms', () => {
     expect(readSearchTerms(libraryDir).get(uuid)?.place).toEqual([
       'Siida',
       'Inarintie',
-      'Inari'
+      'Inari',
+      'Suomi'
     ]);
   });
 
-  // Region, state and country are true of a photo but match thousands of them.
-  test('ignores categories broader than a city', () => {
+  // They duplicate the country and state names at identical counts, so a query
+  // for `fi` would offer `FI` above `Suomi`.
+  test('ignores the two-letter country and state codes', () => {
     const uuid = 'D592800C-7F25-4D50-8277-4082E19B568F';
     seedIndex([
-      { uuid, category: CITY, term: 'Inari' },
-      { uuid, category: COUNTRY, term: 'Suomi' }
+      { uuid, category: COUNTRY, term: 'Suomi' },
+      { uuid, category: COUNTRY_CODE, term: 'FI' },
+      { uuid, category: STATE_CODE, term: 'MA' }
     ]);
 
-    expect(readSearchTerms(libraryDir).get(uuid)?.place).toEqual(['Inari']);
+    expect(readSearchTerms(libraryDir).get(uuid)?.place).toEqual(['Suomi']);
   });
 
   test('collects every label for an asset, sorted and NUL-stripped', () => {

@@ -28,7 +28,7 @@ import { Database } from 'bun:sqlite';
 
 /** Terms attached to one asset, each field ordered most specific first. */
 export interface SearchTerms {
-  /** Reverse-geocoded place names, from the point of interest out to the city. */
+  /** Reverse-geocoded place names, from the point of interest out to the country. */
   place: string[];
   /** Caption the user typed in Photos. */
   description: string[];
@@ -41,11 +41,16 @@ export type SearchField = keyof SearchTerms;
 /**
  * Which `groups.category` values feed which field.
  *
- * Place stops at the city and its immediate surroundings. Photos also indexes
- * region (7), state (10, 11) and country (12, 13), which are true of a photo
- * but useless to search by here — `Suomi` matches 2817 of 4841 items, so it
- * would head every suggestion list while narrowing nothing. Categories are
- * listed specific-first; `readSearchTerms` orders terms by that.
+ * Place spans the whole geocoded hierarchy Photos names, point of interest
+ * through country. Broad levels earn their place by being how you actually
+ * reach a trip — `Islanti` and `Portugali` are the terms for libraries with no
+ * album for them. The cost is that they are true of thousands of items at once
+ * (`Suomi`: 2817 of 4841), so they head the Places group whenever they match;
+ * they are last in this list, which is the order terms read in.
+ *
+ * The two-letter codes are the exception — `FI` (13) and `MA` (11) duplicate
+ * `Suomi` and `Massachusetts` at identical counts under a worse label, so a
+ * query for `fi` would offer the code above the name it stands for.
  *
  * Deliberately absent: camera (2300), year (1101) and media type (1900) have
  * dedicated filters, and folding them in would make a hit ambiguous about why
@@ -62,7 +67,10 @@ const CATEGORIES: Record<SearchField, number[]> = {
     9, // park or island — Isle of Skye
     4, // waterway — River Thames
     14, // water body — Lokan tekojärvi
-    5 // city — Inari, Kuhmo
+    5, // city — Inari, Kuhmo
+    7, // region — Central London, Home Counties
+    10, // state or province — Lappi, Massachusetts
+    12 // country — Suomi, Iso-Britannia
   ],
   description: [1202],
   labels: [1500]
