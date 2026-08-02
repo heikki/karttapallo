@@ -317,17 +317,23 @@ const server = Bun.serve({ port: 0, fetch });
 const baseUrl = `http://127.0.0.1:${server.port}`;
 console.log(`[main] Server running on ${baseUrl}`);
 
+// Only ever the frame a first launch is built at before it maximizes, and the
+// size the zoom button restores to afterwards — macOS zoom toggles back to
+// whatever the window was before it filled the screen.
 const defaultFrame = { x: 100, y: 100, width: 1200, height: 800 };
 
+// Null means nothing usable was saved — a first launch after an install, or a
+// state.json we can't read. Both want the same treatment (see win.maximize
+// below), so neither is worth distinguishing from the other.
 function loadWindowState(): {
   x: number;
   y: number;
   width: number;
   height: number;
-} {
+} | null {
   try {
     const raw = getSetting(supportDir, 'window');
-    if (raw === null) return defaultFrame;
+    if (raw === null) return null;
     return JSON.parse(raw) as {
       x: number;
       y: number;
@@ -335,7 +341,7 @@ function loadWindowState(): {
       height: number;
     };
   } catch {
-    return defaultFrame;
+    return null;
   }
 }
 
@@ -408,9 +414,15 @@ const win = new BrowserWindow<typeof rpc>({
   // once per launch and cannot change under a running window (ADR-0012).
   title: `Karttapallo — ${libraryTitle(libraryPath)}`,
   url: initialViewUrl(),
-  frame: savedFrame,
+  frame: savedFrame ?? defaultFrame,
   rpc
 });
+
+// First launch opens filling the screen. A globe in a 1200x800 box in the
+// corner of a large display shows very little of the map, and this app has
+// nothing else to put on screen — every launch after this one restores the
+// frame the user left, because maximizing fires 'resize' and saves it.
+if (savedFrame === null) win.maximize();
 
 // From here on links are delivered straight to the window. Assigned in the
 // same synchronous run as the window's construction so an event can't slip
