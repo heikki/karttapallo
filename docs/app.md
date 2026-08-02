@@ -50,7 +50,7 @@ Handmade data lives **inside the library bundle** so it travels with it — a mo
 
 A dev or test run that redirects the support dir (`KARTTAPALLO_DATA_DIR`, or a project-local `.data/`) keeps its derived data beside it in `derived/`, so one directory holds everything that run created.
 
-The desktop entry lives at `src/server/index.ts` (the name is required because Electrobun's launcher hardcodes `app/bun/index.js`); the dev entry lives at `src/server/dev.ts`. They differ in static-root order, a per-response hook (request logging vs FDA detection), and how a failed library resolution is surfaced (the desktop app shows a recoverable dialog with Retry; the dev server logs and exits).
+The desktop entry lives at `src/server/index.ts` (the name is required because Electrobun's launcher hardcodes `app/bun/index.js`); the dev entry lives at `src/server/dev.ts`. They differ in which static root serves the client (the bundled views vs `src/client`), a per-response hook (request logging vs FDA detection), and how a failed library resolution is surfaced (the desktop app shows a recoverable dialog with Retry; the dev server logs and exits).
 
 ## Native
 

@@ -27,7 +27,9 @@ Seed: `src/client/common/interaction-mode.test.ts`.
 
 ### Tier 2 — server with fixtures (`bun:test`)
 
-In-process server modules backed by tempdir state. `item-store.ts` opens against a tempdir snapshot with an injected `PhotosWriter` and `buildFreshItems`; `state.ts` and `album-files.ts` round-trip through tempdir JSON; `photos-db.ts` will eventually point at a committed fixture sqlite. API-route tests boot `Bun.serve({ port: 0 })` with injected fakes for anything macOS-specific.
+In-process server modules backed by tempdir state. `item-store.ts` opens against a tempdir snapshot with an injected `PhotosWriter` and `buildFreshItems`; `state.ts` and `album-store.ts` round-trip through tempdir JSON, the latter with an injected album roster so no library is needed; `cache-root.ts` and `request-handler.ts` assert on what a tempdir holds and what a request may reach; `photos-library/db.ts` will eventually point at a committed fixture sqlite.
+
+`request-handler.test.ts` asserts on response **status**, not bodies: `bunfig.toml` preloads happy-dom for Tier 3, which replaces the global `Response`, and happy-dom's does not special-case a `BunFile` — a served file reads back as the string `"[object Blob]"`. Anything asserting on served bytes belongs in Tier 5.
 
 Seed: `src/server/item-store.test.ts`.
 
@@ -46,6 +48,8 @@ Seed: `resources/native/native-bridge.test.ts`.
 ### Tier 5 — end-to-end (Playwright)
 
 `tests/server.ts` boots the same `createApiHandler` + `createRequestHandler` the production servers (`src/server/dev.ts`, `src/server/index.ts`) use, but against a tempdir (`tests/output/data/`) pre-seeded with three fake items and a stub `PhotosLibrary`: `resolveImagePath` points every UUID at a checked-in fixture (`tests/fixtures/sample.jpg`), and `getMetadata` returns a small canned record so the info panel renders. Playwright drives WebKit against the running server.
+
+The tempdir mirrors the production split: a stand-in bundle (`library.photoslibrary/karttapallo/`) for album data, and `derived/` for the item snapshot. Album directories are keyed by UUID here too, off a stub roster — so a spec that reaches for a file on disk has to go through the same name→UUID mapping the app does, and a spec that resets state between runs has to know where the bundle is. Getting that path wrong doesn't fail loudly; it lets state leak between tests, which is what the `beforeEach` in `routes.e2e.ts` exists to stop.
 
 Specs are organised by user journey, not by component. Each one mirrors one or more flows from `docs/flows.md` and is named after its dominant flow; see `tests/specs/` for the current set, with the journey scope documented in each spec's header comment.
 

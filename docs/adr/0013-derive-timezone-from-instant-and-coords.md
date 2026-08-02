@@ -14,7 +14,7 @@ It also removes a latent inconsistency in the read path. Before this decision th
 
 **Write metadata into the original files.** Rewriting originals in place changes `ZORIGINALSTABLEHASH` / `ZINTERNALRESOURCE.ZFINGERPRINT`, risks iCloud desync and damage flags, and still would not fix already-imported assets (Photos freezes EXIF into `ex*` fields at import and never re-reads originals during rebuild). Rejected as both dangerous and insufficient.
 
-**Store our own parallel timezone record outside the library.** We already namespace per-library data under `data/libraries/{hash}/`, so a sidecar was possible. But the instant and coordinates already living in the (journaled) library _are_ a sufficient source of truth; a sidecar would add a second thing to keep in sync for no gain, and would not help Photos.app display the right local time.
+**Store our own parallel timezone record outside the library.** We already keep per-library data of our own, so a sidecar was possible. But the instant and coordinates already living in the (journaled) library _are_ a sufficient source of truth; a sidecar would add a second thing to keep in sync for no gain, and would not help Photos.app display the right local time.
 
 ## Consequences
 

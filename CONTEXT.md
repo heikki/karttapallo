@@ -65,6 +65,7 @@ The marker rendering — `Classic` (color-coded circles) or `Points` (white WebG
 
 ## Relationships
 
+- A **Library** holds zero or more **Albums**, and exactly one **Bundle store** holding what the user authored against them.
 - An **Album** has zero or more **Items**, zero or more **GPX Tracks**, and at most one **Route**.
 - An **Item** belongs to zero or more **Albums** (Apple Photos is many-to-many).
 - A **Pending Edit** targets exactly one **Item** by UUID.
@@ -73,7 +74,7 @@ The marker rendering — `Classic` (color-coded circles) or `Points` (white WebG
 
 ## Flagged ambiguities
 
-- **"Album"** means two related things: the read-only Photos album (same name and ID across the app) and the server's augmented version with sidecar files. Code distinguishes by location; CONTEXT.md treats them as one term with two aspects.
+- **"Album"** means two related things: the read-only Photos album (same name and ID across the app) and the server's augmented version with sidecar files. Code distinguishes by location; CONTEXT.md treats them as one term with two aspects. An Album is also **named by title on the wire and stored by UUID on disk** — the two are bridged only inside `AlbumStore`, so anywhere else that reaches for an album's files by name is a bug waiting to happen.
 - **"Photo" / "Item"** are the same thing seen from different sides. Keep server code on **Item** and client code on **Photo**; the boundary is `/api/items`.
 - **"Scene label" / "labels" / "Categories"** are one thing under three names — the concept, the field, and the word the UI shows. The UI word is deliberate: users only ever meet these through search, and two names there would read as two features.
 - **"Place"** is a name, **"Location"** is coordinates. The Location filter and the Place row answer different questions, and an item can have either without the other.
