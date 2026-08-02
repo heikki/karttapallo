@@ -428,17 +428,12 @@ export interface AlbumRoster {
 }
 
 /**
- * Every album the user made, by title and UUID.
+ * Every album the user made, by title and UUID. `ZKIND = 2` is the user-created
+ * album; the rest of the table is Photos' own — smart albums (1507), folders
+ * (4000), and untitled internal kinds.
  *
- * `ZKIND = 2` is the user-created album. The other kinds in this table are
- * Photos' own: smart albums like "Not in album" (1507), folders that group
- * albums (4000), and a long tail of internal kinds with no title at all. None
- * of them is something the user can attach a route to.
- *
- * Titles come back NFC-normalised. Photos stores them decomposed — `ä` as
- * `a` + U+0308 — while every title the app has already shown went through the
- * same normalisation on its way to the client, so a raw comparison misses
- * exactly the albums with accented names (docs/gotchas.md).
+ * Titles come back NFC-normalised, because Photos stores them decomposed and
+ * everything else here is composed (docs/gotchas.md).
  */
 export function queryAlbums(db: Database): AlbumRoster[] {
   return db

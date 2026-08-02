@@ -12,7 +12,7 @@ import {
 import type { PhotosWriter } from './photos-edit';
 import type { LibraryResolution, PhotoRecord } from './photos-library';
 
-let dataDir = '';
+let cacheRoot = '';
 
 function sampleItem(overrides: Partial<ItemEntry> = {}): ItemEntry {
   return {
@@ -60,21 +60,21 @@ function recordingWriter(): RecordingWriter {
 }
 
 function seedSnapshot(items: ItemEntry[]) {
-  writeFileSync(join(dataDir, 'items.json'), JSON.stringify(items));
+  writeFileSync(join(cacheRoot, 'items.json'), JSON.stringify(items));
 }
 
 function readSnapshot(): ItemEntry[] {
   return JSON.parse(
-    readFileSync(join(dataDir, 'items.json'), 'utf-8')
+    readFileSync(join(cacheRoot, 'items.json'), 'utf-8')
   ) as ItemEntry[];
 }
 
 beforeEach(() => {
-  dataDir = mkdtempSync(join(tmpdir(), 'karttapallo-itemstore-'));
+  cacheRoot = mkdtempSync(join(tmpdir(), 'karttapallo-itemstore-'));
 });
 
 afterEach(() => {
-  rmSync(dataDir, { recursive: true, force: true });
+  rmSync(cacheRoot, { recursive: true, force: true });
 });
 
 async function open(
@@ -84,7 +84,7 @@ async function open(
   } = {}
 ): Promise<ItemStore> {
   const store = openItemStore({
-    dataDir,
+    cacheRoot,
     photosWriter: opts.writer,
     buildFreshItems: () => opts.fresh ?? []
   });
@@ -104,7 +104,7 @@ describe('item-store snapshot', () => {
     const seed = [sampleItem({ uuid: 'AAAA' })];
     seedSnapshot(seed);
     const store = openItemStore({
-      dataDir,
+      cacheRoot,
       buildFreshItems: () => seed
     });
     // Synchronous getAll must already reflect the snapshot — no await yet.
@@ -112,7 +112,7 @@ describe('item-store snapshot', () => {
   });
 
   test('corrupt snapshot falls back to empty list', async () => {
-    writeFileSync(join(dataDir, 'items.json'), 'not json');
+    writeFileSync(join(cacheRoot, 'items.json'), 'not json');
     const store = await open();
     expect(store.getAll()).toEqual([]);
   });
@@ -123,7 +123,7 @@ describe('item-store rebuild', () => {
     const seed = [sampleItem({ uuid: 'AAAA' })];
     seedSnapshot(seed);
     const store = openItemStore({
-      dataDir,
+      cacheRoot,
       buildFreshItems: () => seed
     });
     expect(await store.rebuildComplete).toBe(false);
@@ -156,7 +156,7 @@ describe('item-store rebuild', () => {
   test('manual rebuild swaps and persists', async () => {
     let fresh = [sampleItem({ uuid: 'AAAA' })];
     const store = openItemStore({
-      dataDir,
+      cacheRoot,
       buildFreshItems: () => fresh
     });
     await store.rebuildComplete;
@@ -350,7 +350,7 @@ describe('item-store write-time library guard', () => {
     writer: PhotosWriter
   ): Promise<ItemStore> {
     const store = openItemStore({
-      dataDir,
+      cacheRoot,
       libraryPath: lib,
       photosWriter: writer,
       buildFreshItems: () => [sampleItem({ uuid: 'AAAA', lat: 0, lon: 0 })],

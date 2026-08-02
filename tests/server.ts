@@ -144,7 +144,7 @@ copyFileSync('tests/fixtures/track.gpx', join(tampereDir, 'track.gpx'));
 // No-op PhotosWriter so /api/save-edits succeeds in E2E without touching the
 // real Photos.app via AppleScript.
 const itemStore = openItemStore({
-  dataDir: cacheRoot,
+  cacheRoot,
   buildFreshItems: () => items,
   photosWriter: {
     setLocation: () => undefined,
@@ -193,7 +193,9 @@ const { routeApiRequest } = createApiHandler(bundleDir, {
 
 const fetch = createRequestHandler({
   routeApi: routeApiRequest,
-  staticRoots: [bundleDir, 'src/client'],
+  // Client assets only. Album files go through the API, same as production —
+  // once album directories are named by UUID, a request path can't name one.
+  staticRoots: ['src/client'],
   vendorFiles: {
     '/maplibre-gl.css': 'node_modules/maplibre-gl/dist/maplibre-gl.css'
   }

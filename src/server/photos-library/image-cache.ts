@@ -174,11 +174,9 @@ export function createImageCache(config: ImageCacheConfig): ImageCache {
     const cachedThumb = join(thumbDir, `${uuid}.jpg`);
     const cachedPath = size === 'full' ? cachedFull : cachedThumb;
 
-    // Check source mtime for cache validation
     const sourceMtime = getSourceMtime(libraryPath, asset);
     if (sourceMtime === null) return null; // source not available (iCloud-only)
 
-    // Cache hit with valid mtime
     if (isCacheValid(cachedPath, sourceMtime)) {
       return cachedPath;
     }

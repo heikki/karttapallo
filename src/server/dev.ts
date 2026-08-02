@@ -55,7 +55,7 @@ const imageCache = createImageCache({
 });
 const photosLibrary = openPhotosLibrary({ imageCache, libraryPath });
 const itemStore = openItemStore({
-  dataDir: cacheRoot,
+  cacheRoot,
   imageCache,
   libraryPath,
   photosWriter: createPhotosWriter(libraryPath)

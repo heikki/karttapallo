@@ -98,25 +98,15 @@ function findSupportDir() {
 }
 
 /**
- * Where derived data goes: the item snapshot and the converted-image cache.
- *
- * A real install puts it in `~/Library/Caches`, which macOS excludes from Time
- * Machine by path *policy* rather than the per-item `excludeItem` xattr. The
- * difference matters: policy is inherited by fresh subdirectories and survives
- * the cache being cleared, where the xattr does not come back with a directory
- * that was deleted and recreated. This is several gigabytes of regenerable
- * JPEGs, and none of it belongs in a backup.
- *
- * A run that redirected the support dir keeps its derived data beside it, so
- * one directory still holds everything that run created.
+ * `~/Library/Caches` is the Time Machine exclusion that survives a cache clear
+ * (docs/gotchas.md). A run that redirected the support dir keeps its derived
+ * data beside it instead, so one directory holds everything that run created.
  */
 function findCacheRoot(supportDir: string) {
   if (supportDir !== defaultSupportDir()) return join(supportDir, 'derived');
   return join(process.env.HOME!, 'Library/Caches/Karttapallo');
 }
 
-// Machine-scoped settings only — window geometry and the ORS API key. Anything
-// belonging to a library lives inside the library (see `bundleDir` below).
 const supportDir = findSupportDir();
 console.log(`[main] Support directory: ${supportDir}`);
 
@@ -185,12 +175,6 @@ async function resolveLibraryOrExit() {
 
 const libraryPath = await resolveLibraryOrExit();
 
-// Routes, GPX files and notes are the only things here the user made by hand,
-// and they live inside the library bundle so that they travel with it. A move,
-// a rename or a copy to another Mac carries them along; nothing has to work out
-// which stored directory belongs to which library, because being inside it is
-// the answer. Photos preserves a foreign top-level directory across a full
-// rebuild (docs/gotchas.md).
 const bundleDir = join(libraryPath, 'karttapallo');
 const cacheRoot = claimCacheRoot(findCacheRoot(supportDir), libraryPath);
 console.log(`[main] Library: ${libraryPath}`);
@@ -203,7 +187,7 @@ const imageCache = createImageCache({
 });
 const photosLibrary = openPhotosLibrary({ imageCache, libraryPath });
 const itemStore = openItemStore({
-  dataDir: cacheRoot,
+  cacheRoot,
   imageCache,
   libraryPath,
   photosWriter: createPhotosWriter(libraryPath)
@@ -228,11 +212,9 @@ const { routeApiRequest } = createApiHandler(bundleDir, {
   orsClient
 });
 
-// Locate bundled view files
 const appDir = join(resourcesDir, 'app');
 const viewsDir = join(appDir, 'views', 'app');
 
-// App menu
 ApplicationMenu.setApplicationMenu([
   {
     label: 'Karttapallo',
@@ -331,7 +313,6 @@ const fetch = createRequestHandler({
   }
 });
 
-// Start local server that serves both API and view files
 const server = Bun.serve({ port: 0, fetch });
 
 const baseUrl = `http://127.0.0.1:${server.port}`;
@@ -380,7 +361,6 @@ interface AppRPC {
   };
 }
 
-// Create browser window
 const rpc = BrowserView.defineRPC<AppRPC>({
   handlers: {
     requests: {},
@@ -443,7 +423,6 @@ deliverDeepLink = (uuid) => {
   win.focus();
 };
 
-// Save window state on move/resize
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
 function debouncedSave() {
   if (saveTimer !== null) clearTimeout(saveTimer);

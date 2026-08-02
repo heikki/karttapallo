@@ -48,4 +48,4 @@ Titles are normalised to NFC on the way in, because Photos stores them decompose
 - A read-only library opens and displays normally; a route save returns 500. There is deliberately **no fallback location**, because writing the user's handmade data somewhere that is not the library is the problem this ADR exists to remove.
 - Orphan pruning runs after a successful rebuild, guarded on a non-empty roster — an empty roster means the library could not be read, which is indistinguishable from every album having been deleted. Deletion is outright rather than quarantined, because the bundle is inside the Time Machine backup set.
 - Album files are served through the API rather than off a static root, since the request path no longer names a directory once directories are UUIDs.
-- Migration from the old layout was a one-off script (`scripts/migrate-to-bundle-store.ts`), deliberately not shipped in the app: it reads a layout the app no longer creates.
+- Migration from the old layout was a one-off script, run by hand and then deleted rather than shipped — it read a layout the app no longer creates. Recoverable from history if another machine ever needs it.

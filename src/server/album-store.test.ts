@@ -157,8 +157,7 @@ describe('getFileBytes', () => {
     expect(await store.getFileBytes('Helsinki', 'nope.gpx')).toBeNull();
   });
 
-  // The route serving these bytes replaced a static root, so the allowlist has
-  // to hold here too — otherwise it would read anything sitting in the album.
+  // These bytes are served over HTTP, so the allowlist has to hold on read too.
   test('null for a disallowed extension even when the file exists', async () => {
     mkdirSync(dirFor(HELSINKI), { recursive: true });
     await Bun.write(join(dirFor(HELSINKI), 'secrets.txt'), 'sensitive');
@@ -189,9 +188,6 @@ describe('album name to UUID', () => {
     expect(await store.getRouteBytes('Oulu')).toBe('x');
   });
 
-  // Photos stores titles decomposed; every name reaching this store has been
-  // normalised to NFC on its way to the client. Without matching normalisation
-  // exactly the accented albums miss — 4 of 19 in the author's own library.
   test('matches an NFD roster title against the NFC name the API carries', async () => {
     roster = [{ uuid: KONGAS, title: 'Vätsäri' }];
 

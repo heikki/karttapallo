@@ -52,7 +52,6 @@ const photosDb = new Database(
   FIX ? { readwrite: true } : { readonly: true }
 );
 
-// Discover dynamic join table
 const tables = photosDb
   .query<
     { name: string },
@@ -182,7 +181,6 @@ const updateTzStmt = FIX
     )
   : null;
 
-// Collect changes grouped by album for display
 interface Change {
   row: Row;
   expectedTzName: string;

@@ -1,15 +1,12 @@
 /**
  * AlbumStore — owns the per-album filesystem subtree at
- * `{dataDir}/albums/{albumUuid}/`: GPX/markdown files (upload, list, delete),
+ * `<library>/karttapallo/albums/{albumUuid}/`: GPX/markdown files (upload, list, delete),
  * the `_files.json` visibility sidecar, and the `_route.json` route file. Route
  * data passes through as bytes; the route shape is owned client-side in
  * `map-route/data.ts`.
  *
- * Directories are keyed by album UUID, but callers address albums by the name
- * Photos shows — that is what the item records carry, so it is what reaches the
- * API. Translation happens here and nowhere else. Keying by UUID is what lets a
- * route survive the album being renamed, and it is why an album deleted in
- * Photos can be recognised as gone rather than merely unvisited.
+ * Callers address albums by name; directories are keyed by UUID (ADR-0015).
+ * Translation happens here and nowhere else.
  *
  * Album and file names are validated at the seam to prevent path traversal.
  */
@@ -74,10 +71,9 @@ export interface AlbumRoster {
 }
 
 /**
- * Raised when an album name matches nothing in the library. Reads treat this as
- * empty; writes cannot, because there is no directory to write to and inventing
- * one from the name would recreate the name-keyed layout that pruning then
- * deletes.
+ * Reads treat an unknown album as empty; writes raise this rather than invent a
+ * directory from the name, which would recreate the name-keyed layout that
+ * pruning then deletes.
  */
 export class UnknownAlbumError extends Error {
   constructor(album: string) {
@@ -109,7 +105,7 @@ export interface AlbumStore {
  * the app is running resolves without a restart.
  */
 export function createAlbumStore(
-  dataDir: string,
+  bundleDir: string,
   loadAlbums: () => AlbumRoster[]
 ): AlbumStore {
   let roster: Map<string, string> | null = null;
@@ -139,7 +135,7 @@ export function createAlbumStore(
   /** Directory for reads: null when the album is unknown, so callers go empty. */
   function albumDirOrNull(album: string): string | null {
     const uuid = uuidFor(album);
-    return uuid === null ? null : join(dataDir, 'albums', uuid);
+    return uuid === null ? null : join(bundleDir, 'albums', uuid);
   }
 
   /** Directory for writes: throws rather than write outside the roster. */
@@ -269,21 +265,13 @@ export function createAlbumStore(
   }
 
   /**
-   * Remove the subtree of every album the library no longer has.
-   *
    * Guarded on a non-empty roster: an empty one means the library could not be
-   * read, which is indistinguishable from the user having deleted every album,
-   * and acting on that reading would take out every route at once. A non-empty
-   * roster is the only state in which a missing album is informative.
-   *
-   * Deletion is outright. The bundle is covered by Time Machine, so a wrongly
-   * pruned album is recoverable — which is worth more than a quarantine
-   * directory nobody would ever empty.
+   * read, which is indistinguishable from every album having been deleted.
    */
   function pruneOrphans() {
     const live = new Set(readRoster(true).values());
     if (live.size === 0) return;
-    const root = join(dataDir, 'albums');
+    const root = join(bundleDir, 'albums');
     if (!existsSync(root)) return;
     for (const entry of readdirSync(root, { withFileTypes: true })) {
       if (!entry.isDirectory()) continue;

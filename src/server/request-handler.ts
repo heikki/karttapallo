@@ -48,21 +48,9 @@ export function createRequestHandler(
 }
 
 /**
- * Absolute path for a request under a static root, or null if it escapes.
- *
- * The URL parser normalises a literal `../` segment out of the pathname, but it
- * leaves `%2e%2e%2f` alone — and that survives the `decodeURIComponent` below as
- * a real `../`. Concatenating that onto a root walks straight out of it, which
- * is how `/%2e%2e%2f%2e%2e%2fpackage.json` used to serve the repo's own
- * package.json. Resolving first and then checking containment closes both
- * spellings at once, and it does not depend on the caller's roots being
- * absolute — a relative root only ever hid this by accident.
- */
-/**
- * The request path as a filesystem path, or null if it is not one a correct
- * client would send: malformed percent-encoding, or a null byte — which some
- * filesystem APIs read as end-of-string, so `/index.html%00.png` and
- * `/index.html` could name the same file to different layers.
+ * Null for a path no correct client would send. A null byte reads as
+ * end-of-string to some filesystem APIs, so `/index.html%00.png` and
+ * `/index.html` could name one file to two layers.
  */
 function decodePath(pathname: string): string | null {
   try {
@@ -73,6 +61,15 @@ function decodePath(pathname: string): string | null {
   }
 }
 
+/**
+ * Absolute path under a static root, or null if it escapes.
+ *
+ * The URL parser strips a literal `../` from the pathname but leaves
+ * `%2e%2e%2f` alone, and that survives decoding as a real one — which is how
+ * `/%2e%2e%2f%2e%2e%2fpackage.json` used to read outside the root. Resolving
+ * before checking containment closes both spellings, and does not depend on
+ * the caller's roots being absolute.
+ */
 function fileUnderRoot(root: string, path: string): string | null {
   const base = resolvePath(root);
   const target = resolvePath(base + path);

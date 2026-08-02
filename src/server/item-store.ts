@@ -224,7 +224,7 @@ export interface ItemStore {
 }
 
 interface OpenItemStoreOptions {
-  dataDir: string;
+  cacheRoot: string;
   imageCache?: ImageCache;
   photosWriter?: PhotosWriter;
   /** Library to read items from; defaults to the resolver in openPhotosDb. */
@@ -289,14 +289,14 @@ function evictOrphanedCacheFiles(cacheDir: string, liveUuids: Set<string>) {
 }
 
 export function openItemStore(options: OpenItemStoreOptions): ItemStore {
-  const { dataDir, imageCache } = options;
+  const { cacheRoot, imageCache } = options;
   const writer = options.photosWriter ?? defaultPhotosWriter;
   const loadedLibraryPath = options.libraryPath;
   const resolveActive = options.resolveActiveLibrary ?? resolveLibrary;
   const buildFresh =
     options.buildFreshItems ?? (() => buildFromPhotosDb(options.libraryPath));
-  const snapshotPath = join(dataDir, SNAPSHOT_NAME);
-  const cacheDir = join(dataDir, 'cache');
+  const snapshotPath = join(cacheRoot, SNAPSHOT_NAME);
+  const cacheDir = join(cacheRoot, 'cache');
 
   let { items, json: snapshotJson } = loadSnapshot(snapshotPath);
 

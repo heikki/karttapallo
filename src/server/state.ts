@@ -2,9 +2,11 @@
  * Generic key-value settings backed by `state.json` inside the data dir.
  *
  * Replaces the SQLite `settings` table. Keyed by which dir is passed in:
- * global keys (`window`, `ors_api_key`) use the top-level data dir; the `view`
- * key is per-library and uses `data/libraries/{key}/` so map center, filters,
- * and the selected photo UUID restore against the right library (ADR 0012).
+ * machine-scoped keys (`window`, `ors_api_key`) use the Application Support
+ * dir; the `view` key belongs to one library and is written inside that
+ * library's bundle, so map center, filters and the selected photo restore
+ * against the right library — and on whichever Mac it is opened on
+ * (ADR-0012, ADR-0015).
  * Re-reads the file on each call — the data is tiny and call frequency is
  * debounced (~once per second at peak), so caching would buy nothing.
  */

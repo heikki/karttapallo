@@ -42,13 +42,17 @@ interface ApiHandlerOptions {
 }
 
 /**
- * Create API route handler parameterized by the per-library data directory
- * (`data/libraries/{key}/`) — it owns `items.json`, `cache/`, `albums/`, and
- * the per-library `view` setting persisted by `PUT /api/view-state`. Global
- * settings (`window`, `ors_api_key`) live in the top-level `state.json` and are
- * handled outside this seam.
+ * Create API route handler parameterized by the library's own store
+ * (`<library>.photoslibrary/karttapallo/`) — the only thing it uses that
+ * directory for directly is the `view` setting persisted by
+ * `PUT /api/view-state`; album files reach it through `albumStore`. Derived
+ * data and machine-scoped settings live in the other two roots and are handled
+ * outside this seam (ADR-0015).
  */
-export function createApiHandler(dataDir: string, options: ApiHandlerOptions) {
+export function createApiHandler(
+  bundleDir: string,
+  options: ApiHandlerOptions
+) {
   const { itemStore, photosLibrary, albumStore, orsClient, onEditResult } =
     options;
 
@@ -262,7 +266,7 @@ export function createApiHandler(dataDir: string, options: ApiHandlerOptions) {
       return req
         .json()
         .then((body: unknown) => {
-          setSetting(dataDir, 'view', JSON.stringify(body));
+          setSetting(bundleDir, 'view', JSON.stringify(body));
           return new Response(null, { status: 204 });
         })
         .catch(() => new Response('Bad request', { status: 400 }));
