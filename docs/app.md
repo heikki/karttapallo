@@ -24,18 +24,31 @@ Lit + signals client (`src/client/`), Bun server (`src/server/`), ObjC++ native 
 
 Module set under `src/server/`:
 
-- **`item-store.ts`** — `Item` records in memory, built from `Photos.sqlite` + `geo-tz`, with the searchable terms (place, description, categories) merged in from `psi.sqlite` — see [ADR-0014](adr/0014-search-over-derived-metadata-not-photos-search.md). Persists a snapshot to `data/libraries/{key}/items.json` so cold starts serve immediately while the post-startup rebuild refreshes. `applyEdits` re-resolves the active library first and refuses the batch if it no longer matches the one loaded at startup — see [ADR-0012](adr/0012-track-active-photos-library.md).
-- **`album-store.ts`** — per-album subtree at `data/libraries/{key}/albums/{album}/` with a hard-coded `.gpx`/`.md` allowlist, `_files.json` visibility sidecar, and `_route.json`. Path-traversal is blocked at this seam; the router never builds paths from request strings.
+- **`item-store.ts`** — `Item` records in memory, built from `Photos.sqlite` + `geo-tz`, with the searchable terms (place, description, categories) merged in from `psi.sqlite` — see [ADR-0014](adr/0014-search-over-derived-metadata-not-photos-search.md). Persists a snapshot to `items.json` in the cache root so cold starts serve immediately while the post-startup rebuild refreshes. `applyEdits` re-resolves the active library first and refuses the batch if it no longer matches the one loaded at startup — see [ADR-0012](adr/0012-track-active-photos-library.md).
+- **`album-store.ts`** — per-album subtree at `<library>/karttapallo/albums/{albumUuid}/` with a hard-coded `.gpx`/`.md` allowlist, `_files.json` visibility sidecar, and `_route.json`. Callers address albums by **name**; the store translates to UUID off a roster read from the library, so a rename in Photos doesn't strand a route ([ADR-0015](adr/0015-store-library-data-inside-the-bundle.md)). `pruneOrphans` drops subtrees for albums the library no longer has. Path-traversal is blocked at this seam; the router never builds paths from request strings.
+- **`cache-root.ts`** — claims the derived-data slot for one library, wiping it when `owner.json` names a different one. Runs before the image cache, which creates its subdirectories at construction.
 - **`ors-client.ts`** — OpenRouteService proxy for `/api/route`. Owns API-key resolution (env first, then `ors_api_key` setting).
-- **`state.ts`** — generic key-value settings, keyed by which dir is passed in. Global keys `window` and `ors_api_key` live in the top-level `data/state.json`; the per-library `view` key (map center, filters, selected photo UUID) lives in `data/libraries/{key}/state.json`. See [ADR-0006](adr/0006-flat-json-files-not-sqlite.md).
-- **`photos-library/resolve-library.ts`** — resolves which library the app operates on: always the active one, decoded from the Photos container bookmark by the native bridge, failing loud rather than silently using a different library. Owns the per-library data dir (`libraryDataDir`) and its `library.json` marker. See [ADR-0012](adr/0012-track-active-photos-library.md).
-- **`photos-library/image-cache.ts`** — on-demand image conversion via the native dylib, mtime-validated under `data/libraries/{key}/cache/{full,thumb}/`. See [ADR-0010](adr/0010-on-demand-image-cache.md).
+- **`state.ts`** — generic key-value settings, keyed by which dir is passed in. Machine-scoped keys `window` and `ors_api_key` live in `Application Support/Karttapallo/state.json`; the per-library `view` key (map center, filters, selected photo UUID) lives in `<library>/karttapallo/state.json`, so it travels with the library. See [ADR-0006](adr/0006-flat-json-files-not-sqlite.md).
+- **`request-handler.ts`** — shared request handling for both dev and desktop entries. Static paths are resolved and then checked for containment in their root: the URL parser strips a literal `../`, but `%2e%2e%2f` survives decoding as a real one.
+- **`photos-library/resolve-library.ts`** — resolves which library the app operates on: always the active one, decoded from the Photos container bookmark by the native bridge, failing loud rather than silently using a different library. See [ADR-0012](adr/0012-track-active-photos-library.md).
+- **`photos-library/image-cache.ts`** — on-demand image conversion via the native dylib, mtime-validated under `Caches/Karttapallo/cache/{full,thumb}/`. See [ADR-0010](adr/0010-on-demand-image-cache.md).
 - **`photos-edit.ts`** — write-back to Photos.app via NSAppleScript through the dylib (location/date target the active library; timezone is a direct SQLite write to the resolved library path). `itemStore.applyEdits` quits Photos.app at the end of a batch so the user can't undo writes via the recent-changes view.
-- **`request-handler.ts`** — shared request handling for both dev and desktop entries.
 
 ### Data layout
 
-`data/` holds a global `state.json` (only the `window` and `ors_api_key` keys) plus a per-library subtree `data/libraries/{key}/` (where `key` is a short hash of the resolved library path) containing that library's `items.json`, `cache/`, `albums/`, its own `state.json` for the per-library `view` key, and a `library.json` marker mapping the hash back to its path. Per-library namespacing is required because Apple Photos UUIDs and album names are not stable across libraries — a shared dir would collide cached images, bleed routes/visibility between libraries, and restore a selected photo / map view that doesn't belong to the active library. The active library is resolved fresh at each startup, so switching libraries in Photos.app re-points the app at a different subtree on next launch ([ADR-0012](adr/0012-track-active-photos-library.md)).
+Three roots, split by what the data _is_ rather than which library it belongs to ([ADR-0015](adr/0015-store-library-data-inside-the-bundle.md)):
+
+| Root                                         | Holds                                             | Backed up |
+| -------------------------------------------- | ------------------------------------------------- | --------- |
+| `<library>.photoslibrary/karttapallo/`       | `state.json` (`view`), `albums/{albumUuid}/`      | yes       |
+| `~/Library/Application Support/Karttapallo/` | `state.json` (`window`, `ors_api_key`)            | yes       |
+| `~/Library/Caches/Karttapallo/`              | `owner.json`, `items.json`, `cache/{full,thumb}/` | no        |
+
+The rule for anything new: authored by the user → the bundle; recomputable from Photos → Caches; describes this Mac → Application Support.
+
+Handmade data lives **inside the library bundle** so it travels with it — a move, a rename, or a copy to another Mac carries the routes along, and nothing has to work out which stored directory belongs to which library. Derived data is a **single slot** stamped with `owner.json`; opening a different library empties it, which is affordable because the snapshot is rebuilt every startup anyway and the image cache is lazy and per-entry mtime-validated. `~/Library/Caches` is Time Machine-excluded by path policy, so the regenerable gigabytes stay out of backups while the ~11 MB that can't be regenerated is inside the bundle and covered.
+
+A dev or test run that redirects the support dir (`KARTTAPALLO_DATA_DIR`, or a project-local `.data/`) keeps its derived data beside it in `derived/`, so one directory holds everything that run created.
 
 The desktop entry lives at `src/server/index.ts` (the name is required because Electrobun's launcher hardcodes `app/bun/index.js`); the dev entry lives at `src/server/dev.ts`. They differ in static-root order, a per-response hook (request logging vs FDA detection), and how a failed library resolution is surfaced (the desktop app shows a recoverable dialog with Retry; the dev server logs and exits).
 
@@ -58,7 +71,7 @@ App state persists in URL query params, restored on startup:
 - Route: `route` (presence = visible)
 - Deep link: `focus` (one-shot; see below)
 
-Defaults are omitted. The web version mirrors the URL to `localStorage` (`viewState` key); the desktop app debounces a `PUT /api/view-state` to persist under the per-library `view` key (in `data/libraries/{key}/state.json`), so the selected photo and map view restore against the right library.
+Defaults are omitted. The web version mirrors the URL to `localStorage` (`viewState` key); the desktop app debounces a `PUT /api/view-state` to persist under the per-library `view` key (in `<library>/karttapallo/state.json`), so the selected photo and map view restore against the right library — and on whichever Mac that library is opened on.
 
 ## Deep links
 

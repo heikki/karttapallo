@@ -16,11 +16,18 @@ _Avoid_: Item (client-side).
 Photos plus videos collectively, in contexts where the distinction matters (e.g. the Media filter toggle).
 
 **Library**:
-The Apple Photos `.photoslibrary` bundle the app reads from. Always the **active library** — the one Photos.app currently has open — auto-detected from the container bookmark (`IPXDefaultLibraryURLBookmark`), not hardcoded or user-picked. Because the app tracks the active library, AppleScript writes always target the same Library it reads. Each Library gets its own namespaced data subtree (`data/libraries/{key}/`) for cache, item snapshot, and album sidecars, since UUIDs and album names are not stable across Libraries.
+The Apple Photos `.photoslibrary` bundle the app reads from. Always the **active library** — the one Photos.app currently has open — auto-detected from the container bookmark (`IPXDefaultLibraryURLBookmark`), not hardcoded or user-picked. Because the app tracks the active library, AppleScript writes always target the same Library it reads. A Library also **holds** the data the user authored against it, at `<library>/karttapallo/`, so that data travels with the bundle instead of being looked up by path (ADR-0015).
 _Avoid_: Photos DB, catalog.
 
+**Bundle store**:
+The `karttapallo/` directory inside a Library, holding its saved view and its album subtrees. Distinct from the **cache root** (`~/Library/Caches/Karttapallo/`), which holds only data derived from the Library and is wiped when a different Library is opened.
+_Avoid_: data dir, library dir — both used to mean the retired per-path hash directory.
+
 **Album**:
-An Apple Photos album. Read-only on the client; on the server (`AlbumStore`), the same name keys an augmented filesystem subtree under `data/libraries/{key}/albums/{album}/` containing GPX/markdown files, per-file visibility (`_files.json`), and a saved route (`_route.json`). Server **Album** = Photos album + sidecar data.
+An Apple Photos album. Read-only on the client; on the server (`AlbumStore`), it keys an augmented filesystem subtree at `<library>/karttapallo/albums/{albumUuid}/` containing GPX/markdown files, per-file visibility (`_files.json`), and a saved route (`_route.json`). Callers name an Album by its **title**; the store resolves that to the UUID the directory is named for. Server **Album** = Photos album + sidecar data.
+
+**Roster**:
+The list of an Album's title and UUID for every user album in a Library, read from `ZGENERICALBUM` and normalised to NFC. It is what `AlbumStore` resolves names against, and what tells it which subtrees are orphaned.
 
 **Pending Edit**:
 A coord or time change buffered client-side via `@common/edits` signals, not yet persisted back to Photos.app. Cleared on Save (writes through to `Photos.sqlite` via NSAppleScript) or Discard.

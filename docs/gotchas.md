@@ -125,6 +125,30 @@ The consequence for us: **whether a direct-SQLite write survives a restore depen
 
 This is exactly how a batch of timezone edits was silently lost: the edits landed in the 7-week gap between the last coalesce (snapshot frozen) and a restore from an external drive, while the location/date edits from the same sessions — being AppleScript/journaled — survived. See [ADR-0013](adr/0013-derive-timezone-from-instant-and-coords.md) for the structural fix (stop depending on the offset column being durable).
 
+### A full rebuild preserves a foreign top-level directory in the bundle
+
+Apple documents nothing about the `.photoslibrary` layout, so whether Photos would discard a directory it did not create was an open question — and the whole of [ADR-0015](adr/0015-store-library-data-inside-the-bundle.md) rests on the answer.
+
+Measured on 2026-08-02: `database/` was deleted from a 62 GB library and Photos was allowed to reconstruct it from `resources/journals/`. All 4919 assets came back, matching the source library exactly; `Photos.sqlite` and `psi.sqlite` were regenerated; the only top-level difference before and after was `database/` reappearing. Four probe files planted under `karttapallo/` and `private/` were **byte-identical by SHA-256** afterwards.
+
+Worth re-checking after a major macOS release. It is an empirical result, not a promise.
+
+### `private/` is Apple's per-client scratch namespace, not an extension point
+
+It looks like the obvious place to put third-party data, and third parties do: `com.houdah.HoudahGeo` and `org.snafu.GeoTag` both have directories in this library. They are **0 bytes** — as are `com.apple.swift-frontend` and `com.apple.appkit.xpc.openAndSavePanelService`, which shows Photos auto-creates a namespace for any process that touches the library, whether or not it wanted one.
+
+The 26 entries are keyed by bundle identifier, with a convention of `appPrivateData.plist` plus `caches/` inside. Real users are Apple's own: `com.apple.mediaanalysisd` at 80 MB, `com.apple.photoanalysisd` at 22 MB, `com.apple.photolibraryd` at 548 KB.
+
+Since it is Apple-managed and has its own cleanup story, our directory sits at the bundle's top level instead. Undocumented, but stable enough that osxphotos' test fixtures carry it back to macOS 10.12.
+
+### Album titles are stored NFD, and everything else in the app is NFC
+
+`ZGENERICALBUM.ZTITLE` holds decomposed Unicode — `ä` as `a` + U+0308 (`61 CC88`) — while `item-store.ts` normalises album names to NFC before they reach the client, so any name arriving back from the UI is composed (`C3A4`). Comparing a client-supplied name against a raw `ZTITLE` therefore misses **exactly the albums with accented names**, silently and only for them.
+
+Not hypothetical: 4 of the 19 album directories in this library are Finnish names (`2011 Vätsäri`, `2012 Näätämö`, `2014 Vätsäri`, `2017 Näätämö`) that a naive match drops. Since UUID-keying made that match load-bearing, missing them would have stranded those albums' routes and then pruned them as orphans.
+
+Normalise both sides to NFC. `readAlbums` does it at the source, so callers do not have to.
+
 ### `ZEXTENDEDATTRIBUTES` is not an EXIF table
 
 It holds aperture, ISO and camera model, so it reads like one. It is not — it is Photos' general per-asset metadata cache, and `ZDATECREATED`, `ZTIMEZONEOFFSET` and `ZTIMEZONENAME` are the only columns it fills for **every** asset. A file the camera wrote no EXIF into still gets a date there, sourced from whatever Photos could find, and that can be an artifact of copying with no bearing on when the thing was shot.
@@ -148,3 +172,17 @@ macOS delivers the URL as an Apple Event while the bundle is still starting, and
 Nothing in `src/server/index.ts` can recover it — the uuid is buffered there as early as possible and consumed as the window's initial URL, which covers an event that lands after the Bun process is alive but before the window exists. The gap is earlier than any JavaScript we get to run, and closing it means patching Electrobun's prebuilt launcher to hold the URL until a handler registers.
 
 Separately: replacing `/Applications/Karttapallo.app` in place does **not** make LaunchServices notice a newly declared URL scheme — `open` keeps answering `kLSApplicationNotFoundErr` against a bundle whose `Info.plist` plainly declares it. `bun run install:app` therefore ends with `lsregister -f` on the installed bundle.
+
+## Time Machine
+
+### `~/Library/Caches` is excluded by path policy, not by the exclusion xattr — and that is the stronger guarantee
+
+Two mechanisms look interchangeable and are not.
+
+The **xattr** (`com.apple.metadata:com_apple_backup_excludeItem`, value `bplist00_com.apple.backupd`) is what `tmutil addexclusion` sets and what Photos puts on `database/` and `external/`. It is **per item and not inherited**: a fresh directory inside an excluded one is `[Included]`, and — the part that bites — an exclusion does **not** survive the directory being deleted and recreated. Anything that clears a cache by removing its directory silently re-enrols the replacement into backups.
+
+**Path policy** is the system's own list, which covers `~/Library/Caches`. It is inherited by fresh subdirectories and survives recreation, because it is a property of the path rather than of the inode.
+
+So derived data goes in `~/Library/Caches/Karttapallo/` and no `tmutil` call appears anywhere in the app ([ADR-0015](adr/0015-store-library-data-inside-the-bundle.md)). Check with `tmutil isexcluded <path>`, which reports which mechanism applied.
+
+Note also that an external volume must be opted in explicitly: `defaults read /Library/Preferences/com.apple.TimeMachine IncludedVolumeUUIDs` lists them, and `SkipPaths` lists the per-path exclusions. A library on a drive that is not in `IncludedVolumeUUIDs` is not backed up at all, which is what makes "the bundle is covered, so pruning can delete outright" a claim worth re-checking rather than assuming.

@@ -4,10 +4,10 @@ Geotagged photo map viewer with Apple Photos integration.
 
 ## Project Stats (as of 02.08.2026)
 
-- **TypeScript files**: 87
-- **Lines of code**: 16,299 (+ 5,606 tests)
-- **Total commits**: 653
-- **Total tokens**: ~3,037M | **Total cost**: ~$1,976
+- **TypeScript files**: 126
+- **Lines of code**: 16,841 (+ 6,007 tests)
+- **Total commits**: 658
+- **Total tokens**: ~3,100M | **Total cost**: ~$2,019
 
 ## Updating This Diary
 
@@ -37,9 +37,9 @@ git log --pretty=format:"%ad|%s" --date=format:"%Y-%m-%d" | head -50  # Recent c
 - Describe final outcomes, not reverted intermediate attempts.
 - Flat list, no sub-bullets or prose.
 
-## 02.08.2026 — Search follows Photos' own index
+## 02.08.2026 — Search follows Photos' own index, and routes move in with the library
 
-**Tokens**: 53M | **Cost**: $38
+**Tokens**: 116M | **Cost**: $81
 
 - Place search works again — it broke when Photos rebuilt the library and dropped every moment name
 - Places, descriptions and categories now come from the index Photos' own search uses, so both agree
@@ -47,6 +47,12 @@ git log --pretty=format:"%ad|%s" --date=format:"%Y-%m-%d" | head -50  # Recent c
 - Searching a country or region finds a whole trip, even one with no album of its own
 - Cut, copy, paste and select all now work in the app's text fields, which they never had
 - The title bar names the open library and where it lives, so a library and a copy can't be confused
+- Routes, tracks and notes now live inside the photo library, so they follow it when it moves or is copied
+- Moving or renaming a library no longer loses everything drawn against it, which it silently did before
+- Renaming an album in Photos keeps its route; deleting one now clears the files it left behind
+- Several gigabytes of regenerable thumbnails no longer go into Time Machine backups
+- Opening a different library in Photos can no longer flash the previous one's photos on startup
+- Closed a hole that let anything on the machine read files outside the app through its local server
 
 ## 01.08.2026 — Search, and the metadata panel it fed
 
