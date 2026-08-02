@@ -421,6 +421,48 @@ export function queryNotInAlbumUuid(db: Database) {
   return row?.ZUUID ?? '';
 }
 
+/** One user album: the title Photos shows, and the id it keeps it under. */
+export interface AlbumRoster {
+  uuid: string;
+  title: string;
+}
+
+/**
+ * Every album the user made, by title and UUID.
+ *
+ * `ZKIND = 2` is the user-created album. The other kinds in this table are
+ * Photos' own: smart albums like "Not in album" (1507), folders that group
+ * albums (4000), and a long tail of internal kinds with no title at all. None
+ * of them is something the user can attach a route to.
+ *
+ * Titles come back NFC-normalised. Photos stores them decomposed — `ä` as
+ * `a` + U+0308 — while every title the app has already shown went through the
+ * same normalisation on its way to the client, so a raw comparison misses
+ * exactly the albums with accented names (docs/gotchas.md).
+ */
+export function queryAlbums(db: Database): AlbumRoster[] {
+  return db
+    .query<{ ZUUID: string | null; ZTITLE: string | null }, []>(
+      `SELECT ZUUID, ZTITLE FROM ZGENERICALBUM WHERE ZKIND = 2`
+    )
+    .all()
+    .filter(
+      (r): r is { ZUUID: string; ZTITLE: string } =>
+        r.ZUUID !== null && r.ZTITLE !== null && r.ZTITLE !== ''
+    )
+    .map((r) => ({ uuid: r.ZUUID, title: r.ZTITLE.normalize('NFC') }));
+}
+
+/** `queryAlbums` against a library path, opening and closing the db around it. */
+export function readAlbums(libraryPath?: string): AlbumRoster[] {
+  const db = openPhotosDb(libraryPath ?? defaultLibraryPath());
+  try {
+    return queryAlbums(db);
+  } finally {
+    db.close();
+  }
+}
+
 /** Lightweight asset record for image cache — no album/camera overhead. */
 export interface AssetRecord {
   uuid: string;

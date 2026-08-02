@@ -78,6 +78,31 @@ export function createApiHandler(dataDir: string, options: ApiHandlerOptions) {
     }
   }
 
+  /**
+   * Album files used to be served straight off a static root. Once album
+   * directories are keyed by UUID the request path no longer names a directory,
+   * so the bytes come back through the store — which is also where the
+   * extension allowlist and the traversal guard already live.
+   */
+  async function handleGetAlbumFile(
+    album: string,
+    filename: string
+  ): Promise<Response> {
+    try {
+      const body = await albumStore.getFileBytes(album, filename);
+      if (body === null) return new Response('Not found', { status: 404 });
+      return new Response(body, {
+        headers: {
+          'Content-Type': filename.toLowerCase().endsWith('.gpx')
+            ? 'application/gpx+xml; charset=utf-8'
+            : 'text/markdown; charset=utf-8'
+        }
+      });
+    } catch (err) {
+      return serverError('handleGetAlbumFile', err);
+    }
+  }
+
   async function handleDeleteAlbumFile(
     album: string,
     filename: string
@@ -288,15 +313,17 @@ export function createApiHandler(dataDir: string, options: ApiHandlerOptions) {
       );
     }
 
-    const deleteFileMatch =
+    const albumFileMatch =
       /^\/api\/albums\/(?<album>[^/]+)\/files\/(?<filename>[^/]+)$/.exec(
         pathname
       );
-    if (deleteFileMatch?.groups !== undefined && req.method === 'DELETE') {
-      return handleDeleteAlbumFile(
-        decodeURIComponent(deleteFileMatch.groups.album!),
-        decodeURIComponent(deleteFileMatch.groups.filename!)
-      );
+    if (albumFileMatch?.groups !== undefined) {
+      const album = decodeURIComponent(albumFileMatch.groups.album!);
+      const filename = decodeURIComponent(albumFileMatch.groups.filename!);
+      if (req.method === 'GET') return handleGetAlbumFile(album, filename);
+      if (req.method === 'DELETE') {
+        return handleDeleteAlbumFile(album, filename);
+      }
     }
 
     const metadataMatch = /^\/api\/metadata\/(?<id>[A-F0-9-]+)$/i.exec(

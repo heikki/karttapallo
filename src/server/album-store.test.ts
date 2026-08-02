@@ -1,4 +1,10 @@
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
@@ -6,15 +12,34 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import {
   createAlbumStore,
   InvalidNameError,
+  UnknownAlbumError,
+  type AlbumRoster,
   type AlbumStore
 } from './album-store';
 
+const HELSINKI = '11111111-1111-4111-8111-111111111111';
+const LAPLAND = '22222222-2222-4222-8222-222222222222';
+const SPACES = '33333333-3333-4333-8333-333333333333';
+const KONGAS = '44444444-4444-4444-8444-444444444444';
+
 let dataDir = '';
-let store: AlbumStore = createAlbumStore('');
+let roster: AlbumRoster[] = [];
+let store: AlbumStore = createAlbumStore('', () => []);
+
+/** Where an album's subtree actually lands, for tests asserting on layout. */
+function dirFor(uuid: string) {
+  return join(dataDir, 'albums', uuid);
+}
 
 beforeEach(() => {
   dataDir = mkdtempSync(join(tmpdir(), 'karttapallo-albumstore-'));
-  store = createAlbumStore(dataDir);
+  roster = [
+    { uuid: HELSINKI, title: 'Helsinki' },
+    { uuid: LAPLAND, title: 'Lapland' },
+    { uuid: SPACES, title: 'My Trip 2024.summer' },
+    { uuid: KONGAS, title: 'Lappi-Köngäs' }
+  ];
+  store = createAlbumStore(dataDir, () => roster);
 });
 
 afterEach(() => {
@@ -29,14 +54,21 @@ function makeFormData(files: Array<{ name: string; body: string }>): FormData {
   return fd;
 }
 
-async function expectInvalidName(promise: Promise<unknown>) {
+async function expectRejection(
+  promise: Promise<unknown>,
+  ctor: new (...args: never[]) => Error
+) {
   try {
     await promise;
   } catch (err) {
-    expect(err).toBeInstanceOf(InvalidNameError);
+    expect(err).toBeInstanceOf(ctor);
     return;
   }
-  throw new Error('expected InvalidNameError but no rejection occurred');
+  throw new Error(`expected ${ctor.name} but no rejection occurred`);
+}
+
+async function expectInvalidName(promise: Promise<unknown>) {
+  await expectRejection(promise, InvalidNameError);
 }
 
 describe('listFiles', () => {
@@ -100,13 +132,164 @@ describe('uploadFiles', () => {
     expect(accepted).toEqual([]);
   });
 
-  test('writes file bytes to disk', async () => {
+  test('writes file bytes to disk under the album UUID, not its name', async () => {
     await store.uploadFiles(
       'Helsinki',
       makeFormData([{ name: 'route.gpx', body: '<gpx>hi</gpx>' }])
     );
-    const path = join(dataDir, 'albums', 'Helsinki', 'route.gpx');
-    expect(readFileSync(path, 'utf-8')).toBe('<gpx>hi</gpx>');
+    expect(readFileSync(join(dirFor(HELSINKI), 'route.gpx'), 'utf-8')).toBe(
+      '<gpx>hi</gpx>'
+    );
+    expect(existsSync(join(dataDir, 'albums', 'Helsinki'))).toBe(false);
+  });
+});
+
+describe('getFileBytes', () => {
+  test('returns the bytes of an uploaded file', async () => {
+    await store.uploadFiles(
+      'Helsinki',
+      makeFormData([{ name: 'a.gpx', body: '<gpx>x</gpx>' }])
+    );
+    expect(await store.getFileBytes('Helsinki', 'a.gpx')).toBe('<gpx>x</gpx>');
+  });
+
+  test('null for a file that was never uploaded', async () => {
+    expect(await store.getFileBytes('Helsinki', 'nope.gpx')).toBeNull();
+  });
+
+  // The route serving these bytes replaced a static root, so the allowlist has
+  // to hold here too — otherwise it would read anything sitting in the album.
+  test('null for a disallowed extension even when the file exists', async () => {
+    mkdirSync(dirFor(HELSINKI), { recursive: true });
+    await Bun.write(join(dirFor(HELSINKI), 'secrets.txt'), 'sensitive');
+    expect(await store.getFileBytes('Helsinki', 'secrets.txt')).toBeNull();
+  });
+
+  test('rejects a traversing filename', async () => {
+    await expectInvalidName(store.getFileBytes('Helsinki', '../escape.gpx'));
+  });
+});
+
+describe('album name to UUID', () => {
+  test('a renamed album keeps the route filed under its UUID', async () => {
+    await store.putRouteBytes('Helsinki', 'route-bytes');
+
+    // The user renames the album in Photos: same UUID, new title.
+    roster = [{ uuid: HELSINKI, title: 'Helsinki 2024' }];
+
+    expect(await store.getRouteBytes('Helsinki 2024')).toBe('route-bytes');
+  });
+
+  test('an album added while running resolves without a restart', async () => {
+    expect(await store.getRouteBytes('Oulu')).toBeNull();
+
+    roster = [...roster, { uuid: LAPLAND, title: 'Oulu' }];
+
+    await store.putRouteBytes('Oulu', 'x');
+    expect(await store.getRouteBytes('Oulu')).toBe('x');
+  });
+
+  // Photos stores titles decomposed; every name reaching this store has been
+  // normalised to NFC on its way to the client. Without matching normalisation
+  // exactly the accented albums miss — 4 of 19 in the author's own library.
+  test('matches an NFD roster title against the NFC name the API carries', async () => {
+    roster = [{ uuid: KONGAS, title: 'Vätsäri' }];
+
+    await store.putRouteBytes('Vätsäri'.normalize('NFC'), 'nfc');
+
+    expect(await store.getRouteBytes('Vätsäri'.normalize('NFC'))).toBe('nfc');
+    expect(existsSync(dirFor(KONGAS))).toBe(true);
+  });
+
+  test('two albums sharing a title resolve to one directory, deterministically', async () => {
+    roster = [
+      { uuid: LAPLAND, title: 'Duplicate' },
+      { uuid: HELSINKI, title: 'Duplicate' }
+    ];
+    await store.putRouteBytes('Duplicate', 'x');
+
+    // Lower UUID wins, whatever order the library reports them in.
+    expect(existsSync(dirFor(HELSINKI))).toBe(true);
+    expect(existsSync(dirFor(LAPLAND))).toBe(false);
+  });
+});
+
+describe('unknown albums', () => {
+  test('reads come back empty rather than failing', async () => {
+    expect(await store.listFiles('Ghost')).toEqual([]);
+    expect(await store.getRouteBytes('Ghost')).toBeNull();
+    expect(await store.getFileBytes('Ghost', 'a.gpx')).toBeNull();
+  });
+
+  test('writes refuse, so no directory is invented from the name', async () => {
+    await expectRejection(
+      store.putRouteBytes('Ghost', '{}'),
+      UnknownAlbumError
+    );
+    await expectRejection(
+      store.uploadFiles('Ghost', makeFormData([{ name: 'a.gpx', body: 'x' }])),
+      UnknownAlbumError
+    );
+    expect(() => {
+      store.setFileVisibility('Ghost', 'a.gpx', false);
+    }).toThrow(UnknownAlbumError);
+
+    expect(existsSync(join(dataDir, 'albums'))).toBe(false);
+  });
+
+  // The end state a delete asks for already holds, so it is not an error.
+  test('deletes are no-ops', async () => {
+    await store.deleteRoute('Ghost');
+    await store.deleteFile('Ghost', 'a.gpx');
+  });
+});
+
+describe('pruneOrphans', () => {
+  test('removes the subtree of an album the library no longer has', async () => {
+    await store.putRouteBytes('Helsinki', 'h');
+    await store.putRouteBytes('Lapland', 'l');
+
+    roster = [{ uuid: HELSINKI, title: 'Helsinki' }];
+    store.pruneOrphans();
+
+    expect(existsSync(dirFor(HELSINKI))).toBe(true);
+    expect(existsSync(dirFor(LAPLAND))).toBe(false);
+  });
+
+  // An empty roster means the library could not be read, which is
+  // indistinguishable from every album having been deleted.
+  test('removes nothing when the roster is empty', async () => {
+    await store.putRouteBytes('Helsinki', 'h');
+
+    roster = [];
+    store.pruneOrphans();
+
+    expect(existsSync(dirFor(HELSINKI))).toBe(true);
+  });
+
+  test('leaves directories that are not album UUIDs alone', async () => {
+    await store.putRouteBytes('Helsinki', 'h');
+    mkdirSync(join(dataDir, 'albums', 'not-a-uuid'), { recursive: true });
+
+    roster = [{ uuid: HELSINKI, title: 'Helsinki' }];
+    store.pruneOrphans();
+
+    expect(existsSync(join(dataDir, 'albums', 'not-a-uuid'))).toBe(true);
+  });
+
+  test('survives an albums directory that does not exist yet', () => {
+    expect(() => {
+      store.pruneOrphans();
+    }).not.toThrow();
+  });
+
+  test('a renamed album is not an orphan', async () => {
+    await store.putRouteBytes('Helsinki', 'h');
+
+    roster = [{ uuid: HELSINKI, title: 'Helsinki 2024' }];
+    store.pruneOrphans();
+
+    expect(await store.getRouteBytes('Helsinki 2024')).toBe('h');
   });
 });
 

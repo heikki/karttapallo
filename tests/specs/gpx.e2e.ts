@@ -16,7 +16,7 @@ test('View GPX tracks for an album', async ({ page }) => {
 
   // Selecting Tampere triggers the GPX fetch.
   const responsePromise = page.waitForResponse(
-    (r) => r.url().endsWith('/albums/Tampere/track.gpx') && r.ok()
+    (r) => r.url().endsWith('/api/albums/Tampere/files/track.gpx') && r.ok()
   );
   await page.getByLabel('Album').selectOption('Tampere');
   await responsePromise;

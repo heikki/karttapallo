@@ -128,9 +128,16 @@ const items: ItemEntry[] = [
 // Photos library is touched.
 writeFileSync(join(cacheRoot, 'items.json'), JSON.stringify(items));
 
+// Album directories are keyed by UUID, so the stub roster is what maps the
+// names the specs drive the UI with onto directories on disk.
+const albums = [
+  { uuid: 'E2E00001-0000-4000-8000-000000000001', title: 'Tampere' },
+  { uuid: 'E2E00002-0000-4000-8000-000000000002', title: 'Helsinki' }
+];
+
 // Seed the Tampere album with a small GPX track so map-gpx has a route to
 // load + parse + render. Visibility defaults to true (no _files.json sidecar).
-const tampereDir = join(bundleDir, 'albums', 'Tampere');
+const tampereDir = join(bundleDir, 'albums', albums[0]!.uuid);
 mkdirSync(tampereDir, { recursive: true });
 copyFileSync('tests/fixtures/track.gpx', join(tampereDir, 'track.gpx'));
 
@@ -175,7 +182,7 @@ const photosLibrary: PhotosLibrary = {
   })
 };
 
-const albumStore = createAlbumStore(bundleDir);
+const albumStore = createAlbumStore(bundleDir, () => albums);
 const orsClient = createOrsClient(dataDir);
 const { routeApiRequest } = createApiHandler(bundleDir, {
   itemStore,

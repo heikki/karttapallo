@@ -10,11 +10,13 @@
 export {
   defaultLibraryPath,
   openPhotosDb,
+  queryAlbums,
   queryNotInAlbumUuid,
   queryPhotos,
-  queryVideos
+  queryVideos,
+  readAlbums
 } from './db';
-export type { PhotoRecord } from './db';
+export type { AlbumRoster, PhotoRecord } from './db';
 export { createImageCache } from './image-cache';
 export type { ImageCache } from './image-cache';
 export { openPhotosLibrary } from './library';

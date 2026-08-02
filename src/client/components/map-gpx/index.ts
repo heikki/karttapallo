@@ -183,7 +183,7 @@ export class MapGpx extends MapFeatureElement {
     }
   ) {
     try {
-      const url = `/albums/${encodeURIComponent(src.album)}/${encodeURIComponent(src.filename)}`;
+      const url = `/api/albums/${encodeURIComponent(src.album)}/files/${encodeURIComponent(src.filename)}`;
       const res = await fetch(url);
       if (!res.ok) return;
       const xml = await res.text();

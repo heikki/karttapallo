@@ -12,6 +12,7 @@ import { createPhotosWriter } from './photos-edit';
 import {
   createImageCache,
   openPhotosLibrary,
+  readAlbums,
   resolveLibrary
 } from './photos-library';
 import { createRequestHandler } from './request-handler';
@@ -59,7 +60,7 @@ const itemStore = openItemStore({
   libraryPath,
   photosWriter: createPhotosWriter(libraryPath)
 });
-const albumStore = createAlbumStore(bundleDir);
+const albumStore = createAlbumStore(bundleDir, () => readAlbums(libraryPath));
 const orsClient = createOrsClient(supportDir);
 
 function logEditResult(event: EditResultEvent) {
@@ -81,6 +82,9 @@ itemStore.rebuildComplete
         ? '[item-store] Rebuilt: items changed'
         : '[item-store] Rebuilt: no changes'
     );
+    // A finished rebuild is the one moment we know the library was readable,
+    // which is what makes a missing album mean the user deleted it.
+    albumStore.pruneOrphans();
   })
   .catch((err: unknown) => {
     console.error('[item-store] Rebuild failed:', err);
@@ -120,7 +124,7 @@ function logRequest(
 
 const fetch = createRequestHandler({
   routeApi: routeApiRequest,
-  staticRoots: [bundleDir, 'src/client'],
+  staticRoots: ['src/client'],
   vendorFiles: {
     '/maplibre-gl.css': 'node_modules/maplibre-gl/dist/maplibre-gl.css'
   },

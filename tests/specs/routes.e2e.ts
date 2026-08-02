@@ -7,12 +7,13 @@ import { layerVisibility, sourceFeatureCount } from './_helpers';
 // reset, state leaks between tests: a previous run's waypoint sits at the
 // canvas centre, and the next click would hit and remove it.
 //
-// Album data lives inside the library bundle, so this must track the
-// `bundleDir` that `tests/server.ts` builds.
+// Album data lives inside the library bundle under the album's UUID, so this
+// must track both the `bundleDir` and the stub roster in `tests/server.ts`.
 test.beforeEach(() => {
   const dataDir = process.env.E2E_DATA_DIR ?? 'tests/output/data';
+  const tampere = 'E2E00001-0000-4000-8000-000000000001';
   rmSync(
-    `${dataDir}/library.photoslibrary/karttapallo/albums/Tampere/_route.json`,
+    `${dataDir}/library.photoslibrary/karttapallo/albums/${tampere}/_route.json`,
     { force: true }
   );
 });

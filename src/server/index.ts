@@ -15,8 +15,13 @@ const { claimCacheRoot } = await import('./cache-root');
 const { parseDeepLink, deepLinkViewUrl } = await import('./deep-link');
 const { openItemStore } = await import('./item-store');
 const { createOrsClient } = await import('./ors-client');
-const { createImageCache, openPhotosLibrary, resolveLibrary, libraryTitle } =
-  await import('./photos-library');
+const {
+  createImageCache,
+  openPhotosLibrary,
+  readAlbums,
+  resolveLibrary,
+  libraryTitle
+} = await import('./photos-library');
 const { createPhotosWriter } = await import('./photos-edit');
 const { createRequestHandler } = await import('./request-handler');
 const { getSetting, setSetting } = await import('./state');
@@ -203,8 +208,19 @@ const itemStore = openItemStore({
   libraryPath,
   photosWriter: createPhotosWriter(libraryPath)
 });
-const albumStore = createAlbumStore(bundleDir);
+const albumStore = createAlbumStore(bundleDir, () => readAlbums(libraryPath));
 const orsClient = createOrsClient(supportDir);
+
+// Prune after the rebuild rather than at startup: a rebuild that finished is
+// the one moment we know the library was readable, which is what makes a
+// missing album mean the user deleted it.
+itemStore.rebuildComplete
+  .then(() => {
+    albumStore.pruneOrphans();
+  })
+  .catch(() => {
+    /* a failed rebuild says nothing about which albums are live */
+  });
 const { routeApiRequest } = createApiHandler(bundleDir, {
   itemStore,
   photosLibrary,
@@ -307,7 +323,7 @@ async function checkFullDiskAccess(response: Response, pathname: string) {
 
 const fetch = createRequestHandler({
   routeApi: routeApiRequest,
-  staticRoots: [viewsDir, bundleDir],
+  staticRoots: [viewsDir],
   onResponse: async (req, res, pathname) => {
     if (pathname.startsWith('/api/')) {
       await checkFullDiskAccess(res, pathname);

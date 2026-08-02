@@ -1,20 +1,41 @@
 /**
  * AlbumStore — owns the per-album filesystem subtree at
- * `{dataDir}/albums/{album}/`: GPX/markdown files (upload, list, delete), the
- * `_files.json` visibility sidecar, and the `_route.json` route file. Route
+ * `{dataDir}/albums/{albumUuid}/`: GPX/markdown files (upload, list, delete),
+ * the `_files.json` visibility sidecar, and the `_route.json` route file. Route
  * data passes through as bytes; the route shape is owned client-side in
  * `map-route/data.ts`.
+ *
+ * Directories are keyed by album UUID, but callers address albums by the name
+ * Photos shows — that is what the item records carry, so it is what reaches the
+ * API. Translation happens here and nowhere else. Keying by UUID is what lets a
+ * route survive the album being renamed, and it is why an album deleted in
+ * Photos can be recognised as gone rather than merely unvisited.
  *
  * Album and file names are validated at the seam to prevent path traversal.
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync
+} from 'node:fs';
 import { mkdir, readdir, readFile, unlink } from 'node:fs/promises';
 import { join } from 'node:path';
 
 const SIDECAR_NAME = '_files.json';
 const ROUTE_NAME = '_route.json';
 const ALLOWED_EXTS = ['.gpx', '.md'];
+
+/**
+ * Only directories shaped like an album UUID are ever removed by pruning, so
+ * anything else that ends up under `albums/` is left where it is rather than
+ * mistaken for an album Photos has forgotten.
+ */
+const UUID_DIR =
+  /^[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$/i;
 
 interface FileVisibility {
   visible: boolean;
@@ -46,9 +67,29 @@ function isAllowedFile(name: string) {
   return ALLOWED_EXTS.some((ext) => lower.endsWith(ext));
 }
 
+/** One user album, as `photos-library` reports it. */
+export interface AlbumRoster {
+  uuid: string;
+  title: string;
+}
+
+/**
+ * Raised when an album name matches nothing in the library. Reads treat this as
+ * empty; writes cannot, because there is no directory to write to and inventing
+ * one from the name would recreate the name-keyed layout that pruning then
+ * deletes.
+ */
+export class UnknownAlbumError extends Error {
+  constructor(album: string) {
+    super(`No album named ${JSON.stringify(album)} in this library`);
+    this.name = 'UnknownAlbumError';
+  }
+}
+
 export interface AlbumStore {
   uploadFiles: (album: string, formData: FormData) => Promise<string[]>;
   listFiles: (album: string) => Promise<AlbumFileEntry[]>;
+  getFileBytes: (album: string, filename: string) => Promise<string | null>;
   deleteFile: (album: string, filename: string) => Promise<void>;
   setFileVisibility: (
     album: string,
@@ -58,16 +99,60 @@ export interface AlbumStore {
   getRouteBytes: (album: string) => Promise<string | null>;
   putRouteBytes: (album: string, body: string) => Promise<void>;
   deleteRoute: (album: string) => Promise<void>;
+  /** Drop the subtree of every album that no longer exists in the library. */
+  pruneOrphans: () => void;
 }
 
-export function createAlbumStore(dataDir: string): AlbumStore {
-  function albumDir(album: string) {
+/**
+ * @param loadAlbums roster seam — reads the library's albums. Called lazily and
+ * cached, then re-read once whenever a name misses, so an album created while
+ * the app is running resolves without a restart.
+ */
+export function createAlbumStore(
+  dataDir: string,
+  loadAlbums: () => AlbumRoster[]
+): AlbumStore {
+  let roster: Map<string, string> | null = null;
+
+  function readRoster(refresh = false): Map<string, string> {
+    if (roster !== null && !refresh) return roster;
+    const map = new Map<string, string>();
+    for (const album of loadAlbums()) {
+      const title = album.title.normalize('NFC');
+      if (title === '' || album.uuid === '') continue;
+      // Two albums can share a title. The API addresses albums by name, so they
+      // are one album as far as this store can tell; picking the lower UUID at
+      // least keeps which one deterministic across restarts.
+      const seen = map.get(title);
+      if (seen === undefined || album.uuid < seen) map.set(title, album.uuid);
+    }
+    roster = map;
+    return map;
+  }
+
+  function uuidFor(album: string): string | null {
     assertSafeName(album, 'album');
-    return join(dataDir, 'albums', album);
+    const title = album.normalize('NFC');
+    return readRoster().get(title) ?? readRoster(true).get(title) ?? null;
+  }
+
+  /** Directory for reads: null when the album is unknown, so callers go empty. */
+  function albumDirOrNull(album: string): string | null {
+    const uuid = uuidFor(album);
+    return uuid === null ? null : join(dataDir, 'albums', uuid);
+  }
+
+  /** Directory for writes: throws rather than write outside the roster. */
+  function albumDir(album: string) {
+    const dir = albumDirOrNull(album);
+    if (dir === null) throw new UnknownAlbumError(album);
+    return dir;
   }
 
   function loadVisibility(album: string): Record<string, FileVisibility> {
-    const path = join(albumDir(album), SIDECAR_NAME);
+    const dir = albumDirOrNull(album);
+    if (dir === null) return {};
+    const path = join(dir, SIDECAR_NAME);
     if (!existsSync(path)) return {};
     try {
       return JSON.parse(readFileSync(path, 'utf-8')) as Record<
@@ -110,7 +195,8 @@ export function createAlbumStore(dataDir: string): AlbumStore {
   }
 
   async function listFiles(album: string): Promise<AlbumFileEntry[]> {
-    const dir = albumDir(album);
+    const dir = albumDirOrNull(album);
+    if (dir === null) return [];
     const entries = await readdir(dir).catch(() => [] as string[]);
     const files = entries.filter(isAllowedFile);
     const visibility = loadVisibility(album);
@@ -120,9 +206,27 @@ export function createAlbumStore(dataDir: string): AlbumStore {
     }));
   }
 
+  async function getFileBytes(
+    album: string,
+    filename: string
+  ): Promise<string | null> {
+    assertSafeName(filename, 'file');
+    if (!isAllowedFile(filename)) return null;
+    const dir = albumDirOrNull(album);
+    if (dir === null) return null;
+    try {
+      return await readFile(join(dir, filename), 'utf-8');
+    } catch {
+      return null;
+    }
+  }
+
   async function deleteFile(album: string, filename: string) {
     assertSafeName(filename, 'file');
-    const dir = albumDir(album);
+    const dir = albumDirOrNull(album);
+    // Nothing to remove from an album the library no longer has — the caller's
+    // end state already holds, so this is a no-op rather than an error.
+    if (dir === null) return;
     await unlink(join(dir, filename)).catch(() => undefined);
     const store = loadVisibility(album);
     if (filename in store) {
@@ -143,9 +247,10 @@ export function createAlbumStore(dataDir: string): AlbumStore {
   }
 
   async function getRouteBytes(album: string): Promise<string | null> {
-    const path = join(albumDir(album), ROUTE_NAME);
+    const dir = albumDirOrNull(album);
+    if (dir === null) return null;
     try {
-      return await readFile(path, 'utf-8');
+      return await readFile(join(dir, ROUTE_NAME), 'utf-8');
     } catch {
       return null;
     }
@@ -158,17 +263,48 @@ export function createAlbumStore(dataDir: string): AlbumStore {
   }
 
   async function deleteRoute(album: string) {
-    const path = join(albumDir(album), ROUTE_NAME);
-    await unlink(path).catch(() => undefined);
+    const dir = albumDirOrNull(album);
+    if (dir === null) return;
+    await unlink(join(dir, ROUTE_NAME)).catch(() => undefined);
+  }
+
+  /**
+   * Remove the subtree of every album the library no longer has.
+   *
+   * Guarded on a non-empty roster: an empty one means the library could not be
+   * read, which is indistinguishable from the user having deleted every album,
+   * and acting on that reading would take out every route at once. A non-empty
+   * roster is the only state in which a missing album is informative.
+   *
+   * Deletion is outright. The bundle is covered by Time Machine, so a wrongly
+   * pruned album is recoverable — which is worth more than a quarantine
+   * directory nobody would ever empty.
+   */
+  function pruneOrphans() {
+    const live = new Set(readRoster(true).values());
+    if (live.size === 0) return;
+    const root = join(dataDir, 'albums');
+    if (!existsSync(root)) return;
+    for (const entry of readdirSync(root, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      if (!UUID_DIR.test(entry.name) || live.has(entry.name)) continue;
+      try {
+        rmSync(join(root, entry.name), { recursive: true, force: true });
+      } catch {
+        /* a subtree we cannot remove is not worth failing a rebuild over */
+      }
+    }
   }
 
   return {
     uploadFiles,
     listFiles,
+    getFileBytes,
     deleteFile,
     setFileVisibility,
     getRouteBytes,
     putRouteBytes,
-    deleteRoute
+    deleteRoute,
+    pruneOrphans
   };
 }
