@@ -11,10 +11,12 @@ import { styles } from './styles';
  * Rows taken from the client's own photo record rather than from the metadata
  * response, which `queryMetadata` builds out of `Photos.sqlite` alone.
  *
- * Place and Categories are there because it has neither: a place name comes
- * from the moment table and a scene label from `psi.sqlite` (ADR-0014), both
- * already assembled onto the record by the item store, so re-querying them per
- * open would be a second source for data in hand.
+ * Place and Categories are there because it has neither: both come from
+ * `psi.sqlite` (ADR-0014), already assembled onto the record by the item store,
+ * so re-querying them per open would be a second source for data in hand. The
+ * Description row is the exception that stays on the response — the searchable
+ * copy is in the record too, but `queryMetadata` reads the caption from
+ * `Photos.sqlite` itself, which is where the user typed it.
  *
  * Albums are there for a different reason — the response carries them
  * pre-joined into one string, which cannot be split back into chips without
@@ -179,12 +181,13 @@ const ALWAYS_SHOWN = new Set(['original_date']);
 
 /**
  * Fields whose value wraps onto as many lines as it needs instead of scrolling
- * sideways. Only the two with no bound on their length: every other value is a
+ * sideways. Only the ones with no bound on their length: every other value is a
  * filename, a camera or a number, where a tall row would cost more than a rare
  * sideways scroll. Albums is here so its clickable names stay reachable —
- * a name scrolled off the right edge cannot be clicked.
+ * a name scrolled off the right edge cannot be clicked. Place joined them when
+ * it became the full geocoded hierarchy rather than a single moment title.
  */
-const WRAPPED = new Set(['labels', 'albums']);
+const WRAPPED = new Set(['labels', 'albums', 'place']);
 
 /**
  * Keys the panel lets through to the lightbox and popup underneath it, so it

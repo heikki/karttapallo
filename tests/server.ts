@@ -51,8 +51,9 @@ function seed(s: SeedSpec): ItemEntry {
     gps: 'exif',
     gps_accuracy: 5,
     albums: s.albums,
-    place: s.place ?? null,
-    description: s.description ?? null,
+    // Specs seed at most one of each; the real index attaches a list.
+    place: s.place === undefined ? [] : [s.place],
+    description: s.description === undefined ? [] : [s.description],
     labels: s.labels ?? [],
     // Shaped like the real thing so the info panel's "Open in Photos" link
     // has an href to assert. Never followed in a spec — it would hand the

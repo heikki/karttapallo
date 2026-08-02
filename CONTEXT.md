@@ -33,7 +33,7 @@ The floating panel describing the selected photo (`<info-panel>`), toggled with 
 _Avoid_: metadata modal, inspector.
 
 **Place**:
-The name Photos gives a moment — `Näätämö`, `Kemiö ja Karuna` — read from its own moment table, not reverse-geocoded by this app. A named area, so it is unrelated to an item's coordinates or its **Location precision**: an item can carry a Place and no GPS at all, which is why Place reaches assets the map cannot plot.
+The names Photos' reverse geocoder gives an item, read from the search index Photos.app builds, not geocoded by this app. A list, ordered outward from the point of interest to the city — `Kälkäsentie, Kuhmo`; `Kalottireitti, Käsivarren Erämaa, Kilpisjärvi` — and stopping there, since region and country are true of thousands of items at once. Named areas, so unrelated to an item's coordinates or its **Location precision**: an item can carry a Place and no GPS at all, which is why Place reaches assets the map cannot plot.
 
 **Scene label**:
 One of Apple's own image classifications for an item (`Lintu`, `Ulkoilma`), read from the search index Photos.app builds. Called `labels` in code and **Categories** in the UI, in both the search suggestions and the info panel. An analyzed item carries roughly ten; an unanalyzed one carries none.

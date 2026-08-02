@@ -12,8 +12,9 @@ export interface Photo {
   camera: string | null;
   gps: string | null;
   albums: string[];
-  place: string | null;
-  description: string | null;
+  /** The search corpus, from psi.sqlite — see ItemEntry on the server. */
+  place: string[];
+  description: string[];
   labels: string[];
   photos_url?: string;
   duration?: string | null;

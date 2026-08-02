@@ -16,8 +16,8 @@ function photo(overrides: Partial<Photo> = {}): Photo {
     camera: 'iPhone 15',
     gps: 'exif',
     albums: [],
-    place: null,
-    description: null,
+    place: [],
+    description: [],
     labels: [],
     ...overrides
   };
@@ -64,14 +64,14 @@ describe('matchesPrefix', () => {
 
 describe('matchesTerm', () => {
   test('matches a term held in any searchable field', () => {
-    expect(matchesTerm(photo({ place: 'Kuhmo' }), 'Kuhmo')).toBe(true);
-    expect(matchesTerm(photo({ description: 'Käki' }), 'Käki')).toBe(true);
+    expect(matchesTerm(photo({ place: ['Kuhmo'] }), 'Kuhmo')).toBe(true);
+    expect(matchesTerm(photo({ description: ['Käki'] }), 'Käki')).toBe(true);
     expect(matchesTerm(photo({ labels: ['Lintu'] }), 'Lintu')).toBe(true);
-    expect(matchesTerm(photo({ place: 'Kuhmo' }), 'Inari')).toBe(false);
+    expect(matchesTerm(photo({ place: ['Kuhmo'] }), 'Inari')).toBe(false);
   });
 
   test('is exact — a term is an applied token, not a prefix', () => {
-    expect(matchesTerm(photo({ place: 'Kuhmo' }), 'Kuh')).toBe(false);
+    expect(matchesTerm(photo({ place: ['Kuhmo'] }), 'Kuh')).toBe(false);
   });
 
   test('an empty term is no filter at all', () => {
@@ -88,10 +88,10 @@ describe('matchesTerm', () => {
 
 describe('suggest', () => {
   const photos = [
-    photo({ uuid: 'a', place: 'Kuhmo' }),
-    photo({ uuid: 'b', place: 'Kuhmo' }),
-    photo({ uuid: 'c', place: 'Kuusamo' }),
-    photo({ uuid: 'd', place: 'Inari', description: 'Käki' })
+    photo({ uuid: 'a', place: ['Kuhmo'] }),
+    photo({ uuid: 'b', place: ['Kuhmo'] }),
+    photo({ uuid: 'c', place: ['Kuusamo'] }),
+    photo({ uuid: 'd', place: ['Inari'], description: ['Käki'] })
   ];
 
   test('groups by term and counts photos', () => {
@@ -129,10 +129,10 @@ describe('suggest', () => {
     // it, since localeCompare ranks `Käki` before `Kaupunki1` anyway.
     const crowded = [
       ...Array.from({ length: 9 }, (_, i) => [
-        photo({ uuid: `k${i}a`, place: `Kaupunki${i}` }),
-        photo({ uuid: `k${i}b`, place: `Kaupunki${i}` })
+        photo({ uuid: `k${i}a`, place: [`Kaupunki${i}`] }),
+        photo({ uuid: `k${i}b`, place: [`Kaupunki${i}`] })
       ]).flat(),
-      photo({ uuid: 'd', description: 'Käki' })
+      photo({ uuid: 'd', description: ['Käki'] })
     ];
 
     const terms = suggest(crowded, 'ka').map((s) => s.term);
@@ -143,11 +143,11 @@ describe('suggest', () => {
   // result would render Places → Descriptions → Places.
   test('groups all of one field before the next', () => {
     const mixed = [
-      photo({ uuid: 'a', place: 'Inari' }),
-      photo({ uuid: 'b', place: 'Inari' }),
-      photo({ uuid: 'c', place: 'Ivalo', description: 'Ilmakuva' }),
-      photo({ uuid: 'd', place: 'Islanti', description: 'Ilmakuva' }),
-      photo({ uuid: 'e', place: 'Imatra' })
+      photo({ uuid: 'a', place: ['Inari'] }),
+      photo({ uuid: 'b', place: ['Inari'] }),
+      photo({ uuid: 'c', place: ['Ivalo'], description: ['Ilmakuva'] }),
+      photo({ uuid: 'd', place: ['Islanti'], description: ['Ilmakuva'] }),
+      photo({ uuid: 'e', place: ['Imatra'] })
     ];
 
     const fields = suggest(mixed, 'i').map((s) => s.field);
@@ -174,9 +174,9 @@ describe('suggest', () => {
   test('a field with few matches yields its slots to the other', () => {
     const lopsided = [
       ...Array.from({ length: 6 }, (_, i) =>
-        photo({ uuid: `p${i}`, place: `Kaupunki${i}` })
+        photo({ uuid: `p${i}`, place: [`Kaupunki${i}`] })
       ),
-      photo({ uuid: 'd', place: 'Kaupunki0', description: 'Käki' })
+      photo({ uuid: 'd', place: ['Kaupunki0'], description: ['Käki'] })
     ];
 
     // One description exists, so the remaining slots all go to places.

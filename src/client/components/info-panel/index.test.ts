@@ -149,8 +149,8 @@ describe('<info-panel>', () => {
         camera: 'iPhone 15',
         gps: 'exif',
         albums: ['Helsinki', 'Kemiö, Karuna'],
-        place: null,
-        description: null,
+        place: [],
+        description: [],
         labels: []
       }
     ]);
@@ -230,8 +230,8 @@ describe('<info-panel> search corpus rows', () => {
         camera: 'iPhone 15',
         gps: 'exif',
         albums: ['Helsinki'],
-        place: null,
-        description: null,
+        place: [],
+        description: [],
         labels: [],
         ...overrides
       }
@@ -244,7 +244,7 @@ describe('<info-panel> search corpus rows', () => {
 
   test('shows the place and every label, from the client photo record', async () => {
     const el = await showPhoto({
-      place: 'Näätämö',
+      place: ['Näätämö'],
       labels: ['Lintu', 'Ulkoilma', 'Vesi']
     });
     const text = el.shadowRoot?.textContent ?? '';
@@ -268,7 +268,7 @@ describe('<info-panel> search corpus rows', () => {
   // undefined until the startup rebuild swaps in fresh items.
   test('drops the row when the record has no labels field at all', async () => {
     const el = await showPhoto({
-      place: 'Kuhmo',
+      place: ['Kuhmo'],
       labels: undefined
     });
     const text = el.shadowRoot?.textContent ?? '';
@@ -365,8 +365,8 @@ describe('<info-panel> photo navigation', () => {
         camera: 'iPhone 15',
         gps: 'exif',
         albums: ['Helsinki'],
-        place: null,
-        description: null,
+        place: [],
+        description: [],
         labels: []
       }
     ]);

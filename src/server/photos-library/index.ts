@@ -19,7 +19,8 @@ export { createImageCache } from './image-cache';
 export type { ImageCache } from './image-cache';
 export { openPhotosLibrary } from './library';
 export type { PhotosLibrary } from './library';
-export { readSceneLabels } from './search-index';
+export { readSearchTerms, termsFor } from './search-index';
+export type { SearchTerms } from './search-index';
 export {
   resolveLibrary,
   libraryDataDir,

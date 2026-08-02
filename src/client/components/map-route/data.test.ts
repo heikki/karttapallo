@@ -53,8 +53,8 @@ function photo(overrides: Partial<Photo> = {}): Photo {
     camera: null,
     gps: 'exif',
     albums: [],
-    place: null,
-    description: null,
+    place: [],
+    description: [],
     labels: [],
     ...overrides
   };

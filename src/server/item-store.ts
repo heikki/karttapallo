@@ -34,11 +34,13 @@ import {
   queryNotInAlbumUuid,
   queryPhotos,
   queryVideos,
-  readSceneLabels,
+  readSearchTerms,
   resolveLibrary,
+  termsFor,
   type ImageCache,
   type LibraryResolution,
-  type PhotoRecord
+  type PhotoRecord,
+  type SearchTerms
 } from './photos-library';
 import {
   localizeInstant,
@@ -61,9 +63,15 @@ export interface ItemEntry {
   gps: 'user' | 'exif' | 'inferred' | null;
   gps_accuracy: number | null;
   albums: string[];
-  place: string | null;
-  description: string | null;
-  /** Apple's scene labels; empty for assets Photos hasn't analyzed. */
+  /**
+   * The search corpus, all three read from `psi.sqlite` (ADR-0014). Each is a
+   * list because that index attaches terms, not a single value: a photo sits in
+   * a point of interest AND a street AND a city, and Photos indexes every one.
+   * Empty where the index has nothing — the normal case for `labels` on a
+   * library Photos hasn't analyzed.
+   */
+  place: string[];
+  description: string[];
   labels: string[];
   photos_url: string;
 }
@@ -132,13 +140,14 @@ function deriveLocalTime(record: PhotoRecord): {
 export function buildItemEntry(
   record: PhotoRecord,
   notInAlbumUuid: string,
-  sceneLabels?: Map<string, string[]>
+  searchIndex?: Map<string, SearchTerms>
 ): ItemEntry {
   const sorted = sortedAlbums(record);
   const albumUuid = sorted.albumUuids.find(Boolean) ?? notInAlbumUuid;
   const photosUrl = `photos:albums?albumUuid=${albumUuid}&assetUuid=${record.uuid}`;
 
   const { date, tz } = deriveLocalTime(record);
+  const terms = termsFor(searchIndex, record.uuid);
 
   const base = {
     uuid: record.uuid,
@@ -156,9 +165,9 @@ export function buildItemEntry(
     gps: record.gps,
     gps_accuracy: record.gps_accuracy,
     albums: sorted.albums,
-    place: record.place,
-    description: record.description,
-    labels: sceneLabels?.get(record.uuid) ?? [],
+    place: terms.place,
+    description: terms.description,
+    labels: terms.labels,
     photos_url: photosUrl
   };
 
@@ -246,11 +255,12 @@ function buildFromPhotosDb(libraryPath?: string): ItemEntry[] {
   const db = openPhotosDb(resolved);
   try {
     const notInAlbumUuid = queryNotInAlbumUuid(db);
-    // Scene labels live in a second database and are empty for any library
-    // Photos hasn't analyzed — an ordinary case, not a failure (ADR-0014).
-    const labels = readSceneLabels(resolved);
+    // The search corpus lives in a second database, and is empty for any
+    // library Photos hasn't indexed — an ordinary case, not a failure
+    // (ADR-0014).
+    const searchIndex = readSearchTerms(resolved);
     const records = [...queryPhotos(db), ...queryVideos(db)];
-    return records.map((r) => buildItemEntry(r, notInAlbumUuid, labels));
+    return records.map((r) => buildItemEntry(r, notInAlbumUuid, searchIndex));
   } finally {
     db.close();
   }

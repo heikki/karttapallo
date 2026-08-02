@@ -1,15 +1,15 @@
 /**
- * Text search over the corpus Karttapallo reads out of the Photos library —
- * moment place names and asset descriptions (ADR-0014).
+ * Text search over the corpus Karttapallo reads out of Photos' own search
+ * index — places, descriptions and scene labels (ADR-0014).
  *
  * Matching mirrors Photos.app, which indexes a case- and diacritic-folded
  * form of each term with an FTS5 token-prefix index: `kuh` finds `Kuhmo`,
  * `naatamo` finds `Näätämö`, and `uhm` finds nothing.
  *
  * Photos' inflection and synonym expansion (`Nurmikko` → `Ruoho`) is not
- * reproduced here. Those tables live in `psi.sqlite`, which covers a fraction
- * of the library, and they buy little over place names — proper nouns you type
- * as `Kuhmo`, never as `Kuhmossa`.
+ * reproduced here. It lives in a category of `psi.sqlite` we don't read, and it
+ * buys little over the terms we do — places are proper nouns you type as
+ * `Kuhmo`, never as `Kuhmossa`.
  */
 
 import type { Photo } from './types';
@@ -53,17 +53,20 @@ export function matchesPrefix(candidate: string, query: string): boolean {
 }
 
 /**
- * Every value a photo carries for one field — `labels` holds many, the rest
- * hold at most one.
+ * Every value a photo carries for one field. All three are lists now that the
+ * whole corpus comes from `psi.sqlite`, which attaches as many terms as apply —
+ * a photo has a point of interest and a street and a city, not one "place".
  *
- * A snapshot written before these fields existed has none of them, so they read
- * `undefined` until the startup rebuild swaps in fresh items.
+ * Two shapes still reach this from disk. A snapshot written before these fields
+ * existed omits them entirely; one written while `place` and `description` came
+ * from `Photos.sqlite` holds a bare string. Both read correctly here until the
+ * startup rebuild swaps in fresh items.
  */
 function fieldValues(photo: Photo, field: CorpusField): string[] {
-  // `??` rather than a null check: the field is typed as always present, but a
-  // snapshot written before it existed genuinely omits it at runtime.
-  const value = photo[field] ?? null;
-  if (value === null) return [];
+  // Widened past the declared type on purpose. `Photo` describes a freshly
+  // built item; what a snapshot holds is whatever the version that wrote it
+  // used, and both older shapes still have to read correctly.
+  const value = (photo[field] as string[] | string | null | undefined) ?? [];
   return Array.isArray(value) ? value : [value];
 }
 

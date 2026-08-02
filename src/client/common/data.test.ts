@@ -34,8 +34,8 @@ function photo(overrides: Partial<Photo> = {}): Photo {
     camera: 'iPhone 15',
     gps: 'exif',
     albums: ['Helsinki'],
-    place: null,
-    description: null,
+    place: [],
+    description: [],
     labels: [],
     ...overrides
   };
@@ -194,14 +194,14 @@ describe('option cascades', () => {
       photo({
         uuid: 'a',
         date: '2019:01:01 00:00:00',
-        place: 'Näätämö',
+        place: ['Näätämö'],
         albums: ['Lappi'],
         camera: 'iPhone'
       }),
       photo({
         uuid: 'b',
         date: '2024:01:01 00:00:00',
-        place: 'Kuhmo',
+        place: ['Kuhmo'],
         albums: ['Kainuu'],
         camera: 'Sony'
       })
@@ -214,8 +214,8 @@ describe('option cascades', () => {
 
   test('clearing the search restores the full option lists', () => {
     photos.set([
-      photo({ uuid: 'a', place: 'Näätämö', albums: ['Lappi'] }),
-      photo({ uuid: 'b', place: 'Kuhmo', albums: ['Kainuu'] })
+      photo({ uuid: 'a', place: ['Näätämö'], albums: ['Lappi'] }),
+      photo({ uuid: 'b', place: ['Kuhmo'], albums: ['Kainuu'] })
     ]);
     setSearch('Näätämö');
     expect(albumOptions.get()).toEqual(['Lappi']);
@@ -292,14 +292,14 @@ describe('cascade on verb', () => {
       photo({
         uuid: 'a',
         date: '2019:01:01 00:00:00',
-        place: 'Näätämö',
+        place: ['Näätämö'],
         albums: ['Lappi'],
         camera: 'iPhone'
       }),
       photo({
         uuid: 'b',
         date: '2019:02:01 00:00:00',
-        place: 'Näätämö',
+        place: ['Näätämö'],
         albums: ['Kainuu'],
         camera: 'Sony'
       })
@@ -321,8 +321,8 @@ describe('cascade on verb', () => {
 
   test('clearing the search leaves the selects alone', () => {
     photos.set([
-      photo({ uuid: 'a', place: 'Näätämö', albums: ['Lappi'] }),
-      photo({ uuid: 'b', place: 'Kuhmo', albums: ['Kainuu'] })
+      photo({ uuid: 'a', place: ['Näätämö'], albums: ['Lappi'] }),
+      photo({ uuid: 'b', place: ['Kuhmo'], albums: ['Kainuu'] })
     ]);
     setSearch('Näätämö');
     setAlbum('Lappi');
@@ -332,8 +332,8 @@ describe('cascade on verb', () => {
 
   test('a term the multi-select filters hide is kept, and shows nothing', () => {
     photos.set([
-      photo({ uuid: 'a', type: 'video', place: 'Näätämö' }),
-      photo({ uuid: 'b', place: 'Kuhmo' })
+      photo({ uuid: 'a', type: 'video', place: ['Näätämö'] }),
+      photo({ uuid: 'b', place: ['Kuhmo'] })
     ]);
     setSearch('Näätämö');
     toggleMedia('video');
@@ -342,7 +342,7 @@ describe('cascade on verb', () => {
   });
 
   test('a term no photo in the library carries is dropped', () => {
-    photos.set([photo({ uuid: 'a', place: 'Kuhmo' })]);
+    photos.set([photo({ uuid: 'a', place: ['Kuhmo'] })]);
     setSearch('Näätämö');
     expect(filters.get().search).toBe('');
   });
