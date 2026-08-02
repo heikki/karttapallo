@@ -45,6 +45,7 @@ git log --pretty=format:"%ad|%s" --date=format:"%Y-%m-%d" | head -50  # Recent c
 - Places, descriptions and categories now come from the index Photos' own search uses, so both agree
 - A photo's place is now the whole hierarchy: landmark, street, city, region, country, each searchable
 - Searching a country or region finds a whole trip, even one with no album of its own
+- Cut, copy, paste and select all now work in the app's text fields, which they never had
 
 ## 01.08.2026 — Search, and the metadata panel it fed
 

@@ -207,6 +207,26 @@ ApplicationMenu.setApplicationMenu([
       }
     ]
   },
+  // Not decoration. On macOS the text-editing shortcuts are key equivalents
+  // dispatched through the application menu, so without these items Cmd+A,
+  // Cmd+C and friends never reach the webview's field editor at all — typing
+  // in the search box worked while selecting what you typed did nothing. The
+  // roles map to NSResponder selectors and act on the first responder, so
+  // Select All selects the focused input's text and nothing else. Electrobun
+  // assigns no default accelerators, hence each one spelled out.
+  {
+    label: 'Edit',
+    submenu: [
+      { role: 'undo', accelerator: 'CmdOrCtrl+Z' },
+      { role: 'redo', accelerator: 'Shift+CmdOrCtrl+Z' },
+      { type: 'divider' },
+      { role: 'cut', accelerator: 'CmdOrCtrl+X' },
+      { role: 'copy', accelerator: 'CmdOrCtrl+C' },
+      { role: 'paste', accelerator: 'CmdOrCtrl+V' },
+      { type: 'divider' },
+      { role: 'selectAll', accelerator: 'CmdOrCtrl+A' }
+    ]
+  },
   {
     label: 'Photos',
     submenu: [
