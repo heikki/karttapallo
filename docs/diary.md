@@ -5,9 +5,9 @@ Geotagged photo map viewer with Apple Photos integration.
 ## Project Stats (as of 02.08.2026)
 
 - **TypeScript files**: 125
-- **Lines of code**: 16,566 (+ 6,003 tests)
-- **Total commits**: 662
-- **Total tokens**: ~3,136M | **Total cost**: ~$2,040
+- **Lines of code**: 16,574 (+ 6,003 tests)
+- **Total commits**: 666
+- **Total tokens**: ~3,154M | **Total cost**: ~$2,053
 
 ## Updating This Diary
 
@@ -39,7 +39,7 @@ git log --pretty=format:"%ad|%s" --date=format:"%Y-%m-%d" | head -50  # Recent c
 
 ## 02.08.2026 — Search follows Photos' own index, and routes move in with the library
 
-**Tokens**: 152M | **Cost**: $102
+**Tokens**: 170M | **Cost**: $115
 
 - Place search works again — it broke when Photos rebuilt the library and dropped every moment name
 - Places, descriptions and categories now come from the index Photos' own search uses, so both agree
@@ -53,6 +53,8 @@ git log --pretty=format:"%ad|%s" --date=format:"%Y-%m-%d" | head -50  # Recent c
 - Several gigabytes of regenerable thumbnails no longer go into Time Machine backups
 - Opening a different library in Photos can no longer flash the previous one's photos on startup
 - Closed a hole that let anything on the machine read files outside the app through its local server
+- The app now fills the screen on its very first launch, instead of opening in a small corner box
+- One command now wipes an install completely, so a first launch can be tested as a newcomer sees it
 
 ## 01.08.2026 — Search, and the metadata panel it fed
 
