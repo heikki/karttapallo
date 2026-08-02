@@ -49,6 +49,8 @@ All three are lists, because the index attaches terms rather than a value — a 
 
 Places span the full hierarchy Photos names, point of interest through country. The broad levels are how a trip is actually reached — `Islanti` and `Portugali` are the terms for a journey with no album of its own — at the cost of matching thousands of items each (`Suomi`: 2817 of 4841), which puts them at the head of the Places group whenever they match. Only the two-letter codes are dropped (11, 13): `FI` duplicates `Suomi` at an identical count under a worse label, so a query for `fi` would offer the code above the name it stands for.
 
+Nothing is dropped for reading oddly. Finland's `Aluehallintovirasto` regions shadow every province at nearly the same count (`Lappi` 1234, `Lapin Aluehallintovirasto` 1233) and look like noise in the suggestion list, but Photos.app offers them too — and a term the user has already met there is not noise, it is the corpus. Matching what Photos shows is the whole point of reading its index, so the bar for excluding a category is that it duplicates another term, not that it is ugly.
+
 Terms are ordered specific-first within each field, which is what lets the info panel's Place row read outward as `Kälkäsentie, Kuhmo, Kainuu, Suomi`.
 
 Search is a filter dimension, not a separate result list. It composes with the existing cascade and reuses `filteredPhotos`, marker rendering, fit-to-view and the stats line, so there is exactly one model of "what the map is showing". It follows the other filters into URL state, and `revealPhoto` must clear it for the same reason it widens the GPS filter — a deep link has to land on its photo whatever filter state arrived with it.
