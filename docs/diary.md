@@ -2,12 +2,12 @@
 
 Geotagged photo map viewer with Apple Photos integration.
 
-## Project Stats (as of 01.08.2026)
+## Project Stats (as of 02.08.2026)
 
 - **TypeScript files**: 87
-- **Lines of code**: 16,132 (+ 5,456 tests)
-- **Total commits**: 639
-- **Total tokens**: ~2,984M | **Total cost**: ~$1,938
+- **Lines of code**: 16,254 (+ 5,550 tests)
+- **Total commits**: 647
+- **Total tokens**: ~3,019M | **Total cost**: ~$1,966
 
 ## Updating This Diary
 
@@ -36,6 +36,15 @@ git log --pretty=format:"%ad|%s" --date=format:"%Y-%m-%d" | head -50  # Recent c
 - Skip minor tweaks — only significant features and fixes belong, especially on busy days.
 - Describe final outcomes, not reverted intermediate attempts.
 - Flat list, no sub-bullets or prose.
+
+## 02.08.2026 — Search follows Photos' own index
+
+**Tokens**: 35M | **Cost**: $28
+
+- Place search works again — it broke when Photos rebuilt the library and dropped every moment name
+- Places, descriptions and categories now come from the index Photos' own search uses, so both agree
+- A photo's place is now the whole hierarchy: landmark, street, city, region, country, each searchable
+- Searching a country or region finds a whole trip, even one with no album of its own
 
 ## 01.08.2026 — Search, and the metadata panel it fed
 
