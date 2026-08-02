@@ -35,7 +35,7 @@ export interface OrsClientOptions {
 }
 
 export function createOrsClient(
-  dataDir: string,
+  supportDir: string,
   options: OrsClientOptions = {}
 ): OrsClient {
   const fetchImpl = options.fetchImpl ?? fetch;
@@ -43,7 +43,7 @@ export function createOrsClient(
   function resolveApiKey(): string | null {
     const envKey = process.env.PUBLIC_ORS_API_KEY ?? process.env.ORS_API_KEY;
     if (envKey !== undefined && envKey !== '') return envKey;
-    const setting = getSetting(dataDir, 'ors_api_key');
+    const setting = getSetting(supportDir, 'ors_api_key');
     return setting === '' ? null : setting;
   }
 

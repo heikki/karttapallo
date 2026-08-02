@@ -75,7 +75,6 @@ export function tzOffsetHours(tz: string | null) {
   return sign * (h + m / 60);
 }
 
-/** Get timezone offset in milliseconds. */
 function tzOffsetMs(tz: string) {
   const { sign, h, m } = parseTzOffset(tz);
   return sign * (h * 3600000 + m * 60000);

@@ -52,7 +52,6 @@ Electrobun.events.on('open-url', (event: { data: { url: string } }) => {
   else deliverDeepLink(link.uuid);
 });
 
-// Detect dev build from version.json
 const resourcesDir = resolve(dirname(process.argv0), '..', 'Resources');
 let isDev = false;
 try {
@@ -349,7 +348,6 @@ function saveWindowState(frame: {
   setSetting(supportDir, 'window', JSON.stringify(frame));
 }
 
-// RPC type definition for Electrobun communication
 interface AppRPC {
   bun: {
     requests: Record<string, never>;

@@ -1,9 +1,8 @@
 /**
  * Shared HTTP request handler used by both `src/server/dev.ts` (browser
- * development) and `src/server/index.ts` (Electrobun launcher). Each caller
- * passes a config that
- * differs only in static-root order, vendor-file overrides, and the
- * post-response hook (logging vs. Full Disk Access detection).
+ * development) and `src/server/index.ts` (Electrobun launcher). Their configs
+ * differ only in which static root serves the client, vendor-file overrides,
+ * and the post-response hook (logging vs. Full Disk Access detection).
  */
 
 import { resolve as resolvePath, sep } from 'node:path';

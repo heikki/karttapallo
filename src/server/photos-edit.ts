@@ -1,7 +1,6 @@
 /**
  * Write operations for Apple Photos: location, date/time, timezone.
  *
- * Replaces set_locations.py and set_times.py with native TypeScript.
  * - Location & date: AppleScript via Photos.app — journaled immediately, durable.
  * - Timezone: direct SQLite write — invisible to Photos, NOT durable on its own.
  *   See setTimezone below and docs/adr/0013.
