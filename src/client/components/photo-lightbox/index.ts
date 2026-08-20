@@ -13,6 +13,13 @@ export function showLightbox() {
   document.querySelector<PhotoLightbox>('photo-lightbox')?.show();
 }
 
+/** Whether the lightbox is up, for surfaces that must not act behind it. */
+export function isLightboxOpen() {
+  return (
+    document.querySelector<PhotoLightbox>('photo-lightbox')?.active === true
+  );
+}
+
 @customElement('photo-lightbox')
 export class PhotoLightbox extends SignalWatcher(LitElement) {
   @property({ type: Boolean, reflect: true }) active = false;

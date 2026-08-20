@@ -210,4 +210,14 @@ test('Keyboard drives the suggestion list, and Cmd+F focuses it', async ({
   await expect(suggestions).toBeHidden();
   await expect(page).not.toHaveURL(/q=/);
   await expect(page.locator('photo-popup')).toBeVisible();
+
+  // A second Escape gives up focus, or an empty box would be a dead end for
+  // the keyboard: nothing typed in it reaches the map, so the arrows only
+  // work once it lets go.
+  await expect(search).toBeFocused();
+  const before = await thumb.getAttribute('src');
+  await search.press('Escape');
+  await expect(search).not.toBeFocused();
+  await page.keyboard.press('ArrowRight');
+  await expect(thumb).not.toHaveAttribute('src', before ?? '');
 });

@@ -78,7 +78,12 @@ export class SearchField extends SignalWatcher(LitElement) {
     e.stopPropagation();
     const items = this._suggestions;
     if (e.key === 'Escape') {
-      this._query = '';
+      // One rung per press, like the app's own Escape chain: a half-typed
+      // query is abandoned first, and only an already-empty box gives up
+      // focus. Blurring is what hands the arrows and Space back to the map,
+      // since everything typed here stops at the input.
+      if (this._query === '') this._input?.blur();
+      else this._query = '';
       return;
     }
     if (items.length === 0) return;

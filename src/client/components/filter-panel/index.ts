@@ -14,6 +14,7 @@ import { viewState } from '@common/view-state';
 import './album-controls';
 import '../search-field';
 
+import { isLightboxOpen } from '../photo-lightbox';
 import type { SearchField } from '../search-field';
 import { renderFilterBtns, renderSelect, renderStyleBtns } from './helpers';
 import { styles } from './styles';
@@ -66,7 +67,13 @@ export class FilterPanel extends SignalWatcher(LitElement) {
   // find bar from opening over the app.
   private readonly _onKeydown = (e: KeyboardEvent) => {
     if (e.key !== 'f' || !(e.metaKey || e.ctrlKey) || e.altKey) return;
+    // Claimed even when declined, so the webview's own find-in-page stays out
+    // of it either way.
     e.preventDefault();
+    // The search box sits behind the lightbox. Focusing it there would send
+    // every keystroke to something the user cannot see — including the Escape
+    // that would have closed the lightbox.
+    if (isLightboxOpen()) return;
     this._collapsed = false;
     void this.updateComplete.then(() => {
       this._searchField?.focusInput();
