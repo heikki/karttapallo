@@ -16,7 +16,7 @@ export interface MapApi {
   readonly map: MapGL;
 
   /** Camera-fit the current filtered photos. */
-  fitToPhotos: (animate?: boolean, selectFirst?: boolean) => void;
+  fitToPhotos: (animate?: boolean) => void;
 
   /** Reload GPX tracks for the current album. */
   reloadGpx: () => void;

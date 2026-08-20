@@ -79,8 +79,10 @@ test('Cmd+I toggles the info panel, and nothing overlays the photo', async ({
 });
 
 test('Cmd+I does nothing with no photo selected', async ({ page }) => {
-  await page.goto('/');
-  await expect(page.getByLabel('Photo stats')).toHaveText('3 photos');
+  // Filtering everything out is the only way to have no selection (ADR-0016);
+  // every fixture item is gps='exif', so soloing "None" empties the map.
+  await page.goto('/?gps=none');
+  await expect(page.getByLabel('Photo stats')).toHaveText('No results');
 
   // The panel describes one photo; with none chosen there is nothing to open.
   await page.keyboard.press('Meta+i');
@@ -142,7 +144,7 @@ test('Every scene label shows, wrapped rather than scrolled', async ({
   expect(overflow).toBeLessThanOrEqual(1);
 });
 
-test('Deselecting the photo takes its info away', async ({ page }) => {
+test('The map still takes input under an open info panel', async ({ page }) => {
   await page.goto('/?id=e2e-1');
 
   const popup = page.locator('photo-popup');
@@ -152,21 +154,27 @@ test('Deselecting the photo takes its info away', async ({ page }) => {
   const modal = page.locator('info-panel[active]');
   await expect(modal).toBeVisible();
 
-  // Click empty map, well clear of the panel. That the popup closes at all
-  // proves the click reached the canvas instead of being swallowed — the panel
-  // no longer blocks the map — and the panel must go with it rather than
-  // describing a photo that is no longer selected.
+  // Drag the map well clear of the panel. That it pans at all proves the
+  // pointer reached the canvas instead of being swallowed — the panel no
+  // longer blocks the map.
   const box = await modal.locator('.content').boundingBox();
   if (box === null) throw new Error('panel not laid out');
-  await page.mouse.click(box.x + 60, box.y + box.height + 120);
+  const y = box.y + box.height + 120;
+  await page.mouse.move(box.x + 60, y);
+  await page.mouse.down();
+  await page.mouse.move(box.x + 160, y, { steps: 8 });
+  await page.mouse.up();
+  await expect
+    .poll(() => new URL(page.url()).searchParams.get('lon'))
+    .not.toBe(null);
 
-  await expect(popup).toHaveCount(0);
-  await expect(modal).toHaveCount(0);
+  // And neither survives-by-accident: a stray click on the map dismisses
+  // nothing, because the selection outlives it (ADR-0016).
+  await expect(popup).toBeVisible();
+  await expect(modal).toBeVisible();
 });
 
-test('A filter that excludes the photo takes its info away', async ({
-  page
-}) => {
+test('A filter that excludes the photo moves the info on', async ({ page }) => {
   await page.goto('/?id=e2e-1');
 
   const popup = page.locator('photo-popup');
@@ -176,11 +184,15 @@ test('A filter that excludes the photo takes its info away', async ({
   await expect(modal).toBeVisible();
 
   // e2e-1 is the only Helsinki photo; switching to Tampere drops it from the
-  // filtered set, which clears the selection underneath the panel.
+  // filtered set, so the app auto-selects the oldest that is left — e2e-2,
+  // from 2023 — and the panel follows it rather than closing (ADR-0016).
   await page.getByLabel('Album').selectOption('Tampere');
 
-  await expect(popup).toHaveCount(0);
-  await expect(modal).toHaveCount(0);
+  await expect(popup).toBeVisible();
+  await expect(modal).toBeVisible();
+  await expect
+    .poll(() => new URL(page.url()).searchParams.get('id'))
+    .toBe('e2e-2');
 });
 
 test('The info panel stays put as the table grows', async ({ page }) => {

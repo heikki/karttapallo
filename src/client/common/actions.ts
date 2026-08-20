@@ -10,8 +10,8 @@ function getMapView(): HTMLElementTagNameMap['map-view'] | null {
   return document.querySelector('map-view');
 }
 
-export function fitToPhotos(animate = false, selectFirst = false) {
-  getMapView()?.fitToPhotos(animate, selectFirst);
+export function fitToPhotos(animate = false) {
+  getMapView()?.fitToPhotos(animate);
 }
 
 export function openExternalMap(provider: 'apple' | 'google') {

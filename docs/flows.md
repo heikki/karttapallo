@@ -4,8 +4,8 @@ Canonical inventory of user-visible flows. Each Tier 5 e2e spec maps to one or m
 
 ## Browse and view
 
-- **Browse the collection** — see all photos and videos on the map; URL state restores filters / view / styles / open popup.
-- **Find a photo on the map** — click marker → popup; arrow keys cycle filtered items; Space or thumbnail click → lightbox.
+- **Browse the collection** — see all photos and videos on the map; URL state restores filters / view / styles / open popup. One photo is always selected with its popup open, unless the filters match nothing; a filter that drops the selected photo picks the oldest that is left and fits the map to it.
+- **Find a photo on the map** — click marker → popup; arrow keys cycle filtered items; Space or thumbnail click → lightbox. The popup cannot be dismissed — it follows the selection instead.
 - **View a photo full size** — lightbox shows the photo and nothing else; arrows cycle; Escape/Space/backdrop closes; trackpad pinch zooms.
 - **Watch a video** — videos play inline in lightbox; native controls auto-hide; Enter toggles play/pause (Space closes the lightbox, whatever is in it); mute persists across videos.
 - **View photo info** — Cmd+I toggles a floating panel: fields from `Photos.sqlite` plus Place and Categories, grouped under Photos / File / Capture / Location by where the value came from, empty groups omitted. Album names filter the map to that album; UUID copies and links to Photos.app. Movable, non-blocking; Cmd+I / X / Escape closes.
@@ -13,7 +13,7 @@ Canonical inventory of user-visible flows. Each Tier 5 e2e spec maps to one or m
 
 ## Filter
 
-- **Search by place, description or category** — Cmd+F or the Search box; typing offers matching terms grouped by kind (Places / Descriptions / Categories) with photo counts, taken by arrows + Enter or click; picking one applies it as a token, then fits and opens the oldest match, like the Fit button. Case- and accent-insensitive on word starts — `naatamo` finds `Näätämö`. Always searches the whole library: applying a term clears the three dropdowns below, so a suggestion's count is what lands on the map, and they then list only what the term covers.
+- **Search by place, description or category** — Cmd+F or the Search box; typing offers matching terms grouped by kind (Places / Descriptions / Categories) with photo counts, taken by arrows + Enter or click; picking one applies it as a token and fits the map to the result, like the Fit button; whichever photo ends up selected follows the usual rule — kept if it matches the term, otherwise the oldest that does. Case- and accent-insensitive on word starts — `naatamo` finds `Näätämö`. Always searches the whole library: applying a term clears the three dropdowns below, so a suggestion's count is what lands on the map, and they then list only what the term covers.
 - **Filter by year** — dropdown (limited by search); cascades to repopulate album and camera.
 - **Filter by album** — dropdown (limited by search + year); cascades to camera; loads visible GPX tracks if any.
 - **Filter by camera** — dropdown (limited by search + year + album).
@@ -25,8 +25,8 @@ Canonical inventory of user-visible flows. Each Tier 5 e2e spec maps to one or m
 - **Switch basemap** — Aerial / Topo / Maasto / Orto buttons; layers survive the swap.
 - **Switch marker style** — Classic / Points buttons.
 - **Switch projection** — globe control (bottom-right) toggles globe ↔ mercator.
-- **Reset the app** — closes popup, exits modes, defaults filters/styles, clears URL, fits to all photos.
-- **Open in Apple Maps / Google Maps** — opens external map at selected photo or current view.
+- **Reset the app** — exits modes, defaults filters/styles, clears URL, fits to all photos.
+- **Open in Apple Maps / Google Maps** — opens external map at the selected photo, or at the current view when the filters match nothing.
 
 ## Edit
 
@@ -52,4 +52,4 @@ Canonical inventory of user-visible flows. Each Tier 5 e2e spec maps to one or m
 
 ## Dismiss
 
-Priority order: info panel > date edit > placement > route edit > measurement > lightbox > popup. Escape works in every context; clicking outside the active surface, or pressing the key or button that opened it, also dismisses.
+Priority order: info panel > date edit > placement > route edit > measurement > lightbox. Escape works in every context; clicking outside the active surface, or pressing the key or button that opened it, also dismisses. The popup is not on the list: it belongs to the selection, and the selection always has a photo to show.

@@ -6,10 +6,12 @@ import { expect, test } from '@playwright/test';
 
 test('Open in Apple Maps and Google Maps', async ({ page }) => {
   // 1) No selection → Apple/Google Maps URLs come from the current map
-  // center + zoom.
-  await page.goto('/');
+  // center + zoom. A selection is now automatic whenever anything is filtered
+  // in (ADR-0016), so the only way to have none is to filter everything out —
+  // every fixture item is gps='exif', so soloing "None" empties the map.
+  await page.goto('/?gps=none');
   await expect(page.getByRole('status', { name: 'Photo stats' })).toHaveText(
-    '3 photos'
+    'No results'
   );
   // Wait for the map to be loaded — `<map-fit>` only mounts after
   // `map.once('load')` fires, so its presence proves `<map-view>._map` is

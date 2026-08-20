@@ -31,7 +31,30 @@ function isSinglePointBounds(bounds: LngLatBounds) {
 
 @customElement('map-fit')
 export class MapFit extends MapFeatureElement {
+  // Starts at zero rather than the current count, so an auto-select that
+  // landed while the map was still loading still gets its fit. Without that,
+  // whether the opening camera reserved room for the popup would depend on
+  // whether photos arrived before or after this element mounted.
+  private lastAutoSelect = 0;
+
   override firstUpdated() {
+    // The app choosing a photo for the user is the one case where the camera
+    // moves on its own: fit the new set so the chosen photo is on screen and
+    // the popup's own pan stands down — see ADR-0016. Deferred two frames so
+    // `<map-popup>` has mounted and laid out the popup by the time
+    // `computeTopPadding` measures it; fitting first would leave the popup to
+    // pan the camera back off the fit.
+    effect(() => {
+      const n = selection.autoSelectCount.get();
+      if (n === this.lastAutoSelect) return;
+      this.lastAutoSelect = n;
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          this.toPhotos(true);
+        });
+      });
+    });
+
     // A deep link owns the opening camera position outright — including over
     // a lat/lon in the URL, which for a deep link is only whatever the saved
     // view happened to carry.
@@ -72,7 +95,7 @@ export class MapFit extends MapFeatureElement {
     });
   }
 
-  toPhotos(animate = false, selectFirst = false) {
+  toPhotos(animate = false) {
     if (data.filteredPhotos.get().length === 0) return;
     const bounds = computePhotoBounds();
     const duration = animate ? 500 : 0;
@@ -85,7 +108,6 @@ export class MapFit extends MapFeatureElement {
         zoom: SINGLE_PHOTO_ZOOM,
         duration
       });
-      this.triggerPostFitActions(animate, selectFirst);
       return;
     }
 
@@ -99,18 +121,6 @@ export class MapFit extends MapFeatureElement {
       maxZoom: 18,
       duration
     });
-    this.triggerPostFitActions(animate, selectFirst);
-  }
-
-  private triggerPostFitActions(animate: boolean, selectFirst: boolean) {
-    if (!selectFirst) return;
-    if (animate) {
-      void this.api.map.once('moveend', () => {
-        selection.toggleOldestNewest();
-      });
-    } else {
-      selection.toggleOldestNewest();
-    }
   }
 
   private computeTopPadding() {

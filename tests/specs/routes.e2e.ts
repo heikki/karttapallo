@@ -32,7 +32,12 @@ async function selectAlbum(page: Page, album: string) {
 }
 
 async function clickViewBtn(page: Page, label: string) {
-  await page.getByRole('button', { name: label }).click();
+  // Scoped to the panel: a popup is always open now (ADR-0016), and its date
+  // "edit" button would otherwise tie with the panel's route "Edit".
+  await page
+    .locator('filter-panel')
+    .getByRole('button', { name: label })
+    .click();
 }
 
 async function canvasBox(
@@ -96,9 +101,9 @@ test('Edit mode adds a waypoint via clicking a segment', async ({ page }) => {
 
   // Enter edit mode → the edit-points source is populated.
   await clickViewBtn(page, 'Edit');
-  await expect(page.getByRole('button', { name: 'Edit' })).toHaveClass(
-    /active/
-  );
+  await expect(
+    page.locator('filter-panel').getByRole('button', { name: 'Edit' })
+  ).toHaveClass(/active/);
   await expect
     .poll(() => sourceFeatureCount(page, 'route-edit-points'))
     .toBeGreaterThanOrEqual(2);

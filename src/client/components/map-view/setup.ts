@@ -133,16 +133,6 @@ function installListeners(map: MapGL, api: MapApi) {
     console.warn('[MapGL] WebGL context restored');
   });
 
-  // Empty-map click only closes the popup when no interaction mode is
-  // active. During placement/measure/route-edit the click belongs to that
-  // mode (place a pin, add a point, edit the route) and should leave the
-  // popup alone.
-  map.on('click', (e) => {
-    if (interactionMode.current.get() !== null) return;
-    if (e.defaultPrevented) return;
-    if (selection.isPopupOpen()) selection.closePopup();
-  });
-
   map.on('projectiontransition', () => {
     if (map.getProjection().type === 'globe') {
       background.start();

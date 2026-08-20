@@ -376,12 +376,13 @@ describe('<info-panel> photo navigation', () => {
     await el.updateComplete;
     expect(el.active).toBe(true);
 
-    selection.closePopup();
+    // Selection only goes null when the filters match nothing (ADR-0016);
+    // emptying the library is the honest way to get there.
+    data.photos.set([]);
     await Bun.sleep(0);
 
     expect(el.active).toBe(false);
     expect(el.shownUuid).toBe(null);
-    data.photos.set([]);
     el.remove();
   });
 

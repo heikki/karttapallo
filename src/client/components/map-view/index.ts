@@ -101,8 +101,8 @@ export class MapView extends LitElement implements MapApi {
     return this._map!;
   }
 
-  fitToPhotos(animate = false, selectFirst = false) {
-    this._fit?.toPhotos(animate, selectFirst);
+  fitToPhotos(animate = false) {
+    this._fit?.toPhotos(animate);
   }
 
   reloadGpx() {

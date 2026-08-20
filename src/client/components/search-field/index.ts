@@ -50,12 +50,12 @@ export class SearchField extends SignalWatcher(LitElement) {
     data.setSearch(term);
     this._query = '';
     this._highlighted = 0;
-    // Move the camera to what was just picked and open its oldest photo —
-    // the same (animate, selectFirst) pair the Fit button uses, so a search
-    // lands you exactly where fitting would. Safe to call synchronously:
-    // `fitToPhotos` reads `filteredPhotos`, which the signal above has already
-    // recomputed, and it no-ops on an empty set.
-    actions.fitToPhotos(true, true);
+    // Move the camera to what was just picked, the same way the Fit button
+    // does. Safe to call synchronously: `fitToPhotos` reads `filteredPhotos`,
+    // which the signal above has already recomputed, and it no-ops on an empty
+    // set. Which photo ends up selected is not this call's business — the
+    // selection invariant handles it (ADR-0016).
+    actions.fitToPhotos(true);
   }
 
   private _clear() {

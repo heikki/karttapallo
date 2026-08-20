@@ -34,7 +34,10 @@ async function flush() {
 }
 
 beforeEach(async () => {
-  selection.clear();
+  // `selectPhoto` is the only public way to forget a dropped selection, so
+  // the throwaway select below resets that memory between tests.
+  selection.selectPhoto('reset');
+  selection.selectedPhotoUuid.set(null);
   data.photos.set([]);
   data.resetFilters();
   interactionMode.exit();
@@ -44,7 +47,7 @@ beforeEach(async () => {
   await flush();
 });
 
-describe('selectPhoto / clear / closePopup', () => {
+describe('selectPhoto', () => {
   test('selectPhoto stores the uuid', () => {
     selection.selectPhoto('p1');
     expect(selection.selectedPhotoUuid.get()).toBe('p1');
@@ -65,28 +68,6 @@ describe('selectPhoto / clear / closePopup', () => {
     await flush();
     selection.selectPhoto('p1');
     await flush();
-    expect(interactionMode.current.get()).toBe('measure');
-  });
-
-  test('clear unsets uuid and exits any active mode', async () => {
-    selection.selectPhoto('p1');
-    interactionMode.enter('measure');
-    await flush();
-    selection.clear();
-    await flush();
-    expect(selection.selectedPhotoUuid.get()).toBe(null);
-    expect(interactionMode.current.get()).toBe(null);
-  });
-
-  test('closePopup unsets uuid but preserves mode', async () => {
-    data.photos.set([photo({ uuid: 'p1' })]);
-    await flush();
-    selection.selectPhoto('p1');
-    interactionMode.enter('measure');
-    await flush();
-    selection.closePopup();
-    await flush();
-    expect(selection.selectedPhotoUuid.get()).toBe(null);
     expect(interactionMode.current.get()).toBe('measure');
   });
 });
@@ -177,65 +158,82 @@ describe('next / prev navigation', () => {
   });
 });
 
-describe('toggleOldestNewest', () => {
+describe('the selection invariant', () => {
   const photos = [
     photo({ uuid: 'old', date: '2023:01:01 00:00:00' }),
-    photo({ uuid: 'mid', date: '2024:06:01 00:00:00' }),
+    photo({ uuid: 'mid', date: '2024:06:01 00:00:00', albums: ['Tampere'] }),
     photo({ uuid: 'new', date: '2025:12:01 00:00:00' })
   ];
 
-  test('selects the oldest when nothing is selected', () => {
+  test('auto-selects the oldest once photos load', async () => {
     data.photos.set([...photos]);
-    selection.toggleOldestNewest();
-    expect(selection.selectedPhotoUuid.get()).toBe('old');
-  });
-
-  test('swaps oldest → newest', () => {
-    data.photos.set([...photos]);
-    selection.selectPhoto('old');
-    selection.toggleOldestNewest();
-    expect(selection.selectedPhotoUuid.get()).toBe('new');
-  });
-
-  test('swaps newest → oldest', () => {
-    data.photos.set([...photos]);
-    selection.selectPhoto('new');
-    selection.toggleOldestNewest();
-    expect(selection.selectedPhotoUuid.get()).toBe('old');
-  });
-
-  test('does nothing when current selection is neither oldest nor newest', () => {
-    data.photos.set([...photos]);
-    selection.selectPhoto('mid');
-    selection.toggleOldestNewest();
-    expect(selection.selectedPhotoUuid.get()).toBe('mid');
-  });
-});
-
-describe('auto-clear when photo leaves filtered set', () => {
-  test('clears selection when filter excludes the selected photo', async () => {
-    data.photos.set([
-      photo({ uuid: 'a', albums: ['Helsinki'] }),
-      photo({ uuid: 'b', albums: ['Tampere'] })
-    ]);
     await flush();
-    selection.selectPhoto('a');
+    expect(selection.selectedPhotoUuid.get()).toBe('old');
+  });
+
+  test('auto-selects when a filter drops the selected photo', async () => {
+    data.photos.set([...photos]);
+    await flush();
+    selection.selectPhoto('new');
     await flush();
     data.setAlbum('Tampere');
     await flush();
+    expect(selection.selectedPhotoUuid.get()).toBe('mid');
+  });
+
+  test('keeps a selection that survives the filter change', async () => {
+    data.photos.set([...photos]);
+    await flush();
+    selection.selectPhoto('mid');
+    await flush();
+    data.setAlbum('Tampere');
+    await flush();
+    expect(selection.selectedPhotoUuid.get()).toBe('mid');
+  });
+
+  test('is null only when the filters match nothing', async () => {
+    // The default Location filter excludes `none`, so a library of unplaced
+    // photos filters down to nothing.
+    data.photos.set([photo({ uuid: 'unplaced', gps: 'none' })]);
+    await flush();
+    expect(data.filteredPhotos.get()).toHaveLength(0);
     expect(selection.selectedPhotoUuid.get()).toBe(null);
   });
 
-  test('keeps selection when the photo remains in filtered set', async () => {
-    data.photos.set([
-      photo({ uuid: 'a', albums: ['Helsinki', 'Tampere'] }),
-      photo({ uuid: 'b', albums: ['Tampere'] })
-    ]);
+  test('restores the dropped photo when it comes back', async () => {
+    data.photos.set([...photos]);
     await flush();
-    selection.selectPhoto('a');
+    selection.selectPhoto('new');
     await flush();
     data.setAlbum('Tampere');
     await flush();
-    expect(selection.selectedPhotoUuid.get()).toBe('a');
+    data.setAlbum('all');
+    await flush();
+    expect(selection.selectedPhotoUuid.get()).toBe('new');
+  });
+
+  test('a user selection forgets the dropped photo', async () => {
+    data.photos.set([...photos]);
+    await flush();
+    selection.selectPhoto('new');
+    await flush();
+    data.setAlbum('Tampere');
+    await flush();
+    selection.selectPhoto('mid');
+    data.setAlbum('all');
+    await flush();
+    expect(selection.selectedPhotoUuid.get()).toBe('mid');
+  });
+
+  test('counts auto-selects but not user selections', async () => {
+    data.photos.set([...photos]);
+    await flush();
+    const afterLoad = selection.autoSelectCount.get();
+    selection.selectPhoto('new');
+    await flush();
+    expect(selection.autoSelectCount.get()).toBe(afterLoad);
+    data.setAlbum('Tampere');
+    await flush();
+    expect(selection.autoSelectCount.get()).toBe(afterLoad + 1);
   });
 });

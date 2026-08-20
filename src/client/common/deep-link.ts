@@ -1,3 +1,5 @@
+import { signal } from '@lit-labs/signals';
+
 import * as data from './data';
 import type { Photo } from './types';
 import { updateUrl } from './url-state';
@@ -17,12 +19,16 @@ import { updateUrl } from './url-state';
 const params = new URLSearchParams(location.search);
 const requestedUuid = params.get('focus') === '1' ? params.get('id') : null;
 
-/** Whether this page load came from a deep link that still needs acting on. */
+/**
+ * Whether this page load came from a deep link that still needs acting on.
+ * Reads a signal, so callers inside an effect re-run when it is acted on —
+ * `@common/selection` waits on this before deciding a seeded uuid is stale.
+ */
 export function pending() {
-  return requestedUuid !== null && !consumed;
+  return requestedUuid !== null && !consumed.get();
 }
 
-let consumed = false;
+const consumed = signal(false);
 
 /**
  * Act on the deep link now that photos are in: widen the filters so the
@@ -33,7 +39,7 @@ let consumed = false;
  * `id` param at load; it just couldn't resolve while the filters hid it.
  */
 export function resolve(photos: Photo[]): Photo | null {
-  consumed = true;
+  consumed.set(true);
   // A deep link is a one-shot instruction, not state. Drop `focus` either
   // way so it can't survive into the persisted view and fire again on the
   // next launch.

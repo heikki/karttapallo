@@ -11,8 +11,11 @@ import { MapFeatureElement } from '@components/map-view/api';
 
 function onPlacementClick(e: MapMouseEvent) {
   const uuid = selection.selectedPhotoUuid.get();
+  // Unreachable in practice: placement is entered from the popup, which
+  // needs a selection. Bail out of the mode rather than place a coord on
+  // nothing.
   if (uuid === null) {
-    selection.clear();
+    interactionMode.exit();
     return;
   }
   e.preventDefault();

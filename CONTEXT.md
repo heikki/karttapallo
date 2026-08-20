@@ -35,6 +35,10 @@ A coord or time change buffered client-side via `@common/edits` signals, not yet
 **Location precision**:
 The GPS-source classification on each item: `Exif` (camera-set), `Inferred` (Photos.app guessed), `User` (manually set), or `None` (no GPS). Drives marker color and the Location filter.
 
+**Selection**:
+The one **Photo** the app is currently about — its popup is open, the **Info panel** describes it, and the arrow keys step from it. Held as a UUID in `@common/selection` and mirrored to the `id` URL param. Null only when no photo passes the current filters: whenever the filtered set is non-empty the app keeps a Selection, auto-selecting the oldest (or the one a filter change last displaced) if the current one falls out. Because it is never idly null, the popup is not dismissable — see [ADR-0016](docs/adr/0016-always-keep-a-selection.md).
+_Avoid_: active photo, current photo, cursor.
+
 **Info panel**:
 The floating panel describing the selected photo (`<info-panel>`), toggled with Cmd+I. Named for what Photos.app and Finder call the same thing under the same key, and because it acts as well as reports — album names filter the map, the UUID copies and links out. The server side of it keeps the older name: `/api/metadata` really does serve metadata.
 _Avoid_: metadata modal, inspector.
@@ -69,6 +73,7 @@ The marker rendering — `Classic` (color-coded circles) or `Points` (white WebG
 - An **Album** has zero or more **Items**, zero or more **GPX Tracks**, and at most one **Route**.
 - An **Item** belongs to zero or more **Albums** (Apple Photos is many-to-many).
 - A **Pending Edit** targets exactly one **Item** by UUID.
+- A **Selection** names at most one **Photo**, and names none only when the filters match none.
 - A **Route** references **Items** by UUID; reconciliation drops references to items no longer in the album.
 - An **Interaction mode** is mutually exclusive with the others; only one is active at a time.
 

@@ -1,4 +1,7 @@
+import { signal } from '@lit-labs/signals';
+
 import * as data from '@common/data';
+import * as deepLink from '@common/deep-link';
 import * as interactionMode from '@common/interaction-mode';
 import { effect } from '@common/signals';
 import type { Photo } from '@common/types';
@@ -9,10 +12,15 @@ export const selectedPhotoUuid = urlSignal<string | null>(
   (raw) => raw,
   (v) => v
 );
-// Captured at module load: the URL-seeded uuid (if any). Used by the
-// restoration effect below to decide whether the seed actually points
-// at a photo we have, independent of any later user-initiated changes.
-const seedUuid = selectedPhotoUuid.get();
+
+// Bumped every time the app chooses for the user. `<map-fit>` watches it to
+// fit the camera; nothing else should care that a selection was automatic.
+const autoSelectCount = signal(0);
+
+// Whatever the last filter change knocked out of the filtered set, preferred
+// over the oldest photo if it comes back — so flicking a solo toggle off and
+// on returns you to where you were. Cleared whenever the user selects.
+let droppedUuid: string | null = null;
 
 function getPhoto(): Photo | undefined {
   const uuid = selectedPhotoUuid.get();
@@ -36,22 +44,12 @@ function isPopupOpen() {
 }
 
 function selectPhoto(uuid: string) {
+  droppedUuid = null;
   selectedPhotoUuid.set(uuid);
   // Placement targeted the previous selection.
   if (interactionMode.current.get() === 'placement') {
     interactionMode.exit();
   }
-}
-
-function clear() {
-  selectedPhotoUuid.set(null);
-  interactionMode.exit();
-}
-
-// Close the popup without touching interactionMode — measure and
-// route-edit shouldn't exit when the user dismisses the popup.
-function closePopup() {
-  selectedPhotoUuid.set(null);
 }
 
 function next() {
@@ -76,53 +74,55 @@ function prev() {
   return true;
 }
 
-function toggleOldestNewest() {
-  const photos = data.filteredPhotos.get();
-  if (photos.length === 0) return;
-  let oldestIdx = 0;
-  let newestIdx = 0;
-  for (let i = 1; i < photos.length; i++) {
-    if (photos[i]!.date < photos[oldestIdx]!.date) oldestIdx = i;
-    if (photos[i]!.date > photos[newestIdx]!.date) newestIdx = i;
-  }
-  const cur = selectedPhotoUuid.get();
-  if (cur === photos[oldestIdx]!.uuid) {
-    selectPhoto(photos[newestIdx]!.uuid);
-  } else if (cur === photos[newestIdx]!.uuid) {
-    selectPhoto(photos[oldestIdx]!.uuid);
-  } else if (cur === null) {
-    selectPhoto(photos[oldestIdx]!.uuid);
-  }
+// `filteredPhotos` inherits `loadPhotos`'s sort, so [0] is the oldest.
+function pick(uuid: string) {
+  selectedPhotoUuid.set(uuid);
+  autoSelectCount.set(autoSelectCount.get() + 1);
 }
 
-let restoredFromUrl = false;
+// The selection invariant (ADR-0016): null only when the filters match
+// nothing. One-shot `everLoaded`, like data.ts's cascade: before the first
+// load an empty set means "still loading" and a URL-seeded uuid must survive
+// the wait; after it, an empty set is real and the seed is stale.
+let everLoaded = false;
 effect(() => {
   const filtered = data.filteredPhotos.get();
-  if (!restoredFromUrl) {
-    if (seedUuid === null) {
-      restoredFromUrl = true;
-      return;
-    }
-    if (filtered.some((p) => p.uuid === seedUuid)) {
-      // Signal already seeded from URL — no .set() needed.
-      restoredFromUrl = true;
-    }
+  if (data.photos.get().length > 0) everLoaded = true;
+  if (!everLoaded) return;
+  // A deep link widens the filters a beat later, so a seed that isn't in the
+  // filtered set yet isn't stale — just early. `pending()` reads a signal, so
+  // this re-runs once the link is acted on either way.
+  if (deepLink.pending()) return;
+
+  const cur = selectedPhotoUuid.get();
+
+  // A displaced photo coming back outranks whatever was auto-selected in its
+  // place. Without this the replacement usually survives the widening and the
+  // memory would never pay out — flicking a solo toggle off and on has to
+  // return you to where you were.
+  const back = filtered.find((p) => p.uuid === droppedUuid);
+  if (back !== undefined) {
+    droppedUuid = null;
+    if (back.uuid !== cur) pick(back.uuid);
     return;
   }
-  const cur = selectedPhotoUuid.get();
-  if (cur === null) return;
-  if (!filtered.some((p) => p.uuid === cur)) clear();
+
+  if (cur !== null && filtered.some((p) => p.uuid === cur)) return;
+  if (cur !== null) droppedUuid = cur;
+  if (filtered.length === 0) {
+    selectedPhotoUuid.set(null);
+    return;
+  }
+  pick(filtered[0]!.uuid);
 });
 
 export default {
   selectedPhotoUuid,
+  autoSelectCount,
   getPhoto,
   getPhotoIndex,
   isPopupOpen,
   selectPhoto,
-  clear,
-  closePopup,
   next,
-  prev,
-  toggleOldestNewest
+  prev
 };

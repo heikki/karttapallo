@@ -43,12 +43,30 @@ function calculatePanOffset(
   return { panX, panY };
 }
 
-/** Wait for popup layout to settle, then call fn. */
-function afterPopupLayout(fn: () => void) {
-  // Double rAF ensures the browser has painted the popup at its final position
+/** Run fn once the browser has painted, so measured rects are final. */
+function afterPaint(fn: () => void) {
   requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
+    requestAnimationFrame(fn);
+  });
+}
+
+/**
+ * Wait for popup layout — and for the camera — to settle, then call fn.
+ *
+ * Both matter. The paint wait ensures the popup is at its final position; the
+ * camera wait ensures that position is the one it will keep. A rect measured
+ * mid-flight describes where the popup happens to be a frame or two into a
+ * `fitBounds`, so acting on it both pans to the wrong place and cuts the
+ * animation short.
+ */
+function afterPopupLayout(map: MapGL, fn: () => void) {
+  afterPaint(() => {
+    if (!map.isMoving()) {
       fn();
+      return;
+    }
+    void map.once('moveend', () => {
+      afterPaint(fn);
     });
   });
 }
@@ -67,10 +85,9 @@ function panBy(map: MapGL, panX: number, panY: number, duration: number) {
  * Used for initial popup show (click on marker).
  */
 export function panToFitPopup(map: MapGL, popup: Popup) {
-  afterPopupLayout(() => {
+  afterPopupLayout(map, () => {
     const rects = getPopupRect(map, popup);
     if (rects === null) return;
-    map.stop();
     const { panX, panY } = calculatePanOffset(rects.mapRect, rects.popupRect);
     panBy(map, panX, panY, 300);
   });
@@ -88,7 +105,7 @@ export function flyToPopupTo(
   popup: Popup,
   coords: [number, number]
 ) {
-  afterPopupLayout(() => {
+  afterPopupLayout(map, () => {
     const rects = getPopupRect(map, popup);
     if (rects === null) return;
     const { panX, panY } = calculatePanOffset(rects.mapRect, rects.popupRect);
@@ -110,7 +127,7 @@ export function flyToPopupTo(
       }
       function onMoveEnd() {
         map.off('moveend', onMoveEnd);
-        afterPopupLayout(() => {
+        afterPopupLayout(map, () => {
           const r = getPopupRect(map, popup);
           if (r === null) return;
           const adj = calculatePanOffset(r.mapRect, r.popupRect);

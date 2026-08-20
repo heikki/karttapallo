@@ -39,8 +39,8 @@ export class MapPopup extends MapFeatureElement {
     uuid: string;
   } | null = null;
   // Set during forceRemount so the 'close' handler skips its
-  // external-teardown selection clear.
-  private suppressCloseClear = false;
+  // external-teardown remount.
+  private suppressCloseRemount = false;
   private navSeq = 0;
 
   override firstUpdated() {
@@ -91,18 +91,14 @@ export class MapPopup extends MapFeatureElement {
     }
   }
 
-  // Escape priority: date-edit > interaction mode > popup-close. Date edit
-  // wins so a stray Escape doesn't lose the edit row; mode-exit wins over
-  // popup-close so e.g. exiting placement returns to the popup instead of
-  // dismissing it.
+  // Escape priority: date-edit > interaction mode. Date edit wins so a stray
+  // Escape doesn't lose the edit row. There is no third rung: the selection
+  // outlives Escape, so exiting placement returns to the popup rather than
+  // dismissing it, and Escape on a bare popup does nothing (ADR-0016).
   private handleEscape(e: KeyboardEvent) {
     e.preventDefault();
     if (this.mounted?.el.closeDateEdit() === true) return;
-    if (interactionMode.current.get() !== null) {
-      interactionMode.exit();
-      return;
-    }
-    if (selection.isPopupOpen()) selection.closePopup();
+    if (interactionMode.current.get() !== null) interactionMode.exit();
   }
 
   /** Current MapLibre Popup, if any. */
@@ -116,9 +112,9 @@ export class MapPopup extends MapFeatureElement {
    */
   forceRemount() {
     if (this.mounted === null) return;
-    this.suppressCloseClear = true;
+    this.suppressCloseRemount = true;
     this.mounted.popup.remove();
-    this.suppressCloseClear = false;
+    this.suppressCloseRemount = false;
     this.applySelection();
   }
 
@@ -178,9 +174,13 @@ export class MapPopup extends MapFeatureElement {
 
     popup.on('close', () => {
       this.mounted = null;
-      if (!this.suppressCloseClear && selection.isPopupOpen()) {
-        // Closed via MapLibre's own teardown (e.g. setStyle); keep state in sync.
-        selection.closePopup();
+      if (!this.suppressCloseRemount && selection.isPopupOpen()) {
+        // Closed via MapLibre's own teardown (e.g. setStyle). The selection
+        // outlives the popup, so put it back — deferred because we're inside
+        // `remove()`, and building a popup there re-enters MapLibre's render.
+        queueMicrotask(() => {
+          this.applySelection();
+        });
       }
     });
 

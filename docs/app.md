@@ -10,6 +10,7 @@ Lit + signals client (`src/client/`), Bun server (`src/server/`), ObjC++ native 
 - **Layer order** = template order — see [ADR-0008](adr/0008-dom-order-as-z-order.md). `<map-markers>` keeps its z-position across runtime layer swaps via the invisible `markers-anchor` symbol layer.
 - **State** lives in `@lit-labs/signals` stores under `@common/` — see [ADR-0004](adr/0004-signals-for-state.md). The stores are `data`, `edits`, `selection`, `view-state`, `interaction-mode`, plus the `urlSignal()` primitive in `url-state`.
 - **Interaction modes** (`placement` | `measure` | `route-edit`) are mutually exclusive via one signal — see [ADR-0009](adr/0009-single-interaction-mode-signal.md).
+- **Selection** is never idly empty: the app auto-selects when a filter change leaves it without one, and fits the camera when it does — see [ADR-0016](adr/0016-always-keep-a-selection.md).
 - **Commands** live alongside the state they touch (`data.*` verbs, `interactionMode.*`, `selection.*`). `@common/actions` is the one-shot verbs barrel for Lit components — modal openers, MapApi forwarders, and `saveEdits` — see [ADR-0011](adr/0011-actions-as-one-shot-verbs-barrel.md). Multi-step orchestrations (e.g. the Reset button's filter + URL + viewState + map sequence) stay inlined at their call site.
 
 ### Startup
@@ -65,7 +66,7 @@ Pinned at 1.16.0 — see [ADR-0001](adr/0001-pin-electrobun-1.16.0.md). The laun
 App state persists in URL query params, restored on startup:
 
 - Filters: `year`, `album`, `camera`, `gps`, `media`, `q` (applied search term)
-- Selection: `id` (photo UUID)
+- Selection: `id` (photo UUID) — present whenever any photo passes the filters, since the app always keeps one selected ([ADR-0016](adr/0016-always-keep-a-selection.md))
 - Map view: `lat`, `lon`, `z`
 - Styles: `style` (basemap), `markers` (marker style)
 - Route: `route` (presence = visible)

@@ -46,7 +46,8 @@ test('Find a specific photo on the map', async ({ page }) => {
   await expect(page.locator('photo-lightbox[active]')).toHaveCount(0);
   await expect(popup).toBeVisible();
 
-  // Escape again dismisses the popup itself.
+  // Escape stops there: the selection outlives it, so a second press leaves
+  // the popup where it is (ADR-0016).
   await page.keyboard.press('Escape');
-  await expect(page.locator('photo-popup')).toHaveCount(0);
+  await expect(popup).toBeVisible();
 });

@@ -186,3 +186,9 @@ The **xattr** (`com.apple.metadata:com_apple_backup_excludeItem`, value `bplist0
 So derived data goes in `~/Library/Caches/Karttapallo/` and no `tmutil` call appears anywhere in the app ([ADR-0015](adr/0015-store-library-data-inside-the-bundle.md)). Check with `tmutil isexcluded <path>`, which reports which mechanism applied.
 
 Note also that an external volume must be opted in explicitly: `defaults read /Library/Preferences/com.apple.TimeMachine IncludedVolumeUUIDs` lists them, and `SkipPaths` lists the per-path exclusions. A library on a drive that is not in `IncludedVolumeUUIDs` is not backed up at all, which is what makes "the bundle is covered, so pruning can delete outright" a claim worth re-checking rather than assuming.
+
+### A photo with no location is a marker at null island, not an absent marker
+
+`getEffectiveCoords` falls back to `{ lat: 0, lon: 0 }`, so an unplaced photo plots off the coast of Africa rather than not plotting at all, and `computePhotoBounds` extends the fit to include it. The default Location filter hides `None`, which is why this stays out of sight most of the time.
+
+Since [ADR-0016](adr/0016-always-keep-a-selection.md) it is much easier to meet: every auto-select fits, and soloing `None` — the "show me everything that needs fixing" workflow — selects an unplaced photo and fits to it, so the camera lands on empty ocean with a popup over it. That behaviour is correct as far as the selection rule goes (excluding unplaced photos from auto-select would break the one workflow the app exists for); what is wrong is the coordinate fallback conflating "no location" with `0,0`. Fixing it means separating the two at the type level, not special-casing the fit.
