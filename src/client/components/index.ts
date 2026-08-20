@@ -1,6 +1,7 @@
 import './files-modal';
 import './app-root';
 import './filter-panel';
+import './map-accuracy-ring';
 import './map-fit';
 import './map-gpx';
 import './map-markers';

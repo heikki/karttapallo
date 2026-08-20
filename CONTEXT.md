@@ -35,6 +35,9 @@ A coord or time change buffered client-side via `@common/edits` signals, not yet
 **Location precision**:
 The GPS-source classification on each item: `Exif` (camera-set), `Inferred` (Photos.app guessed), `User` (manually set), or `None` (no GPS). Drives marker color and the Location filter.
 
+**Accuracy ring**:
+The dashed circle drawn on the ground around the selected photo, its radius the horizontal accuracy the camera recorded, in metres. Answers how much to trust a pin, so it exists only where something was actually measured: an `Exif` **Location precision** and no **Pending Edit**. Distinct from **Location precision** — that is a four-way classification of where a location came from, this is a distance.
+
 **Selection**:
 The one **Photo** the app is currently about — its popup is open, the **Info panel** describes it, and the arrow keys step from it. Held as a UUID in `@common/selection` and mirrored to the `id` URL param. Null only when no photo passes the current filters: whenever the filtered set is non-empty the app keeps a Selection, auto-selecting the oldest (or the one a filter change last displaced) if the current one falls out. Because it is never idly null, the popup is not dismissable — see [ADR-0016](docs/adr/0016-always-keep-a-selection.md).
 _Avoid_: active photo, current photo, cursor.
@@ -76,6 +79,7 @@ The marker rendering — `Classic` (color-coded circles) or `Points` (white WebG
 - A **Selection** names at most one **Photo**, and names none only when the filters match none.
 - A **Route** references **Items** by UUID; reconciliation drops references to items no longer in the album.
 - An **Interaction mode** is mutually exclusive with the others; only one is active at a time.
+- An **Accuracy ring** belongs to the **Selection**, and only while the **Info panel** is open.
 
 ## Flagged ambiguities
 

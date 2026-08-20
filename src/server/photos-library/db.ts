@@ -248,6 +248,24 @@ function formatCamera(
   return formatCameraBrand(m, mod);
 }
 
+/**
+ * Photos records no flag for who set a location, so the source is inferred
+ * from the accuracy value itself. Two of the branches are exact-match guesses
+ * at values nothing measured, and they are not equally sound:
+ *
+ * - `-1` for Apple's own guess and `1.0` for an osxphotos batch-edit both hold
+ *   up — the `1.0` assets in the working library sit ~2 km from the EXIF
+ *   coordinates still in their originals, so they really were overwritten.
+ * - `10.0` does not. iPhone 6 / SE write exactly `10 m` as a genuine EXIF
+ *   `GPSHPositioningError`, and every `10.0` asset in the Lost and Found
+ *   library matches its original's EXIF coordinates to six decimals — camera
+ *   fixes, all of them, reported here as user-placed.
+ *
+ * Fixing that needs the original file, which is the only place the camera's
+ * measurement survives an edit: coordinates matching the EXIF mean a camera
+ * fix, absent or disagreeing means someone moved it. Deliberately not done —
+ * it costs an EXIF read per asset, and the misreading is cosmetic.
+ */
 function determineGpsSource(
   accuracy: number | null
 ): 'user' | 'exif' | 'inferred' | null {

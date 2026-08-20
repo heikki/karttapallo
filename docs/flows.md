@@ -9,6 +9,7 @@ Canonical inventory of user-visible flows. Each Tier 5 e2e spec maps to one or m
 - **View a photo full size** — lightbox shows the photo and nothing else; arrows cycle; Escape/Space/backdrop closes; trackpad pinch zooms.
 - **Watch a video** — videos play inline in lightbox; native controls auto-hide; Enter toggles play/pause (Space closes the lightbox, whatever is in it); mute persists across videos.
 - **View photo info** — Cmd+I toggles a floating panel: fields from `Photos.sqlite` plus Place and Categories, grouped under Photos / File / Capture / Location by where the value came from, empty groups omitted. Album names filter the map to that album; UUID copies and links to Photos.app. Movable, non-blocking; Cmd+I / X / Escape closes.
+- **See how accurate a photo's location is** — with the Info panel open, an `Exif` photo's marker gets a dashed circle the size of the accuracy the camera recorded, so a metre-perfect fix and a kilometre-wide one stop looking alike. Nothing is drawn for a location Photos guessed or you placed, or once you move the pin yourself.
 - **Open a photo from a link** — a `karttapallo://photo/<uuid>` link opens the app (launching it if needed) on that photo: filters widen so it's visible, the map moves to it, and the popup opens.
 
 ## Filter

@@ -40,6 +40,8 @@ interface SeedSpec {
   camera: string;
   lat: number;
   lon: number;
+  /** Metres, as Photos records it for an exif fix. Defaults to a tight one. */
+  gpsAccuracy?: number;
   place?: string;
   description?: string;
   labels?: string[];
@@ -57,7 +59,7 @@ function seed(s: SeedSpec): ItemEntry {
     tz: '+03:00',
     camera: s.camera,
     gps: 'exif',
-    gps_accuracy: 5,
+    gps_accuracy: s.gpsAccuracy ?? 5,
     albums: s.albums,
     // Specs seed at most one of each; the real index attaches a list.
     place: s.place === undefined ? [] : [s.place],
@@ -101,6 +103,9 @@ const items: ItemEntry[] = [
     camera: 'iPhone',
     lat: 61.51,
     lon: 23.79,
+    // Two orders of magnitude looser than the others, so a spec can tell the
+    // ring is drawn from this photo's own accuracy and not a constant.
+    gpsAccuracy: 300,
     place: 'Näätämö',
     description: 'Käki',
     // Long enough to wrap the Categories row over several lines, which is the

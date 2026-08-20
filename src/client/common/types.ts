@@ -11,6 +11,11 @@ export interface Photo {
   tz: string | null;
   camera: string | null;
   gps: string | null;
+  /**
+   * Horizontal accuracy in metres. A real measurement only where `gps` is
+   * `exif`; the other sources carry a placeholder — see `accuracyRing`.
+   */
+  gps_accuracy: number | null;
   albums: string[];
   /** The search corpus, from psi.sqlite — see ItemEntry on the server. */
   place: string[];

@@ -52,6 +52,7 @@ function photo(overrides: Partial<Photo> = {}): Photo {
     tz: '+00:00',
     camera: null,
     gps: 'exif',
+    gps_accuracy: 5,
     albums: [],
     place: [],
     description: [],

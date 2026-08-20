@@ -3,6 +3,7 @@ import { html, LitElement, nothing } from 'lit';
 import { customElement, state as litState, property } from 'lit/decorators.js';
 
 import * as data from '@common/data';
+import { infoPanelOpen } from '@common/panels';
 import selection from '@common/selection';
 
 import { styles } from './styles';
@@ -263,6 +264,7 @@ export class InfoPanel extends SignalWatcher(LitElement) {
     this._error = null;
     this._startLoading();
     this.active = true;
+    infoPanelOpen.set(true);
 
     void fetch(`/api/metadata/${uuid}`)
       .then((r) => {
@@ -327,6 +329,7 @@ export class InfoPanel extends SignalWatcher(LitElement) {
 
   private _close() {
     this.active = false;
+    infoPanelOpen.set(false);
     this.shownUuid = null;
     this._clearLoadingTimer();
     this._loading = false;

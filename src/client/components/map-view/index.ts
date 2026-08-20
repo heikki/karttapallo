@@ -158,6 +158,7 @@ export class MapView extends LitElement implements MapApi {
         : html`
             <map-gpx></map-gpx>
             <map-route></map-route>
+            <map-accuracy-ring></map-accuracy-ring>
             <map-markers></map-markers>
             <map-measure></map-measure>
             <map-popup></map-popup>
