@@ -2,12 +2,12 @@
 
 Geotagged photo map viewer with Apple Photos integration.
 
-## Project Stats (as of 02.08.2026)
+## Project Stats (as of 20.08.2026)
 
 - **TypeScript files**: 125
-- **Lines of code**: 16,574 (+ 6,003 tests)
-- **Total commits**: 666
-- **Total tokens**: ~3,154M | **Total cost**: ~$2,053
+- **Lines of code**: 16,599 (+ 6,022 tests)
+- **Total commits**: 669
+- **Total tokens**: ~3,169M | **Total cost**: ~$2,065
 
 ## Updating This Diary
 
@@ -36,6 +36,16 @@ git log --pretty=format:"%ad|%s" --date=format:"%Y-%m-%d" | head -50  # Recent c
 - Skip minor tweaks — only significant features and fixes belong, especially on busy days.
 - Describe final outcomes, not reverted intermediate attempts.
 - Flat list, no sub-bullets or prose.
+
+## 20.08.2026 — The map always has a photo chosen
+
+**Tokens**: 15M | **Cost**: $11.77
+
+- One photo is always selected with its popup open, unless the filters match nothing
+- A filter that hides the chosen photo moves to the oldest one left and fits the map to it
+- Flicking a filter off and on returns to the photo it pushed out rather than stranding you
+- The popup belongs to the selection now: Escape and a stray map click no longer dismiss it
+- Fixed an opening camera that settled in a different place from one launch to the next
 
 ## 02.08.2026 — Search follows Photos' own index, and routes move in with the library
 
