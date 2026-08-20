@@ -17,6 +17,7 @@ import { openItemStore, type ItemEntry } from '@server/item-store';
 import { createOrsClient } from '@server/ors-client';
 import type { PhotosLibrary } from '@server/photos-library';
 import { createRequestHandler } from '@server/request-handler';
+import { setSetting } from '@server/state';
 import { serve } from 'bun';
 
 const port = Number(process.env.E2E_PORT ?? 4757);
@@ -189,7 +190,10 @@ const photosLibrary: PhotosLibrary = {
 
 const albumStore = createAlbumStore(bundleDir, () => albums);
 const orsClient = createOrsClient(dataDir);
-const { routeApiRequest } = createApiHandler(bundleDir, {
+const { routeApiRequest } = createApiHandler({
+  saveView: (params) => {
+    setSetting(bundleDir, 'view', JSON.stringify(params));
+  },
   itemStore,
   photosLibrary,
   albumStore,

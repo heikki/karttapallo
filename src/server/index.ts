@@ -204,7 +204,10 @@ itemStore.rebuildComplete
   .catch(() => {
     /* a failed rebuild says nothing about which albums are live */
   });
-const { routeApiRequest } = createApiHandler(bundleDir, {
+const { routeApiRequest } = createApiHandler({
+  saveView: (params) => {
+    setSetting(bundleDir, 'view', JSON.stringify(params));
+  },
   itemStore,
   photosLibrary,
   albumStore,

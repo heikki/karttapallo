@@ -16,6 +16,7 @@ import {
   resolveLibrary
 } from './photos-library';
 import { createRequestHandler } from './request-handler';
+import { setSetting } from './state';
 
 const supportDir = '.data';
 
@@ -90,7 +91,10 @@ itemStore.rebuildComplete
     console.error('[item-store] Rebuild failed:', err);
   });
 
-const { routeApiRequest } = createApiHandler(bundleDir, {
+const { routeApiRequest } = createApiHandler({
+  saveView: (params) => {
+    setSetting(bundleDir, 'view', JSON.stringify(params));
+  },
   itemStore,
   photosLibrary,
   albumStore,

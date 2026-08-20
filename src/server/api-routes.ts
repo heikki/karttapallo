@@ -7,7 +7,6 @@ import type {
 } from './item-store';
 import type { OrsClient } from './ors-client';
 import type { PhotosLibrary } from './photos-library';
-import { setSetting } from './state';
 import { serveVideo } from './video-stream';
 
 function serverError(context: string, err: unknown): Response {
@@ -33,6 +32,13 @@ export interface EditResultEvent {
 }
 
 interface ApiHandlerOptions {
+  /**
+   * Persist the view params for the open Library. A verb rather than the
+   * Bundle store's path: `view` belongs to that store and nowhere else, and
+   * the session reads it back through the mirror of this — leaving a path here
+   * would enforce that on the read and merely hope for it on the write.
+   */
+  saveView: (params: unknown) => void;
   itemStore: ItemStore;
   photosLibrary: PhotosLibrary;
   albumStore: AlbumStore;
@@ -42,19 +48,20 @@ interface ApiHandlerOptions {
 }
 
 /**
- * Create API route handler parameterized by the library's own store
- * (`<library>.photoslibrary/karttapallo/`) — the only thing it uses that
- * directory for directly is the `view` setting persisted by
- * `PUT /api/view-state`; album files reach it through `albumStore`. Derived
- * data and machine-scoped settings live in the other two roots and are handled
- * outside this seam (ADR-0015).
+ * Create the API route handler over one Library's stores. Nothing here holds a
+ * path: album files reach the Bundle store through `albumStore`, the `view`
+ * setting through `saveView`, and derived data and machine-scoped settings live
+ * in roots this seam never sees (ADR-0015).
  */
-export function createApiHandler(
-  bundleDir: string,
-  options: ApiHandlerOptions
-) {
-  const { itemStore, photosLibrary, albumStore, orsClient, onEditResult } =
-    options;
+export function createApiHandler(options: ApiHandlerOptions) {
+  const {
+    saveView,
+    itemStore,
+    photosLibrary,
+    albumStore,
+    orsClient,
+    onEditResult
+  } = options;
 
   async function handleUploadAlbumFile(
     req: Request,
@@ -266,7 +273,7 @@ export function createApiHandler(
       return req
         .json()
         .then((body: unknown) => {
-          setSetting(bundleDir, 'view', JSON.stringify(body));
+          saveView(body);
           return new Response(null, { status: 204 });
         })
         .catch(() => new Response('Bad request', { status: 400 }));
