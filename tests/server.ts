@@ -8,31 +8,29 @@
  * library access.
  */
 
-import { copyFileSync, mkdirSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import indexHtml from '@client/index.html';
-import { createAlbumStore } from '@server/album-store';
-import { createApiHandler } from '@server/api-routes';
-import { openItemStore, type ItemEntry } from '@server/item-store';
-import { createOrsClient } from '@server/ors-client';
+import type { ItemEntry } from '@server/item-store';
+import { openLibrarySession } from '@server/library-session';
 import type { PhotosLibrary } from '@server/photos-library';
 import { createRequestHandler } from '@server/request-handler';
-import { setSetting } from '@server/state';
 import { serve } from 'bun';
 
 const port = Number(process.env.E2E_PORT ?? 4757);
 const dataDir = process.env.E2E_DATA_DIR ?? 'tests/output/data';
 const fixtureJpeg = 'tests/fixtures/sample.jpg';
 
-// The two roots the production entries build: handmade data inside the library
-// bundle, derived data outside it. There is no real bundle here — the stub
-// PhotosLibrary stands in for one — so both are directories under the test data
-// dir, wired the same way round as in `src/server/index.ts`.
-const bundleDir = join(dataDir, 'library.photoslibrary', 'karttapallo');
+// A stand-in library bundle: no real one exists here — the stub PhotosLibrary
+// below is what serves its bytes — but the session derives the Bundle store
+// from it exactly as it does in production, so the album subtrees land where
+// the specs look for them. `bundleDir` is spelled out only to seed fixtures
+// into; nothing here wires it.
+const libraryPath = join(dataDir, 'library.photoslibrary');
+const bundleDir = join(libraryPath, 'karttapallo');
 const cacheRoot = join(dataDir, 'derived');
 
 mkdirSync(bundleDir, { recursive: true });
-mkdirSync(cacheRoot, { recursive: true });
 
 interface SeedSpec {
   uuid: string;
@@ -129,11 +127,6 @@ const items: ItemEntry[] = [
   })
 ];
 
-// Pre-seed the snapshot so /api/items returns immediately. The buildFreshItems
-// override returns the same list so rebuild detects no changes — no Apple
-// Photos library is touched.
-writeFileSync(join(cacheRoot, 'items.json'), JSON.stringify(items));
-
 // Album directories are keyed by UUID, so the stub roster is what maps the
 // names the specs drive the UI with onto directories on disk.
 const albums = [
@@ -146,22 +139,6 @@ const albums = [
 const tampereDir = join(bundleDir, 'albums', albums[0]!.uuid);
 mkdirSync(tampereDir, { recursive: true });
 copyFileSync('tests/fixtures/track.gpx', join(tampereDir, 'track.gpx'));
-
-// No-op PhotosWriter so /api/save-edits succeeds in E2E without touching the
-// real Photos.app via AppleScript.
-const itemStore = openItemStore({
-  cacheRoot,
-  buildFreshItems: () => items,
-  photosWriter: {
-    setLocation: () => undefined,
-    setDateTime: () => undefined,
-    setTimezone: () => undefined,
-    quitPhotosApp: () => undefined
-  }
-});
-itemStore.rebuildComplete.catch(() => {
-  /* ignored — E2E doesn't depend on rebuild */
-});
 
 // Fake Photos library: every UUID resolves to the same fixture JPEG so popup /
 // lightbox <img> tags load real bytes. Metadata returns a small canned record
@@ -188,20 +165,35 @@ const photosLibrary: PhotosLibrary = {
   })
 };
 
-const albumStore = createAlbumStore(bundleDir, () => albums);
-const orsClient = createOrsClient(dataDir);
-const { routeApiRequest } = createApiHandler({
-  saveView: (params) => {
-    setSetting(bundleDir, 'view', JSON.stringify(params));
-  },
-  itemStore,
-  photosLibrary,
-  albumStore,
-  orsClient
+const session = openLibrarySession({
+  libraryPath,
+  supportDir: dataDir,
+  cacheRoot,
+  adapters: {
+    photosLibrary,
+    // No-op writer so /api/save-edits succeeds without reaching AppleScript,
+    // and a resolver that agrees with the stand-in bundle so the write-time
+    // active-library guard passes instead of comparing against the real
+    // library this machine happens to have open.
+    photosWriter: {
+      setLocation: () => undefined,
+      setDateTime: () => undefined,
+      setTimezone: () => undefined,
+      quitPhotosApp: () => undefined
+    },
+    buildFreshItems: () => items,
+    loadAlbums: () => albums,
+    resolveActiveLibrary: () => ({ ok: true, path: libraryPath })
+  }
 });
 
+// Serve only once the snapshot is in memory. The rebuild is a microtask and
+// Playwright's first request is many milliseconds out, but an ordering the
+// suite depends on is worth stating rather than winning by default.
+await session.rebuildComplete;
+
 const fetch = createRequestHandler({
-  routeApi: routeApiRequest,
+  routeApi: session.routeApiRequest,
   // Client assets only. Album files go through the API, same as production —
   // once album directories are named by UUID, a request path can't name one.
   staticRoots: ['src/client'],

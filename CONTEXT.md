@@ -19,6 +19,10 @@ Photos plus videos collectively, in contexts where the distinction matters (e.g.
 The Apple Photos `.photoslibrary` bundle the app reads from. Always the **active library** — the one Photos.app currently has open — auto-detected from the container bookmark (`IPXDefaultLibraryURLBookmark`), not hardcoded or user-picked. Because the app tracks the active library, AppleScript writes always target the same Library it reads. A Library also **holds** the data the user authored against it, at `<library>/karttapallo/`, so that data travels with the bundle instead of being looked up by path (ADR-0015).
 _Avoid_: Photos DB, catalog.
 
+**Library session**:
+Everything the app holds open for one **Library** — the item store, the album store, the image cache, the routing client, and the API routes over them (`src/server/library-session.ts`). Opened once per launch against the Library resolved at startup and never re-pointed at another, so switching libraries means relaunching (ADR-0012). It owns where the **Bundle store** sits and everything under the **cache root**; it deliberately owns neither resolving the Library, nor serving HTTP, nor where the cache root itself lives — the three entries answer those differently, and that difference is the only reason they are three.
+_Avoid_: app, server, context.
+
 **Bundle store**:
 The `karttapallo/` directory inside a Library, holding its saved view and its album subtrees. Distinct from the **cache root** (`~/Library/Caches/Karttapallo/`), which holds only data derived from the Library and is wiped when a different Library is opened.
 _Avoid_: data dir, library dir — both used to mean the retired per-path hash directory.
@@ -73,6 +77,7 @@ The marker rendering — `Classic` (color-coded circles) or `Points` (white WebG
 ## Relationships
 
 - A **Library** holds zero or more **Albums**, and exactly one **Bundle store** holding what the user authored against them.
+- A **Library session** is opened against exactly one **Library**, and cannot outlive it.
 - An **Album** has zero or more **Items**, zero or more **GPX Tracks**, and at most one **Route**.
 - An **Item** belongs to zero or more **Albums** (Apple Photos is many-to-many).
 - A **Pending Edit** targets exactly one **Item** by UUID.

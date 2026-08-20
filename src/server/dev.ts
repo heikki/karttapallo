@@ -3,20 +3,10 @@ import { join } from 'node:path';
 import indexHtml from '@client/index.html';
 import { serve } from 'bun';
 
-import { createAlbumStore } from './album-store';
-import { createApiHandler, type EditResultEvent } from './api-routes';
-import { claimCacheRoot } from './cache-root';
-import { openItemStore } from './item-store';
-import { createOrsClient } from './ors-client';
-import { createPhotosWriter } from './photos-edit';
-import {
-  createImageCache,
-  openPhotosLibrary,
-  readAlbums,
-  resolveLibrary
-} from './photos-library';
+import type { EditResultEvent } from './api-routes';
+import { openLibrarySession } from './library-session';
+import { resolveLibrary } from './photos-library';
 import { createRequestHandler } from './request-handler';
-import { setSetting } from './state';
 
 const supportDir = '.data';
 
@@ -42,27 +32,12 @@ if (!resolved.ok) {
 const libraryPath = resolved.path;
 mkdirSync(supportDir, { recursive: true });
 
-// Handmade data inside the library, derived data beside the dev support dir —
-// the same split the desktop entry makes, just without ~/Library.
-const bundleDir = join(libraryPath, 'karttapallo');
-const cacheRoot = claimCacheRoot(join(supportDir, 'derived'), libraryPath);
+// Derived data beside the dev support dir rather than in ~/Library — the
+// desktop entry's reason for the Caches directory is Time Machine policy,
+// which a source-tree run has no stake in.
+const cacheRoot = join(supportDir, 'derived');
 console.log(`[main] Library: ${libraryPath}`);
-console.log(`[main] Library data: ${bundleDir}`);
 console.log(`[main] Derived data: ${cacheRoot}`);
-
-const imageCache = createImageCache({
-  cacheDir: join(cacheRoot, 'cache'),
-  libraryPath
-});
-const photosLibrary = openPhotosLibrary({ imageCache, libraryPath });
-const itemStore = openItemStore({
-  cacheRoot,
-  imageCache,
-  libraryPath,
-  photosWriter: createPhotosWriter(libraryPath)
-});
-const albumStore = createAlbumStore(bundleDir, () => readAlbums(libraryPath));
-const orsClient = createOrsClient(supportDir);
 
 function logEditResult(event: EditResultEvent) {
   const dim = '\x1b[2m';
@@ -76,31 +51,24 @@ function logEditResult(event: EditResultEvent) {
     );
   }
 }
-itemStore.rebuildComplete
+const session = openLibrarySession({
+  libraryPath,
+  supportDir,
+  cacheRoot,
+  onEditResult: logEditResult
+});
+
+session.rebuildComplete
   .then((changed) => {
     console.log(
       changed
         ? '[item-store] Rebuilt: items changed'
         : '[item-store] Rebuilt: no changes'
     );
-    // A finished rebuild is the one moment we know the library was readable,
-    // which is what makes a missing album mean the user deleted it.
-    albumStore.pruneOrphans();
   })
   .catch((err: unknown) => {
     console.error('[item-store] Rebuild failed:', err);
   });
-
-const { routeApiRequest } = createApiHandler({
-  saveView: (params) => {
-    setSetting(bundleDir, 'view', JSON.stringify(params));
-  },
-  itemStore,
-  photosLibrary,
-  albumStore,
-  orsClient,
-  onEditResult: logEditResult
-});
 
 const methodColors: Record<string, string> = {
   GET: '\x1b[36m',
@@ -127,7 +95,7 @@ function logRequest(
 }
 
 const fetch = createRequestHandler({
-  routeApi: routeApiRequest,
+  routeApi: session.routeApiRequest,
   staticRoots: ['src/client'],
   vendorFiles: {
     '/maplibre-gl.css': 'node_modules/maplibre-gl/dist/maplibre-gl.css'

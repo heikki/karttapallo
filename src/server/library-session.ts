@@ -92,6 +92,7 @@ export function openLibrarySession(
   // holds a Library's data is a fact about Libraries, not about this entry.
   const bundleDir = join(libraryPath, 'karttapallo');
   const cacheDir = join(cacheRoot, 'cache');
+  console.log(`[session] Library data: ${bundleDir}`);
 
   claimCacheRoot(cacheRoot, libraryPath);
 

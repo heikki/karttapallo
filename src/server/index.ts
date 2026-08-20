@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 
 const {
@@ -9,20 +9,9 @@ const {
   default: Electrobun
 } = await import('electrobun/bun');
 
-const { createAlbumStore } = await import('./album-store');
-const { createApiHandler } = await import('./api-routes');
-const { claimCacheRoot } = await import('./cache-root');
 const { parseDeepLink, deepLinkViewUrl } = await import('./deep-link');
-const { openItemStore } = await import('./item-store');
-const { createOrsClient } = await import('./ors-client');
-const {
-  createImageCache,
-  openPhotosLibrary,
-  readAlbums,
-  resolveLibrary,
-  libraryTitle
-} = await import('./photos-library');
-const { createPhotosWriter } = await import('./photos-edit');
+const { openLibrarySession } = await import('./library-session');
+const { resolveLibrary, libraryTitle } = await import('./photos-library');
 const { createRequestHandler } = await import('./request-handler');
 const { getSetting, setSetting } = await import('./state');
 
@@ -174,45 +163,11 @@ async function resolveLibraryOrExit() {
 
 const libraryPath = await resolveLibraryOrExit();
 
-const bundleDir = join(libraryPath, 'karttapallo');
-const cacheRoot = claimCacheRoot(findCacheRoot(supportDir), libraryPath);
+const cacheRoot = findCacheRoot(supportDir);
 console.log(`[main] Library: ${libraryPath}`);
-console.log(`[main] Library data: ${bundleDir}`);
 console.log(`[main] Derived data: ${cacheRoot}`);
 
-const imageCache = createImageCache({
-  cacheDir: join(cacheRoot, 'cache'),
-  libraryPath
-});
-const photosLibrary = openPhotosLibrary({ imageCache, libraryPath });
-const itemStore = openItemStore({
-  cacheRoot,
-  imageCache,
-  libraryPath,
-  photosWriter: createPhotosWriter(libraryPath)
-});
-const albumStore = createAlbumStore(bundleDir, () => readAlbums(libraryPath));
-const orsClient = createOrsClient(supportDir);
-
-// Prune after the rebuild rather than at startup: a rebuild that finished is
-// the one moment we know the library was readable, which is what makes a
-// missing album mean the user deleted it.
-itemStore.rebuildComplete
-  .then(() => {
-    albumStore.pruneOrphans();
-  })
-  .catch(() => {
-    /* a failed rebuild says nothing about which albums are live */
-  });
-const { routeApiRequest } = createApiHandler({
-  saveView: (params) => {
-    setSetting(bundleDir, 'view', JSON.stringify(params));
-  },
-  itemStore,
-  photosLibrary,
-  albumStore,
-  orsClient
-});
+const session = openLibrarySession({ libraryPath, supportDir, cacheRoot });
 
 const appDir = join(resourcesDir, 'app');
 const viewsDir = join(appDir, 'views', 'app');
@@ -306,7 +261,7 @@ async function checkFullDiskAccess(response: Response, pathname: string) {
 }
 
 const fetch = createRequestHandler({
-  routeApi: routeApiRequest,
+  routeApi: session.routeApiRequest,
   staticRoots: [viewsDir],
   onResponse: async (req, res, pathname) => {
     if (pathname.startsWith('/api/')) {
@@ -377,22 +332,8 @@ const rpc = BrowserView.defineRPC<AppRPC>({
 
 const savedFrame = loadWindowState();
 
-// `view` is per-library (it carries library-specific state — map center,
-// filters, and the selected photo UUID), so it lives in the bundle, not the
-// machine-scoped state.json that holds `window`. Storing it with the library
-// means the view restores on whichever Mac the library is opened on.
-function savedViewParams(): Record<string, string> {
-  try {
-    const raw = getSetting(bundleDir, 'view');
-    if (raw === null) return {};
-    return JSON.parse(raw) as Record<string, string>;
-  } catch {
-    return {};
-  }
-}
-
 function buildViewUrl() {
-  const qs = new URLSearchParams(savedViewParams()).toString();
+  const qs = new URLSearchParams(session.savedView()).toString();
   return qs === '' ? baseUrl : `${baseUrl}?${qs}`;
 }
 
@@ -401,7 +342,11 @@ function buildViewUrl() {
 // where they happened to leave off.
 function initialViewUrl() {
   if (pendingDeepLinkUuid === null) return buildViewUrl();
-  const url = deepLinkViewUrl(baseUrl, pendingDeepLinkUuid, savedViewParams());
+  const url = deepLinkViewUrl(
+    baseUrl,
+    pendingDeepLinkUuid,
+    session.savedView()
+  );
   pendingDeepLinkUuid = null;
   return url;
 }
@@ -432,7 +377,7 @@ if (savedFrame === null) win.maximize();
 // into the gap and be dropped by a handler that still thinks it has nowhere
 // to put it.
 deliverDeepLink = (uuid) => {
-  win.webview.loadURL(deepLinkViewUrl(baseUrl, uuid, savedViewParams()));
+  win.webview.loadURL(deepLinkViewUrl(baseUrl, uuid, session.savedView()));
   win.focus();
 };
 
@@ -509,7 +454,7 @@ async function syncPhotos() {
   syncing = true;
   win.setTitle('Karttapallo — Syncing…');
   try {
-    const changed = await itemStore.rebuild();
+    const changed = await session.rebuild();
     if (changed) win.webview.loadURL(buildViewUrl());
     void Utils.showMessageBox({
       type: 'info',
@@ -534,15 +479,7 @@ async function syncPhotos() {
 
 /** Delete cached images and reload webview. */
 function clearCache() {
-  const cacheFullDir = join(cacheRoot, 'cache', 'full');
-  const cacheThumbDir = join(cacheRoot, 'cache', 'thumb');
-
-  if (existsSync(cacheFullDir)) rmSync(cacheFullDir, { recursive: true });
-  if (existsSync(cacheThumbDir)) rmSync(cacheThumbDir, { recursive: true });
-
-  mkdirSync(cacheFullDir, { recursive: true });
-  mkdirSync(cacheThumbDir, { recursive: true });
-
+  session.clearImageCache();
   console.log('[main] Cache cleared');
   win.webview.loadURL(buildViewUrl());
   void Utils.showMessageBox({
@@ -576,7 +513,7 @@ ApplicationMenu.on('application-menu-clicked', (event: unknown) => {
 // detection skips the reload when the snapshot already matched fresh data —
 // keeps cold starts flicker-free in the common case. By now the webview is
 // fully initialized, so this later loadURL is safe.
-itemStore.rebuildComplete
+session.rebuildComplete
   .then((changed) => {
     if (changed) win.webview.loadURL(buildViewUrl());
     console.log(
