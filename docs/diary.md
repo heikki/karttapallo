@@ -4,10 +4,10 @@ Geotagged photo map viewer with Apple Photos integration.
 
 ## Project Stats (as of 20.08.2026)
 
-- **TypeScript files**: 125
-- **Lines of code**: 16,599 (+ 6,022 tests)
-- **Total commits**: 669
-- **Total tokens**: ~3,169M | **Total cost**: ~$2,065
+- **TypeScript files**: 133
+- **Lines of code**: 16,913 (+ 6,580 tests)
+- **Total commits**: 676
+- **Total tokens**: ~3,209M | **Total cost**: ~$2,095
 
 ## Updating This Diary
 
@@ -37,15 +37,19 @@ git log --pretty=format:"%ad|%s" --date=format:"%Y-%m-%d" | head -50  # Recent c
 - Describe final outcomes, not reverted intermediate attempts.
 - Flat list, no sub-bullets or prose.
 
-## 20.08.2026 — The map always has a photo chosen
+## 20.08.2026 — The map always has a photo chosen; one owner for the server graph
 
-**Tokens**: 15M | **Cost**: $11.77
+**Tokens**: 55M | **Cost**: $42.11
 
 - One photo is always selected with its popup open, unless the filters match nothing
 - A filter that hides the chosen photo moves to the oldest one left and fits the map to it
 - Flicking a filter off and on returns to the photo it pushed out rather than stranding you
 - The popup belongs to the selection now: Escape and a stray map click no longer dismiss it
 - Fixed an opening camera that settled in a different place from one launch to the next
+- Internal: one module owns server startup; the three entries no longer each wire it by hand
+- Internal: the test server gained the cache claim, library seam and album pruning it lacked
+- Internal: each module now owns the files it writes, so no two can disagree on where they live
+- Internal: a failed end-to-end run names the test and the assertion, not just a count
 
 ## 02.08.2026 — Search follows Photos' own index, and routes move in with the library
 
