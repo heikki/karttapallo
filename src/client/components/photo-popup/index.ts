@@ -46,7 +46,6 @@ function computeManualDateOffset(
 @customElement('photo-popup')
 export class PhotoPopup extends SignalWatcher(LitElement) {
   @property({ attribute: false }) photo: Photo | null = null;
-  @property({ type: Number }) index = 0;
 
   // Date edit mode is local UI state. Auto-clears when the photo changes
   // or a save starts (see updated() and firstUpdated() below). Escape inside
@@ -147,10 +146,6 @@ export class PhotoPopup extends SignalWatcher(LitElement) {
       border-color: #007aff;
     }
   `;
-
-  private _onImgClick() {
-    actions.showLightbox(this.index);
-  }
 
   private _onPlacement(e: Event) {
     e.preventDefault();
@@ -462,7 +457,7 @@ export class PhotoPopup extends SignalWatcher(LitElement) {
             src=${getThumbUrl(photo)}
             alt="Photo"
             @click=${() => {
-              this._onImgClick();
+              actions.showLightbox();
             }}
           />
           ${isVideo(photo)

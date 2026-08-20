@@ -91,13 +91,12 @@ export class MapPopup extends MapFeatureElement {
       return;
     }
     if (e.key === ' ') {
-      const idx = selection.getPhotoIndex();
-      if (idx === null) return;
+      if (selection.getPhoto() === undefined) return;
       e.preventDefault();
       // Space steps one rung toward the photo rather than past it: a hidden
       // card comes back, and only from the card does it go full-screen —
       // otherwise Space is the one key that acts on a photo you cannot see.
-      if (selection.popupRevealed.get()) actions.showLightbox(idx);
+      if (selection.popupRevealed.get()) actions.showLightbox();
       else selection.revealPopup();
     }
   }
@@ -171,11 +170,9 @@ export class MapPopup extends MapFeatureElement {
 
   private openPopup(photo: Photo) {
     const { lon, lat } = edits.getEffectiveCoords(photo);
-    const idx = selection.getPhotoIndex() ?? 0;
 
     const el = document.createElement('photo-popup') as PhotoPopup;
     el.photo = photo;
-    el.index = idx;
 
     const popup = new Popup({
       closeButton: false,
@@ -210,9 +207,8 @@ export class MapPopup extends MapFeatureElement {
 
   private movePopupTo(photo: Photo) {
     if (this.mounted === null) return;
-    const idx = selection.getPhotoIndex() ?? 0;
     const { lon, lat } = edits.getEffectiveCoords(photo);
-    this.setContent(photo, idx);
+    this.setContent(photo);
     this.mounted.popup.setLngLat([lon, lat]);
     flyToPopupTo(this.api.map, this.mounted.popup, [lon, lat]);
   }
@@ -225,22 +221,19 @@ export class MapPopup extends MapFeatureElement {
     if (this.mounted === null) return;
     if (selection.getPhoto()?.uuid !== photo.uuid) return;
 
-    const idx = selection.getPhotoIndex() ?? 0;
     const loc = edits.getEffectiveLocation(photo);
     const lng = loc?.lon ?? 0;
     const lat = loc?.lat ?? 0;
 
     this.mounted.uuid = photo.uuid;
-    this.setContent(photo, idx);
+    this.setContent(photo);
     this.mounted.popup.setLngLat([lng, lat]);
     flyToPopupTo(this.api.map, this.mounted.popup, [lng, lat]);
   }
 
-  private setContent(photo: Photo, index: number) {
+  private setContent(photo: Photo) {
     if (this.mounted === null) return;
-    const { el } = this.mounted;
-    el.photo = photo;
-    el.index = index;
+    this.mounted.el.photo = photo;
   }
 }
 

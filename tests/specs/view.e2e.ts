@@ -43,6 +43,13 @@ test('Find a specific photo on the map', async ({ page }) => {
     .poll(() => lightboxImg.evaluate((el: HTMLImageElement) => el.naturalWidth))
     .toBeGreaterThan(0);
 
+  // The lightbox has no cursor of its own: an arrow key steps the selection,
+  // and the lightbox follows it, so one press moves one photo.
+  await page.keyboard.press('ArrowRight');
+  await expect(page).toHaveURL(/id=e2e-2/);
+  await page.keyboard.press('ArrowLeft');
+  await expect(page).toHaveURL(/id=e2e-3/);
+
   // Escape closes the lightbox; popup remains open underneath.
   await page.keyboard.press('Escape');
   await expect(page.locator('photo-lightbox[active]')).toHaveCount(0);

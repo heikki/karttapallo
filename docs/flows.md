@@ -53,4 +53,4 @@ Canonical inventory of user-visible flows. Each Tier 5 e2e spec maps to one or m
 
 ## Dismiss
 
-Priority order: date edit > placement > route edit > measurement > lightbox > popup. The info panel is not on the list — it stays open under Escape and closes by the key and button that opened it. Escape works in every context; clicking outside the active surface, or pressing the key or button that opened it, also dismisses. The popup sits last and is the one entry Escape only hides rather than dismisses: it belongs to the selection, and the selection always has a photo to show.
+Priority order: files modal > date edit > lightbox > the active map mode (placement / route edit / measurement, only ever one at a time) > popup. The info panel is not on the list — it stays open under Escape and closes by the key and button that opened it. Escape works in every context; clicking outside the active surface, or pressing the key or button that opened it, also dismisses. The popup sits last and is the one entry Escape only hides rather than dismisses: it belongs to the selection, and the selection always has a photo to show.

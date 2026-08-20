@@ -2,25 +2,20 @@ import { SignalWatcher } from '@lit-labs/signals';
 import { css, html, LitElement, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 
-import * as actions from '@common/actions';
-import * as data from '@common/data';
-import type { Photo } from '@common/types';
+import selection from '@common/selection';
 import { getFullUrl, getVideoUrl, isVideo } from '@common/utils';
 
 function stopPropagation(e: Event) {
   e.stopPropagation();
 }
 
-export function showLightbox(index: number) {
-  document.querySelector<PhotoLightbox>('photo-lightbox')?.show(index);
+export function showLightbox() {
+  document.querySelector<PhotoLightbox>('photo-lightbox')?.show();
 }
 
 @customElement('photo-lightbox')
 export class PhotoLightbox extends SignalWatcher(LitElement) {
   @property({ type: Boolean, reflect: true }) active = false;
-  @property({ attribute: false }) photo: Photo | null = null;
-  @property({ type: Number }) currentIndex = 0;
-  @property({ type: Number }) totalCount = 0;
 
   private _hideControlsTimer: ReturnType<typeof setTimeout> | null = null;
   private _videoMuted = false;
@@ -29,33 +24,17 @@ export class PhotoLightbox extends SignalWatcher(LitElement) {
   private _ty = 0;
   private _gestureStartScale = 1;
 
-  show(index: number) {
-    this.currentIndex = index;
-    const photo = data.filteredPhotos.get()[index];
-    if (photo === undefined) return;
-    this.photo = photo;
-    this.totalCount = data.filteredPhotos.get().length;
+  show() {
+    if (selection.getPhoto() === undefined) return;
     this.active = true;
   }
 
   hide() {
     this.active = false;
-    this.photo = null;
     if (this._hideControlsTimer !== null) {
       clearTimeout(this._hideControlsTimer);
       this._hideControlsTimer = null;
     }
-  }
-
-  private _navigate(delta: number) {
-    const total = data.filteredPhotos.get().length;
-    if (total === 0) return;
-    const newIndex = (this.currentIndex + delta + total) % total;
-    this.currentIndex = newIndex;
-    const photo = data.filteredPhotos.get()[newIndex] ?? null;
-    this.photo = photo;
-    this.totalCount = total;
-    if (photo !== null) actions.refreshInfo(photo.uuid);
   }
 
   private _resetTransform() {
@@ -224,8 +203,9 @@ export class PhotoLightbox extends SignalWatcher(LitElement) {
       e.stopImmediatePropagation();
       return;
     }
-    if (e.key === 'ArrowRight') this._navigate(1);
-    if (e.key === 'ArrowLeft') this._navigate(-1);
+    // The arrows are not claimed here: they step the Selection in
+    // <map-popup>, and this reads the Selection, so one keypress moves one
+    // cursor and the popup underneath stays on the same photo.
     // Enter plays and pauses; Space always closes. Space used to do both,
     // which made one key mean "back to the popup" on a photo and "pause" on a
     // video — so the way out of the lightbox depended on what was in it.
@@ -253,8 +233,11 @@ export class PhotoLightbox extends SignalWatcher(LitElement) {
   }
 
   override render() {
-    if (this.photo === null) return nothing;
-    const photo = this.photo;
+    // Gated on `active` rather than rendering whatever is selected: an
+    // inactive lightbox must hold no <video>, or it goes on playing behind
+    // the map.
+    const photo = this.active ? selection.getPhoto() : undefined;
+    if (photo === undefined) return nothing;
 
     return html`
       <div class="image-wrap" @click=${stopPropagation}>

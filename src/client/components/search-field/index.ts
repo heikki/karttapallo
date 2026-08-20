@@ -72,13 +72,13 @@ export class SearchField extends SignalWatcher(LitElement) {
   }
 
   private _onKeyDown(e: KeyboardEvent) {
+    // Keys typed here belong to the input, the way <photo-popup>'s date input
+    // treats its own. Without this, Space reaches <map-popup> and opens the
+    // lightbox, and the arrows step the Selection out from under the query.
+    e.stopPropagation();
     const items = this._suggestions;
     if (e.key === 'Escape') {
       this._query = '';
-      // Abandoning a query is the whole meaning of this key here. Letting it
-      // bubble would also reach <map-popup>'s document handler and hide the
-      // popup, the way <photo-popup>'s date input stops its own keys.
-      e.stopPropagation();
       return;
     }
     if (items.length === 0) return;

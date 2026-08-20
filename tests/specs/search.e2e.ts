@@ -190,6 +190,18 @@ test('Keyboard drives the suggestion list, and Cmd+F focuses it', async ({
   await expect(search).toBeFocused();
   await expect(page).not.toHaveURL(/q=/);
 
+  // Keys typed into the box stay in the box: Space types a space rather than
+  // opening the lightbox, and the arrows move the caret rather than stepping
+  // the selection out from under the query.
+  await search.fill('ku');
+  const thumb = page.locator('photo-popup .popup-image-wrap img');
+  const shown = await thumb.getAttribute('src');
+  await search.press('Space');
+  await expect(search).toHaveValue('ku ');
+  await expect(page.locator('photo-lightbox[active]')).toHaveCount(0);
+  await search.press('ArrowLeft');
+  await expect(thumb).toHaveAttribute('src', shown ?? '');
+
   // Escape abandons a half-typed query without applying anything, and stops
   // there — it must not also reach the popup's Escape handler and hide it.
   await search.fill('ku');
