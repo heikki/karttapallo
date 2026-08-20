@@ -35,10 +35,13 @@ test('View photo info', async ({ page }) => {
     'Capture'
   ]);
 
-  // Escape closes the modal; the popup remains open underneath.
+  // Escape belongs to the popup, not the panel: it hides the card and leaves
+  // the panel describing the same photo. Cmd+I is the way out.
   await page.keyboard.press('Escape');
+  await expect(popup).toHaveCount(0);
+  await expect(page.locator('info-panel[active]')).toBeVisible();
+  await page.keyboard.press('Meta+i');
   await expect(page.locator('info-panel[active]')).toHaveCount(0);
-  await expect(popup).toBeVisible();
 });
 
 test('Cmd+I toggles the info panel, and nothing overlays the photo', async ({
@@ -341,7 +344,7 @@ test('Move the info panel by its header', async ({ page }) => {
   ).toBeVisible();
 
   // Closing forgets where it was dragged: the next open is back in the corner.
-  await page.keyboard.press('Escape');
+  await page.keyboard.press('Meta+i');
   await expect(page.locator('info-panel[active]')).toHaveCount(0);
   await page.keyboard.press('Meta+i');
   const reopened = await content.boundingBox();
@@ -410,8 +413,9 @@ test('Toggle the lightbox with Space while the info panel is open', async ({
     modal.locator('.body').getByText('e2e-1.jpg', { exact: true })
   ).toBeVisible();
 
-  // Escape still closes the modal rather than leaking through to the popup.
+  // Escape passes through to the popup, the way Space and the arrows already
+  // do: the card hides and the modal stays open on the same photo.
   await page.keyboard.press('Escape');
-  await expect(modal).toHaveCount(0);
-  await expect(popup).toBeVisible();
+  await expect(popup).toHaveCount(0);
+  await expect(modal).toBeVisible();
 });

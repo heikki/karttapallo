@@ -5,10 +5,10 @@ Canonical inventory of user-visible flows. Each Tier 5 e2e spec maps to one or m
 ## Browse and view
 
 - **Browse the collection** — see all photos and videos on the map; URL state restores filters / view / styles / open popup. One photo is always selected with its popup open, unless the filters match nothing; a filter that drops the selected photo picks the oldest that is left and fits the map to it.
-- **Find a photo on the map** — click marker → popup; arrow keys cycle filtered items; Space or thumbnail click → lightbox. The popup cannot be dismissed — it follows the selection instead.
+- **Find a photo on the map** — click marker → popup; arrow keys cycle filtered items; Space or thumbnail click → lightbox. Escape hides the popup to show the map under it and hides nothing else; the photo stays selected and its marker lit, and Escape, Space or any change of selection brings the popup back — Space reveals the card rather than skipping it for the lightbox.
 - **View a photo full size** — lightbox shows the photo and nothing else; arrows cycle; Escape/Space/backdrop closes; trackpad pinch zooms.
 - **Watch a video** — videos play inline in lightbox; native controls auto-hide; Enter toggles play/pause (Space closes the lightbox, whatever is in it); mute persists across videos.
-- **View photo info** — Cmd+I toggles a floating panel: fields from `Photos.sqlite` plus Place and Categories, grouped under Photos / File / Capture / Location by where the value came from, empty groups omitted. Album names filter the map to that album; UUID copies and links to Photos.app. Movable, non-blocking; Cmd+I / X / Escape closes.
+- **View photo info** — Cmd+I toggles a floating panel: fields from `Photos.sqlite` plus Place and Categories, grouped under Photos / File / Capture / Location by where the value came from, empty groups omitted. Album names filter the map to that album; UUID copies and links to Photos.app. Movable, non-blocking; Cmd+I / X closes. Escape passes through to the map, as the arrows and Space already do.
 - **See how accurate a photo's location is** — with the Info panel open, an `Exif` photo's marker gets a dashed circle the size of the accuracy the camera recorded, so a metre-perfect fix and a kilometre-wide one stop looking alike. Nothing is drawn for a location Photos guessed or you placed, or once you move the pin yourself.
 - **Open a photo from a link** — a `karttapallo://photo/<uuid>` link opens the app (launching it if needed) on that photo: filters widen so it's visible, the map moves to it, and the popup opens.
 
@@ -53,4 +53,4 @@ Canonical inventory of user-visible flows. Each Tier 5 e2e spec maps to one or m
 
 ## Dismiss
 
-Priority order: info panel > date edit > placement > route edit > measurement > lightbox. Escape works in every context; clicking outside the active surface, or pressing the key or button that opened it, also dismisses. The popup is not on the list: it belongs to the selection, and the selection always has a photo to show.
+Priority order: date edit > placement > route edit > measurement > lightbox > popup. The info panel is not on the list — it stays open under Escape and closes by the key and button that opened it. Escape works in every context; clicking outside the active surface, or pressing the key or button that opened it, also dismisses. The popup sits last and is the one entry Escape only hides rather than dismisses: it belongs to the selection, and the selection always has a photo to show.

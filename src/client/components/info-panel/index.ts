@@ -195,9 +195,17 @@ const WRAPPED = new Set(['labels', 'albums', 'place']);
  * can stay open while the user works: arrows cycle photos (those navigators
  * call back into `refreshInfo` to pull the panel along), Space toggles
  * between the popup and the lightbox, Enter plays or pauses a video there.
- * Same photo in every case, so nothing to refresh. Every other key stops here.
+ * Same photo in every case, so nothing to refresh. Escape is here too — it
+ * belongs to the popup's own chain, and the panel closes by the key and
+ * button that opened it. Every other key stops here.
  */
-const BROWSING_KEYS = new Set(['ArrowLeft', 'ArrowRight', ' ', 'Enter']);
+const PASS_THROUGH_KEYS = new Set([
+  'ArrowLeft',
+  'ArrowRight',
+  ' ',
+  'Enter',
+  'Escape'
+]);
 
 /** How long a metadata read may take before the panel says it's loading. */
 const LOADING_ANNOUNCE_MS = 200;
@@ -539,13 +547,7 @@ export class InfoPanel extends SignalWatcher(LitElement) {
       return;
     }
     if (!this.active) return;
-    if (e.key === 'Escape') {
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      this._close();
-      return;
-    }
-    if (BROWSING_KEYS.has(e.key)) return;
+    if (PASS_THROUGH_KEYS.has(e.key)) return;
     e.stopImmediatePropagation();
   };
 

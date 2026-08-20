@@ -44,7 +44,9 @@ git log --pretty=format:"%ad|%s" --date=format:"%Y-%m-%d" | head -50  # Recent c
 - One photo is always selected with its popup open, unless the filters match nothing
 - A filter that hides the chosen photo moves to the oldest one left and fits the map to it
 - Flicking a filter off and on returns to the photo it pushed out rather than stranding you
-- The popup belongs to the selection now: Escape and a stray map click no longer dismiss it
+- The popup belongs to the selection now: a stray map click no longer dismisses it
+- Escape hides the popup to show the map beneath it; Space or picking another photo brings it back
+- The info panel no longer closes on Escape — the key and button that opened it still do
 - Fixed an opening camera that settled in a different place from one launch to the next
 - Internal: one module owns server startup; the three entries no longer each wire it by hand
 - Internal: the test server gained the cache claim, library seam and album pruning it lacked

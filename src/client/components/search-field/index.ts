@@ -75,6 +75,10 @@ export class SearchField extends SignalWatcher(LitElement) {
     const items = this._suggestions;
     if (e.key === 'Escape') {
       this._query = '';
+      // Abandoning a query is the whole meaning of this key here. Letting it
+      // bubble would also reach <map-popup>'s document handler and hide the
+      // popup, the way <photo-popup>'s date input stops its own keys.
+      e.stopPropagation();
       return;
     }
     if (items.length === 0) return;

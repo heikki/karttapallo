@@ -101,6 +101,81 @@ describe('isPopupOpen', () => {
   });
 });
 
+describe('togglePopup', () => {
+  // `beforeEach`'s throwaway `selectPhoto` reveals the popup, so every test
+  // here starts from the revealed state without a reset of its own.
+  const photos = [
+    photo({ uuid: 'old', date: '2023:01:01 00:00:00' }),
+    photo({ uuid: 'mid', date: '2024:06:01 00:00:00', albums: ['Tampere'] }),
+    photo({ uuid: 'new', date: '2025:12:01 00:00:00' })
+  ];
+
+  test('hides the popup and reveals it again', () => {
+    selection.selectPhoto('p1');
+    selection.togglePopup();
+    expect(selection.popupRevealed.get()).toBe(false);
+    selection.togglePopup();
+    expect(selection.popupRevealed.get()).toBe(true);
+  });
+
+  test('leaves the selection and isPopupOpen alone while hidden', () => {
+    selection.selectPhoto('p1');
+    selection.togglePopup();
+    expect(selection.selectedPhotoUuid.get()).toBe('p1');
+    expect(selection.isPopupOpen()).toBe(true);
+  });
+
+  test('revealPopup reveals a hidden popup', () => {
+    selection.selectPhoto('p1');
+    selection.togglePopup();
+    selection.revealPopup();
+    expect(selection.popupRevealed.get()).toBe(true);
+  });
+
+  test('a user selection reveals the popup', () => {
+    selection.selectPhoto('p1');
+    selection.togglePopup();
+    selection.selectPhoto('p2');
+    expect(selection.popupRevealed.get()).toBe(true);
+  });
+
+  test('an auto-select reveals the popup', async () => {
+    data.photos.set([...photos]);
+    await flush();
+    selection.selectPhoto('new');
+    await flush();
+    selection.togglePopup();
+    data.setAlbum('Tampere');
+    await flush();
+    expect(selection.selectedPhotoUuid.get()).toBe('mid');
+    expect(selection.popupRevealed.get()).toBe(true);
+  });
+
+  test('surviving a filter change does not reveal the popup', async () => {
+    data.photos.set([...photos]);
+    await flush();
+    selection.selectPhoto('mid');
+    await flush();
+    selection.togglePopup();
+    data.setAlbum('Tampere');
+    await flush();
+    expect(selection.selectedPhotoUuid.get()).toBe('mid');
+    expect(selection.popupRevealed.get()).toBe(false);
+  });
+
+  test('entering and leaving placement does not reveal the popup', async () => {
+    data.photos.set([photo({ uuid: 'p1' })]);
+    await flush();
+    selection.selectPhoto('p1');
+    selection.togglePopup();
+    interactionMode.enter('placement');
+    await flush();
+    interactionMode.exit();
+    await flush();
+    expect(selection.popupRevealed.get()).toBe(false);
+  });
+});
+
 describe('getPhoto / getPhotoIndex', () => {
   test('getPhoto returns the photo when present in filtered set', () => {
     data.photos.set([photo({ uuid: 'a' }), photo({ uuid: 'b' })]);

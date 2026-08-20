@@ -190,10 +190,12 @@ test('Keyboard drives the suggestion list, and Cmd+F focuses it', async ({
   await expect(search).toBeFocused();
   await expect(page).not.toHaveURL(/q=/);
 
-  // Escape abandons a half-typed query without applying anything.
+  // Escape abandons a half-typed query without applying anything, and stops
+  // there — it must not also reach the popup's Escape handler and hide it.
   await search.fill('ku');
   await expect(suggestions).toBeVisible();
   await search.press('Escape');
   await expect(suggestions).toBeHidden();
   await expect(page).not.toHaveURL(/q=/);
+  await expect(page.locator('photo-popup')).toBeVisible();
 });

@@ -63,7 +63,7 @@ test('See how accurate a photo’s location is', async ({ page }) => {
     .toBeCloseTo(300, 3);
 
   // Closing the panel takes the ring with it.
-  await page.keyboard.press('Escape');
+  await page.keyboard.press('Meta+i');
   await expect(page.locator('info-panel[active]')).toHaveCount(0);
   await expect.poll(async () => await ringCount(page)).toBe(0);
 

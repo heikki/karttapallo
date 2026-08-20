@@ -22,6 +22,15 @@ const autoSelectCount = signal(0);
 // on returns you to where you were. Cleared whenever the user selects.
 let droppedUuid: string | null = null;
 
+// Escape hides the selected photo's card without disturbing the selection
+// underneath it, so you can look at the map the card was covering. Anything
+// that asks to see a photo reveals it again — every selection change,
+// app-chosen as much as user-chosen, and Space — which makes this a peek at
+// the photo you're on rather than a mode you browse in (ADR-0016).
+// Deliberately outside `isPopupOpen`: only <map-popup> cares, and the marker
+// stays lit meanwhile to show the selection survived.
+const popupRevealed = signal(true);
+
 function getPhoto(): Photo | undefined {
   const uuid = selectedPhotoUuid.get();
   if (uuid === null) return undefined;
@@ -43,8 +52,17 @@ function isPopupOpen() {
   );
 }
 
+function togglePopup() {
+  popupRevealed.set(!popupRevealed.get());
+}
+
+function revealPopup() {
+  popupRevealed.set(true);
+}
+
 function selectPhoto(uuid: string) {
   droppedUuid = null;
+  revealPopup();
   selectedPhotoUuid.set(uuid);
   // Placement targeted the previous selection.
   if (interactionMode.current.get() === 'placement') {
@@ -76,6 +94,7 @@ function prev() {
 
 // `filteredPhotos` inherits `loadPhotos`'s sort, so [0] is the oldest.
 function pick(uuid: string) {
+  revealPopup();
   selectedPhotoUuid.set(uuid);
   autoSelectCount.set(autoSelectCount.get() + 1);
 }
@@ -119,9 +138,12 @@ effect(() => {
 export default {
   selectedPhotoUuid,
   autoSelectCount,
+  popupRevealed,
   getPhoto,
   getPhotoIndex,
   isPopupOpen,
+  togglePopup,
+  revealPopup,
   selectPhoto,
   next,
   prev

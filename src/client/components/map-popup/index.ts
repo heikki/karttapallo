@@ -29,6 +29,13 @@ async function preloadThumb(photo: Photo) {
   }
 }
 
+// The card shows only when the selection has one to show and the user hasn't
+// hidden it. Kept out of `isPopupOpen` so the markers layer goes on
+// highlighting the selected photo while the card is away.
+function shouldShowPopup() {
+  return selection.isPopupOpen() && selection.popupRevealed.get();
+}
+
 @customElement('map-popup')
 export class MapPopup extends MapFeatureElement {
   // The three move in lockstep: set together when the popup opens, cleared
@@ -67,6 +74,7 @@ export class MapPopup extends MapFeatureElement {
     effect(() => {
       edits.pendingCoords.get();
       selection.selectedPhotoUuid.get();
+      selection.popupRevealed.get();
       interactionMode.current.get();
       this.applySelection();
     });
@@ -84,21 +92,34 @@ export class MapPopup extends MapFeatureElement {
     }
     if (e.key === ' ') {
       const idx = selection.getPhotoIndex();
-      if (idx !== null) {
-        e.preventDefault();
-        actions.showLightbox(idx);
-      }
+      if (idx === null) return;
+      e.preventDefault();
+      // Space steps one rung toward the photo rather than past it: a hidden
+      // card comes back, and only from the card does it go full-screen —
+      // otherwise Space is the one key that acts on a photo you cannot see.
+      if (selection.popupRevealed.get()) actions.showLightbox(idx);
+      else selection.revealPopup();
     }
   }
 
-  // Escape priority: date-edit > interaction mode. Date edit wins so a stray
-  // Escape doesn't lose the edit row. There is no third rung: the selection
-  // outlives Escape, so exiting placement returns to the popup rather than
-  // dismissing it, and Escape on a bare popup does nothing (ADR-0016).
+  // Escape priority: date-edit > interaction mode > popup. Date edit wins so a
+  // stray Escape doesn't lose the edit row; exiting a mode outranks hiding, so
+  // Escape from placement returns you to the popup rather than past it. The
+  // bottom rung hides the card and leaves the selection standing (ADR-0016).
+  //
+  // Overlays that claim Escape stop it before it reaches this document
+  // listener, and each of them registers first: <filter-panel> and
+  // <files-modal> on the capture phase, <photo-lightbox> from a
+  // connectedCallback during app-root's first render — while map features
+  // mount only after the map's `load` event (see map-view/index.ts).
   private handleEscape(e: KeyboardEvent) {
     e.preventDefault();
     if (this.mounted?.el.closeDateEdit() === true) return;
-    if (interactionMode.current.get() !== null) interactionMode.exit();
+    if (interactionMode.current.get() !== null) {
+      interactionMode.exit();
+      return;
+    }
+    selection.togglePopup();
   }
 
   /** Current MapLibre Popup, if any. */
@@ -134,7 +155,7 @@ export class MapPopup extends MapFeatureElement {
   }
 
   private applySelection() {
-    const photo = selection.isPopupOpen() ? selection.getPhoto() : undefined;
+    const photo = shouldShowPopup() ? selection.getPhoto() : undefined;
     if (photo === undefined) {
       this.mounted?.popup.remove();
     } else if (this.mounted === null) {
@@ -174,7 +195,7 @@ export class MapPopup extends MapFeatureElement {
 
     popup.on('close', () => {
       this.mounted = null;
-      if (!this.suppressCloseRemount && selection.isPopupOpen()) {
+      if (!this.suppressCloseRemount && shouldShowPopup()) {
         // Closed via MapLibre's own teardown (e.g. setStyle). The selection
         // outlives the popup, so put it back — deferred because we're inside
         // `remove()`, and building a popup there re-enters MapLibre's render.

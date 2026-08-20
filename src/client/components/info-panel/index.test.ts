@@ -389,7 +389,7 @@ describe('<info-panel> photo navigation', () => {
     el.remove();
   });
 
-  test('browsing keys reach navigators underneath, other keys do not', async () => {
+  test('pass-through keys reach handlers underneath, other keys do not', async () => {
     const el = await mount();
     el.load('first-uuid');
     const seen: string[] = [];
@@ -398,13 +398,21 @@ describe('<info-panel> photo navigation', () => {
     }
     document.addEventListener('keydown', listener);
 
-    for (const key of ['ArrowRight', 'ArrowLeft', ' ', 'Enter', 'd']) {
+    for (const key of [
+      'ArrowRight',
+      'ArrowLeft',
+      ' ',
+      'Enter',
+      'Escape',
+      'd'
+    ]) {
       document.dispatchEvent(new KeyboardEvent('keydown', { key }));
     }
 
     document.removeEventListener('keydown', listener);
     // Enter is one of them: it plays and pauses a video in the lightbox below.
-    expect(seen).toEqual(['ArrowRight', 'ArrowLeft', ' ', 'Enter']);
+    // So is Escape, which the panel no longer claims — it hides the popup.
+    expect(seen).toEqual(['ArrowRight', 'ArrowLeft', ' ', 'Enter', 'Escape']);
     el.remove();
   });
 });
