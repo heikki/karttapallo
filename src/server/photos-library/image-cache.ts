@@ -41,7 +41,6 @@ export interface ImageCache {
     size: 'full' | 'thumb',
     asset: AssetRecord
   ) => string | null;
-  invalidate: (uuid: string) => void;
   /** Drop every converted image. They are re-made on demand (ADR-0010). */
   clear: () => void;
   /** Drop the converted images of assets the library no longer has. */
@@ -213,19 +212,6 @@ export function createImageCache(config: ImageCacheConfig): ImageCache {
     return cachedPath;
   }
 
-  function invalidate(uuid: string) {
-    try {
-      unlinkSync(join(fullDir, `${uuid}.jpg`));
-    } catch {
-      /* ignore */
-    }
-    try {
-      unlinkSync(join(thumbDir, `${uuid}.jpg`));
-    } catch {
-      /* ignore */
-    }
-  }
-
   function clear() {
     for (const dir of [fullDir, thumbDir]) {
       rmSync(dir, { recursive: true, force: true });
@@ -251,5 +237,5 @@ export function createImageCache(config: ImageCacheConfig): ImageCache {
     }
   }
 
-  return { resolve, invalidate, clear, evictExcept };
+  return { resolve, clear, evictExcept };
 }
