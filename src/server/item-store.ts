@@ -1,7 +1,7 @@
 /**
  * In-memory store for the items list, with snapshot persistence.
  *
- * On open, reads `items.json` into memory so the API can serve immediately.
+ * On open, reads the snapshot into memory so the API can serve immediately.
  * In a microtask, rebuilds from Photos.sqlite + geo-tz; on change, swaps the
  * in-memory list, evicts orphaned cache files, and rewrites the snapshot.
  *
@@ -10,14 +10,7 @@
  * the user can't accidentally undo edits in an open Photos.app window.
  */
 
-import {
-  existsSync,
-  readdirSync,
-  readFileSync,
-  unlinkSync,
-  writeFileSync
-} from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 
 import {
   applyHourOffset,
@@ -224,7 +217,9 @@ export interface ItemStore {
 }
 
 interface OpenItemStoreOptions {
-  cacheRoot: string;
+  /** Where the snapshot is read and written. Named by the cache root. */
+  snapshotPath: string;
+  /** Present so a rebuild can evict images of assets that are gone. */
   imageCache?: ImageCache;
   photosWriter?: PhotosWriter;
   /** Library to read items from; defaults to the resolver in openPhotosDb. */
@@ -234,8 +229,6 @@ interface OpenItemStoreOptions {
   /** Write-time active-library guard seam; defaults to the real resolver. */
   resolveActiveLibrary?: () => LibraryResolution;
 }
-
-const SNAPSHOT_NAME = 'items.json';
 
 function loadSnapshot(snapshotPath: string): {
   items: ItemEntry[];
@@ -266,38 +259,13 @@ function buildFromPhotosDb(libraryPath?: string): ItemEntry[] {
   }
 }
 
-function evictOrphanedCacheFiles(cacheDir: string, liveUuids: Set<string>) {
-  for (const sub of ['full', 'thumb']) {
-    const dir = join(cacheDir, sub);
-    if (!existsSync(dir)) continue;
-    try {
-      for (const f of readdirSync(dir)) {
-        if (!f.endsWith('.jpg')) continue;
-        const uuid = f.slice(0, -4);
-        if (!liveUuids.has(uuid)) {
-          try {
-            unlinkSync(join(dir, f));
-          } catch {
-            /* ignore */
-          }
-        }
-      }
-    } catch {
-      /* ignore */
-    }
-  }
-}
-
 export function openItemStore(options: OpenItemStoreOptions): ItemStore {
-  const { cacheRoot, imageCache } = options;
+  const { snapshotPath, imageCache } = options;
   const writer = options.photosWriter ?? defaultPhotosWriter;
   const loadedLibraryPath = options.libraryPath;
   const resolveActive = options.resolveActiveLibrary ?? resolveLibrary;
   const buildFresh =
     options.buildFreshItems ?? (() => buildFromPhotosDb(options.libraryPath));
-  const snapshotPath = join(cacheRoot, SNAPSHOT_NAME);
-  const cacheDir = join(cacheRoot, 'cache');
-
   let { items, json: snapshotJson } = loadSnapshot(snapshotPath);
 
   function writeSnapshot() {
@@ -315,9 +283,7 @@ export function openItemStore(options: OpenItemStoreOptions): ItemStore {
     items = fresh;
     snapshotJson = freshJson;
     writeFileSync(snapshotPath, freshJson);
-    if (imageCache !== undefined) {
-      evictOrphanedCacheFiles(cacheDir, new Set(fresh.map((i) => i.uuid)));
-    }
+    imageCache?.evictExcept(new Set(fresh.map((i) => i.uuid)));
     return true;
   }
 

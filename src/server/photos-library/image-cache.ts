@@ -9,6 +9,8 @@ import {
   copyFileSync,
   existsSync,
   mkdirSync,
+  readdirSync,
+  rmSync,
   statSync,
   unlinkSync,
   utimesSync
@@ -40,6 +42,10 @@ export interface ImageCache {
     asset: AssetRecord
   ) => string | null;
   invalidate: (uuid: string) => void;
+  /** Drop every converted image. They are re-made on demand (ADR-0010). */
+  clear: () => void;
+  /** Drop the converted images of assets the library no longer has. */
+  evictExcept: (liveUuids: Set<string>) => void;
 }
 
 // ---------- Image helpers ----------
@@ -220,5 +226,30 @@ export function createImageCache(config: ImageCacheConfig): ImageCache {
     }
   }
 
-  return { resolve, invalidate };
+  function clear() {
+    for (const dir of [fullDir, thumbDir]) {
+      rmSync(dir, { recursive: true, force: true });
+      mkdirSync(dir, { recursive: true });
+    }
+  }
+
+  function evictExcept(liveUuids: Set<string>) {
+    for (const dir of [fullDir, thumbDir]) {
+      try {
+        for (const f of readdirSync(dir)) {
+          if (!f.endsWith('.jpg')) continue;
+          if (liveUuids.has(f.slice(0, -4))) continue;
+          try {
+            unlinkSync(join(dir, f));
+          } catch {
+            /* a file we cannot remove is not worth failing a rebuild over */
+          }
+        }
+      } catch {
+        /* no directory to sweep */
+      }
+    }
+  }
+
+  return { resolve, invalidate, clear, evictExcept };
 }

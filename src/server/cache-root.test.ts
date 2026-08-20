@@ -101,7 +101,9 @@ describe('claimCacheRoot', () => {
     expect(existsSync(join(root, 'items.json'))).toBe(false);
   });
 
-  test('returns the root it claimed', () => {
-    expect(claimCacheRoot(root, LIB_A)).toBe(root);
+  test('names what it holds, rather than handing back the root', () => {
+    const cache = claimCacheRoot(root, LIB_A);
+    expect(cache.snapshotPath).toBe(join(root, 'items.json'));
+    expect(cache.imagesDir).toBe(join(root, 'cache'));
   });
 });

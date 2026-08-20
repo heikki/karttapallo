@@ -15,7 +15,6 @@
  * of the three entries answers those differently — see docs/app.md.
  */
 
-import { mkdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { createAlbumStore } from './album-store';
@@ -91,16 +90,18 @@ export function openLibrarySession(
   // with it (ADR-0015). Derived here rather than passed in — which directory
   // holds a Library's data is a fact about Libraries, not about this entry.
   const bundleDir = join(libraryPath, 'karttapallo');
-  const cacheDir = join(cacheRoot, 'cache');
   console.log(`[session] Library data: ${bundleDir}`);
 
-  claimCacheRoot(cacheRoot, libraryPath);
+  const cache = claimCacheRoot(cacheRoot, libraryPath);
 
-  const imageCache = createImageCache({ cacheDir, libraryPath });
+  const imageCache = createImageCache({
+    cacheDir: cache.imagesDir,
+    libraryPath
+  });
   const photosLibrary =
     adapters.photosLibrary ?? openPhotosLibrary({ imageCache, libraryPath });
   const itemStore = openItemStore({
-    cacheRoot,
+    snapshotPath: cache.snapshotPath,
     imageCache,
     libraryPath,
     photosWriter: adapters.photosWriter ?? createPhotosWriter(libraryPath),
@@ -120,14 +121,6 @@ export function openLibrarySession(
       return JSON.parse(raw) as Record<string, string>;
     } catch {
       return {};
-    }
-  }
-
-  function clearImageCache() {
-    for (const size of ['full', 'thumb']) {
-      const dir = join(cacheDir, size);
-      rmSync(dir, { recursive: true, force: true });
-      mkdirSync(dir, { recursive: true });
     }
   }
 
@@ -157,7 +150,7 @@ export function openLibrarySession(
     routeApiRequest,
     rebuildComplete: itemStore.rebuildComplete,
     rebuild: itemStore.rebuild,
-    clearImageCache,
+    clearImageCache: imageCache.clear,
     savedView
   };
 }

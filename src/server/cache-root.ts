@@ -19,12 +19,25 @@ function readOwner(cacheRoot: string): string | null {
   }
 }
 
+export interface CacheRoot {
+  /** The item snapshot (ADR-0006). */
+  snapshotPath: string;
+  /**
+   * Root of the converted-image tree. What the tree looks like inside is the
+   * image cache's business, not this module's — it only says where it starts.
+   */
+  imagesDir: string;
+}
+
 /**
  * Must run before anything opens a directory underneath it: the image cache
  * creates its subdirectories at construction, and a wipe after that would
  * leave it pointing at a tree that no longer exists.
  */
-export function claimCacheRoot(cacheRoot: string, libraryPath: string): string {
+export function claimCacheRoot(
+  cacheRoot: string,
+  libraryPath: string
+): CacheRoot {
   if (readOwner(cacheRoot) !== libraryPath) {
     rmSync(cacheRoot, { recursive: true, force: true });
   }
@@ -33,5 +46,8 @@ export function claimCacheRoot(cacheRoot: string, libraryPath: string): string {
     join(cacheRoot, OWNER_NAME),
     `${JSON.stringify({ path: libraryPath }, null, 2)}\n`
   );
-  return cacheRoot;
+  return {
+    snapshotPath: join(cacheRoot, 'items.json'),
+    imagesDir: join(cacheRoot, 'cache')
+  };
 }

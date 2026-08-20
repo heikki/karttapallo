@@ -13,6 +13,7 @@ import type { PhotosWriter } from './photos-edit';
 import type { LibraryResolution, PhotoRecord } from './photos-library';
 
 let cacheRoot = '';
+let snapshotPath = '';
 
 function sampleItem(overrides: Partial<ItemEntry> = {}): ItemEntry {
   return {
@@ -71,6 +72,7 @@ function readSnapshot(): ItemEntry[] {
 
 beforeEach(() => {
   cacheRoot = mkdtempSync(join(tmpdir(), 'karttapallo-itemstore-'));
+  snapshotPath = join(cacheRoot, 'items.json');
 });
 
 afterEach(() => {
@@ -84,7 +86,7 @@ async function open(
   } = {}
 ): Promise<ItemStore> {
   const store = openItemStore({
-    cacheRoot,
+    snapshotPath,
     photosWriter: opts.writer,
     buildFreshItems: () => opts.fresh ?? []
   });
@@ -104,7 +106,7 @@ describe('item-store snapshot', () => {
     const seed = [sampleItem({ uuid: 'AAAA' })];
     seedSnapshot(seed);
     const store = openItemStore({
-      cacheRoot,
+      snapshotPath,
       buildFreshItems: () => seed
     });
     // Synchronous getAll must already reflect the snapshot — no await yet.
@@ -123,7 +125,7 @@ describe('item-store rebuild', () => {
     const seed = [sampleItem({ uuid: 'AAAA' })];
     seedSnapshot(seed);
     const store = openItemStore({
-      cacheRoot,
+      snapshotPath,
       buildFreshItems: () => seed
     });
     expect(await store.rebuildComplete).toBe(false);
@@ -156,7 +158,7 @@ describe('item-store rebuild', () => {
   test('manual rebuild swaps and persists', async () => {
     let fresh = [sampleItem({ uuid: 'AAAA' })];
     const store = openItemStore({
-      cacheRoot,
+      snapshotPath,
       buildFreshItems: () => fresh
     });
     await store.rebuildComplete;
@@ -350,7 +352,7 @@ describe('item-store write-time library guard', () => {
     writer: PhotosWriter
   ): Promise<ItemStore> {
     const store = openItemStore({
-      cacheRoot,
+      snapshotPath,
       libraryPath: lib,
       photosWriter: writer,
       buildFreshItems: () => [sampleItem({ uuid: 'AAAA', lat: 0, lon: 0 })],
