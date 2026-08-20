@@ -15,7 +15,7 @@
 import type { Photo } from './types';
 
 /** Fields a query is matched against, in suggestion-grouping order. */
-export const CORPUS_FIELDS = ['place', 'description', 'labels'] as const;
+const CORPUS_FIELDS = ['place', 'description', 'labels'] as const;
 
 export type CorpusField = (typeof CORPUS_FIELDS)[number];
 
