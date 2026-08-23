@@ -167,7 +167,10 @@ function installBackground(map: MapGL) {
   }
   map.on('move', updateRadius);
   map.on('projectiontransition', updateRadius);
-  void map.once('load', updateRadius);
+  // The opening size, before anything has moved the camera — on style.load
+  // rather than load for the same reason the features mount there: with a
+  // basemap host that never answers, `load` never comes.
+  void map.once('style.load', updateRadius);
 
   map.on('movestart', () => {
     background.setIdle(false);
@@ -227,7 +230,7 @@ function installStyleEffect(map: MapGL) {
 /**
  * Build the MapLibre instance and wire up all map-level concerns: controls,
  * background, debug diagnostics, interaction-mode crosshair, basemap-style
- * effect, and event listeners. Caller still owns the `map.once('load')`
+ * effect, and event listeners. Caller still owns the `map.once('style.load')`
  * handshake — exposing the map flips the @state that mounts feature children.
  */
 export default function setupMap(container: HTMLElement, api: MapApi): MapGL {

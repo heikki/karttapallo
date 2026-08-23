@@ -88,15 +88,21 @@ export class MapView extends LitElement implements MapApi {
     const container =
       this.renderRoot.querySelector<HTMLDivElement>('#container')!;
     const map = setupMap(container, this);
-    void map.once('load', () => {
+    // `style.load`, not `load`: the latter also waits for the first frame to
+    // be drawn, tiles included, so a basemap host that answers slowly or not
+    // at all would leave the app with no markers, no card and no measure —
+    // nothing but a bare world view. Sources, layers and handlers are all the
+    // features add on mount, and those are legal from style.load on.
+    void map.once('style.load', () => {
       this._map = map;
     });
   }
 
   // ---- MapApi ----
 
-  /** The MapLibre map instance. Non-null after `load`; features only mount
-   * post-load via the conditional template, so they can read it directly. */
+  /** The MapLibre map instance. Non-null once the style has loaded; features
+   * only mount from there via the conditional template, so they can read it
+   * directly. */
   get map(): MapGL {
     return this._map!;
   }
@@ -151,7 +157,7 @@ export class MapView extends LitElement implements MapApi {
   }
 
   override render() {
-    // Feature children mount only after the map's load event so they can
+    // Feature children mount only once the style has loaded so they can
     // assume mapContext (a MapApi handle) resolves to a valid map. Order
     // is z-order, bottom to top.
     return html`

@@ -17,8 +17,8 @@ Lit + signals client (`src/client/`), Bun server (`src/server/`), ObjC++ native 
 
 1. URL-bound view-state signals (`mapStyle`, `markerStyle`, `routeVisible`, `selectedPhotoUuid`) seed synchronously at module load.
 2. `<app-root>` mounts, installs window-level handlers, kicks off `data.loadPhotos()`, renders `<map-view>` plus panel components.
-3. `<map-view>`'s `firstUpdated` calls `setupMap(container, this)` and registers `map.once('load')`.
-4. On map load, `<map-view>` flips `_map`, which mounts the `<map-*>` feature children. Each feature's `firstUpdated` adds its layers and effects (template order = z-order).
+3. `<map-view>`'s `firstUpdated` calls `setupMap(container, this)` and registers `map.once('style.load')` — not `load`, which also waits for the first frame to be drawn and so never fires if the basemap host doesn't answer.
+4. On style load, `<map-view>` flips `_map`, which mounts the `<map-*>` feature children. Each feature's `firstUpdated` adds its layers and effects (template order = z-order).
 5. `data.ts`'s photos-load effect re-runs the URL-restored filter cascade so any search/year/album/camera that no longer exists falls back to its default.
 
 ## Server

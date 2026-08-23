@@ -12,7 +12,7 @@ import type { Map as MapGL, PointLike } from 'maplibre-gl';
  * feature interaction needs it. Don't expose feature elements wholesale.
  */
 export interface MapApi {
-  /** The MapLibre map instance. Valid only after the load event fires. */
+  /** The MapLibre map instance. Valid only once the style has loaded. */
   readonly map: MapGL;
 
   /** Camera-fit the current filtered photos. */
