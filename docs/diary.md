@@ -2,12 +2,12 @@
 
 Geotagged photo map viewer with Apple Photos integration.
 
-## Project Stats (as of 23.08.2026)
+## Project Stats (as of 24.08.2026)
 
 - **TypeScript files**: 133
-- **Lines of code**: 16,845 (+ 6,754 tests)
-- **Total commits**: 680
-- **Total tokens**: ~3,228M | **Total cost**: ~$2,108
+- **Lines of code**: 16,869 (+ 6,754 tests)
+- **Total commits**: 685
+- **Total tokens**: ~3,248M | **Total cost**: ~$2,121
 
 ## Updating This Diary
 
@@ -36,6 +36,14 @@ git log --pretty=format:"%ad|%s" --date=format:"%Y-%m-%d" | head -50  # Recent c
 - Skip minor tweaks — only significant features and fixes belong, especially on busy days.
 - Describe final outcomes, not reverted intermediate attempts.
 - Flat list, no sub-bullets or prose.
+
+## 24.08.2026 — Desktop shell migration, settled
+
+**Tokens**: 20M | **Cost**: $12
+
+- Internal: packaged builds read their API keys again — the Finnish basemaps and the routing service came back after the shell upgrade had silently dropped them
+- Internal: installing replaces the app bundle instead of merging into it, so a new build can no longer inherit files from the old one
+- Internal: dropped a code-signing entitlement the new shell makes unnecessary, and verified a clean first install from a wiped machine state
 
 ## 23.08.2026 — Desktop shell jumps a major; dependency refresh
 
