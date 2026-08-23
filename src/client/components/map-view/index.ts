@@ -1,7 +1,7 @@
 import { ContextProvider } from '@lit/context';
 import { css, html, LitElement, nothing } from 'lit';
 import { customElement, query, state } from 'lit/decorators.js';
-import type { Map as MapGL } from 'maplibre-gl';
+import type { Map as MapGL, PointLike } from 'maplibre-gl';
 
 import * as edits from '@common/edits';
 import selection from '@common/selection';
@@ -119,6 +119,10 @@ export class MapView extends LitElement implements MapApi {
 
   markerRadius(zoom: number) {
     return this._markers?.getRadius(zoom) ?? 0;
+  }
+
+  markerAt(point: PointLike) {
+    return this._markers?.hitTest(point) ?? false;
   }
 
   openExternal(target: 'apple' | 'google') {

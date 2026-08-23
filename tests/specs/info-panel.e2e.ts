@@ -171,8 +171,8 @@ test('The map still takes input under an open info panel', async ({ page }) => {
     .poll(() => new URL(page.url()).searchParams.get('lon'))
     .not.toBe(null);
 
-  // And neither survives-by-accident: a stray click on the map dismisses
-  // nothing, because the selection outlives it (ADR-0016).
+  // And neither survives-by-accident: a pan is not a click, so it dismisses
+  // nothing — the card a click would hide is still up, and so is the panel.
   await expect(popup).toBeVisible();
   await expect(modal).toBeVisible();
 });

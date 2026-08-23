@@ -1,6 +1,6 @@
 import { consume, createContext } from '@lit/context';
 import { LitElement } from 'lit';
-import type { Map as MapGL } from 'maplibre-gl';
+import type { Map as MapGL, PointLike } from 'maplibre-gl';
 
 /**
  * Public, in-tree map API consumed by sibling map features (via the
@@ -29,6 +29,9 @@ export interface MapApi {
 
   /** Marker radius at a given zoom level (used by popup offset). */
   markerRadius: (zoom: number) => number;
+
+  /** Is a photo marker under this screen point? */
+  markerAt: (point: PointLike) => boolean;
 
   /** Open the current selection (or map center) in an external map app. */
   openExternal: (target: 'apple' | 'google') => void;

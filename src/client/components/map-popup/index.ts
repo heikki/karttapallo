@@ -1,5 +1,6 @@
 import { customElement } from 'lit/decorators.js';
 import { Popup } from 'maplibre-gl';
+import type { MapMouseEvent } from 'maplibre-gl';
 
 import * as actions from '@common/actions';
 import * as edits from '@common/edits';
@@ -56,6 +57,10 @@ export class MapPopup extends MapFeatureElement {
 
     document.addEventListener('keydown', (e) => {
       this.handleKeydown(e);
+    });
+
+    this.api.map.on('click', (e) => {
+      this.handleMapClick(e);
     });
 
     // Defer so markers' effect swaps the layer first; getRadius() then
@@ -117,6 +122,23 @@ export class MapPopup extends MapFeatureElement {
       interactionMode.exit();
       return;
     }
+    selection.togglePopup();
+  }
+
+  // Clicking the map is the Escape chain's bottom rung by mouse: the card
+  // hides so you can see what it covered, and clicking again brings it back.
+  // Only the rungs a click can't mean are skipped — a marker click selects,
+  // and a mode owns its clicks (placement sets a coord, measure adds a point)
+  // where Escape would exit the mode. Date edit keeps its priority, so a click
+  // meant for the map doesn't take the edit row down with the card.
+  //
+  // MapLibre suppresses the click that ends a pan (its 3px clickTolerance),
+  // and the popup itself lives outside the canvas container, so clicks on the
+  // card never reach here.
+  private handleMapClick(e: MapMouseEvent) {
+    if (this.api.markerAt(e.point)) return;
+    if (interactionMode.current.get() !== null) return;
+    if (this.mounted?.el.closeDateEdit() === true) return;
     selection.togglePopup();
   }
 

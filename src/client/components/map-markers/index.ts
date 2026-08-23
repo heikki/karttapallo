@@ -1,5 +1,5 @@
 import { customElement } from 'lit/decorators.js';
-import type { MapLayerMouseEvent } from 'maplibre-gl';
+import type { MapLayerMouseEvent, PointLike } from 'maplibre-gl';
 
 import * as data from '@common/data';
 import * as edits from '@common/edits';
@@ -68,6 +68,21 @@ export class MapMarkers extends MapFeatureElement {
 
   getRadius(zoom: number) {
     return this.currentLayer?.markerRadius(zoom) ?? 0;
+  }
+
+  /**
+   * Is a marker under this screen point? `<map-popup>` asks before treating
+   * a click as a click on the map — the layer handler below claims marker
+   * clicks, but it re-registers on every marker-style swap, so its position
+   * in MapLibre's listener order (and with it `defaultPrevented`) isn't
+   * something another feature can rely on.
+   */
+  hitTest(point: PointLike) {
+    const layerId = this.currentLayer?.id;
+    if (layerId === undefined) return false;
+    const map = this.api.map;
+    if (map.getLayer(layerId) === undefined) return false;
+    return map.queryRenderedFeatures(point, { layers: [layerId] }).length > 0;
   }
 
   private refreshView() {

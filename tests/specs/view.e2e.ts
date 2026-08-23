@@ -115,3 +115,46 @@ test('Find a specific photo on the map', async ({ page }) => {
   await expect(page).toHaveURL(/id=e2e-2/);
   await expect(popup).toBeVisible();
 });
+
+test('Clicking the map hides the card', async ({ page }) => {
+  await page.goto('/?id=e2e-1');
+
+  await expect(page.getByRole('status', { name: 'Photo stats' })).toHaveText(
+    '3 photos'
+  );
+  const popup = page.locator('photo-popup');
+  await expect(popup).toBeVisible();
+
+  // Absolute mouse coordinates rather than locator.click(), which MapLibre's
+  // canvas handles more reliably. The left edge is bare map: the filter panel
+  // sits top right, and the fixture's three photos share a narrow band of
+  // longitude in the middle.
+  const box = await page
+    .locator('map-view >> canvas.maplibregl-canvas')
+    .boundingBox();
+  if (box === null) throw new Error('canvas not laid out');
+  const bareX = box.x + 60;
+  const bareY = box.y + box.height / 2;
+
+  // Panning is not clicking: the card you drag the map under stays up.
+  await page.mouse.move(bareX, bareY);
+  await page.mouse.down();
+  await page.mouse.move(bareX + 120, bareY, { steps: 8 });
+  await page.mouse.up();
+  await expect(popup).toBeVisible();
+
+  // A click on bare map is Escape's bottom rung by mouse — the card hides,
+  // the selection stands, and clicking again brings it back.
+  await page.mouse.click(bareX, bareY);
+  await expect(popup).toHaveCount(0);
+  await expect(page).toHaveURL(/id=e2e-1/);
+
+  await page.mouse.click(bareX, bareY);
+  await expect(popup).toBeVisible();
+
+  // The two rungs are the same one: Escape hides what the click revealed.
+  await page.keyboard.press('Escape');
+  await expect(popup).toHaveCount(0);
+  await page.mouse.click(bareX, bareY);
+  await expect(popup).toBeVisible();
+});
