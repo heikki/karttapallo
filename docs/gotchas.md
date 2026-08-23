@@ -58,6 +58,10 @@ The failure was invisible for a second reason: `alert()` is a **no-op** in Elect
 
 `src/client/index.html` loads the bundle with `<script type="module">`. A plain `<script src>` parses the bundle as a classic script, where `import.meta` is a syntax error: the whole bundle fails to parse, the webview renders nothing, and **no error reaches the terminal** — the only symptom is that the webview's own console output (the Lit dev-mode warning, the image-cache line) stops appearing. maplibre-gl 6 is what put `import.meta.url` in the bundle, to resolve its worker; anything else ESM-only will do the same.
 
+### Installing over an existing bundle must delete it first, not merge
+
+`cp -r App.app /Applications/` onto an existing bundle merges into it, leaving every file the new build no longer ships. That went unnoticed under Electrobun 1.x, where both bundles had the same shape. A 2.x `--env=stable` bundle is a self-extractor whose `Contents/MacOS` holds nothing but `launcher`, with the app compressed in `Resources/*.tar.zst` — so merging it over a 1.x install leaves the old `bun` binary and, worse, the old flat `Resources/app/`, which the launcher loads **in preference to extracting the payload**. The installed app then silently runs the previous build's code. `install:app` removes the destination first.
+
 ### `electrobun dev` reuses cached binaries
 
 `electrobun dev` may reuse a cached `Resources/app` bundle, so source edits silently don't take effect. To force a clean rebuild, delete `build/dev-macos-arm64/.../Resources/app`, or run `electrobun build` first.

@@ -1,11 +1,11 @@
 import type { ElectrobunConfig } from 'electrobun';
 
-// macOS code-signing identity (create it locally with `bun run cert --create`).
-// Electrobun reads the signing identity from process.env at sign time, after
-// this config loads, so setting it here is enough. An explicit
-// ELECTROBUN_DEVELOPER_ID already in the environment still wins, e.g. a
-// Developer ID on a release machine.
-process.env.ELECTROBUN_DEVELOPER_ID ??= 'Karttapallo Signing';
+// The macOS code-signing identity (create it locally with `bun run cert
+// --create`) is NOT set here: Hutch serializes this config and signs from
+// another process, so mutating process.env here would never reach it. The
+// default lives in the `build:app:stable` script instead, where an explicit
+// ELECTROBUN_DEVELOPER_ID in the environment still wins — e.g. a Developer ID
+// on a release machine.
 
 export default {
   app: {

@@ -25,4 +25,10 @@ Hutch projects the SDK into a generated `.hutch/devkit/` sysroot, and the npm `e
 
 Electrobun 2.x serializes the config while loading it, so function-valued bundler plugins cannot cross that boundary. The inline `tsconfig-paths` plugin that resolved `@common/*` and friends at bundle time is deleted: Cottontail's bundler reads `paths` from `tsconfig.json` directly, which is what the plugin was hand-rolling. One mirror of the alias list instead of two.
 
-The stable-build path (`bun run install:app` → `scripts/finalize-stable.sh`) still patches `NSAppleEventsUsageDescription` into the self-extractor payload, because 2.x has no config field for Info.plist usage descriptions either. That script's assumptions about the payload layout are **unverified against a 2.x stable build** — it is the one path this migration did not exercise.
+## Signing moved out of the config
+
+The same serialization boundary broke code signing: `electrobun.config.ts` used to set `ELECTROBUN_DEVELOPER_ID` on `process.env`, which reached 1.x's sign step because it ran in the same process. Hutch signs from another process, so the build now fails with `MissingDeveloperId`. The default lives in the `build:app:stable` script instead, where an explicit environment value still wins.
+
+`scripts/finalize-stable.sh` survives unchanged: 2.x still emits `entitlements.plist` beside the bundle and still ships the app as a `*.tar.zst` self-extractor payload, so patching `NSAppleEventsUsageDescription` into both copies and re-signing works exactly as before. 2.x has no config field for Info.plist usage descriptions either, so the script is still needed.
+
+What did change is the bundle's shape, and `install:app` now deletes the installed bundle before copying — see [gotchas.md](../gotchas.md).
