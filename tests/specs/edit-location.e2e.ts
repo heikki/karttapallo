@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './_fixtures';
 
 // Fixture (sorted by date, +03:00):
 //   e2e-2 — 2023:08:15 (oldest)

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './_fixtures';
 
 // tests/server.ts injects a no-op PhotosWriter so /api/save-edits round-trips
 // without touching Photos.app. The client-visible flow is:

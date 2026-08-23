@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './_fixtures';
 
 // Fixture has 3 photos, all gps='exif', no videos. Toggling Photos off, or
 // soloing Videos, drops the visible count to zero — surfaced in the panel

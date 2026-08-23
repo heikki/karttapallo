@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './_fixtures';
 
 // Fixture:
 //   e2e-1 — 2024, Helsinki, iPhone

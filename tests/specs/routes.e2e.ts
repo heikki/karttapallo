@@ -1,6 +1,7 @@
 import { rmSync } from 'node:fs';
-import { expect, test, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
 
+import { expect, test } from './_fixtures';
 import { layerVisibility, sourceFeatureCount } from './_helpers';
 
 // The autosave-and-load tests below mutate `_route.json` on disk. Without a

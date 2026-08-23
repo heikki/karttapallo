@@ -1,5 +1,4 @@
-import { expect, test } from '@playwright/test';
-
+import { expect, test } from './_fixtures';
 import { sourceFeatureCount } from './_helpers';
 
 // Tampere is seeded with a small GPX track (tests/fixtures/track.gpx). When

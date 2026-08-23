@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './_fixtures';
 
 // Tampere is seeded with track.gpx by tests/server.ts. The Files button on
 // `<album-controls>` is disabled until an album is picked.

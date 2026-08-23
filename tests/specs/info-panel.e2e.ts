@@ -1,5 +1,6 @@
 import { setTimeout as sleep } from 'node:timers/promises';
-import { expect, test } from '@playwright/test';
+
+import { expect, test } from './_fixtures';
 
 test('View photo info', async ({ page }) => {
   await page.goto('/?id=e2e-1');

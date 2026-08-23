@@ -1,6 +1,5 @@
-import { expect, test } from '@playwright/test';
-
-import { mapCenter } from './_helpers';
+import { expect, test } from './_fixtures';
+import { cameraSettled, mapCenter } from './_helpers';
 
 // Fixture (sorted by date, +03:00):
 //   e2e-2 — 2023:08:15 (oldest)
@@ -64,19 +63,8 @@ test('Find a specific photo on the map', async ({ page }) => {
 
   // Let the camera settle after the earlier flights, so "hiding didn't move
   // the map" is a claim about Escape and not about an animation still easing.
-  // Compared by distance, not equality: a fly eases asymptotically, so two
-  // consecutive reads can agree to the last digit and still creep afterwards.
-  let center = await mapCenter(page);
-  await expect
-    .poll(async () => {
-      const now = await mapCenter(page);
-      const settled =
-        Math.abs((now?.lat ?? 0) - (center?.lat ?? 0)) < 1e-5 &&
-        Math.abs((now?.lon ?? 0) - (center?.lon ?? 0)) < 1e-5;
-      center = now;
-      return settled;
-    })
-    .toBe(true);
+  await cameraSettled(page);
+  const center = await mapCenter(page);
 
   // A second Escape hides the popup so you can see the map it was covering.
   // The selection outlives it — the URL still names the photo — and the

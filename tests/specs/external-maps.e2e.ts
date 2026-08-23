@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './_fixtures';
 
 // Apple/Google Maps buttons call `window.open(url, '_blank')` (see
 // `MapView.openExternal` in src/client/components/map-view/index.ts). Stub

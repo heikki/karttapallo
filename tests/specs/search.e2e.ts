@@ -1,6 +1,5 @@
-import { expect, test } from '@playwright/test';
-
-import { mapCenter } from './_helpers';
+import { expect, test } from './_fixtures';
+import { cameraSettled, mapCenter } from './_helpers';
 
 // Fixture:
 //   e2e-1 — 2024, Helsinki, iPhone, place Kuhmo
@@ -15,12 +14,10 @@ test('Search by place, applied as a token', async ({ page }) => {
   const search = page.getByRole('combobox', { name: 'Search' });
   const suggestions = page.getByRole('listbox', { name: 'Search suggestions' });
 
-  // Let the opening fit-to-all-photos settle first. Searching before the map
-  // has loaded lets <map-fit>'s own startup fit run against the already-filtered
-  // set, which lands on the right coordinates for the wrong reason.
-  await expect
-    .poll(async () => (await mapCenter(page))?.lat)
-    .toBeCloseTo(60.86, 1);
+  // Let the opening camera settle first. Searching before the map has loaded
+  // lets <map-fit>'s own startup fit run against the already-filtered set,
+  // which lands on the right coordinates for the wrong reason.
+  await cameraSettled(page);
 
   // Typing offers both "ku" places, alphabetical at equal counts.
   await search.fill('ku');

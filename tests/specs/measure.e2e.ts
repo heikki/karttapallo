@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './_fixtures';
 
 // The measure overlay (`<map-measure>` → `.overlay`) cycles through three
 // messages depending on point count:

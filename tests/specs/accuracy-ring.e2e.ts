@@ -1,5 +1,6 @@
-import { expect, test, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
 
+import { expect, test } from './_fixtures';
 import { sourceFeatureCount } from './_helpers';
 
 // Fixture (sorted by date): e2e-2 (oldest), e2e-1, e2e-3 (newest). All three

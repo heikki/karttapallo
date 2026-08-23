@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './_fixtures';
 
 // URL keys (see src/client/common/view-state.ts):
 //   mapStyle    → ?style=…    (omitted when default 'satellite')

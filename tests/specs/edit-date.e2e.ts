@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './_fixtures';
 
 test("Adjust a photo's date and copy/paste between photos", async ({
   page
