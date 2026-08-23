@@ -28,7 +28,7 @@ jobs:
       - run: bun run e2e:install
       - run: bun run e2e
       - if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: playwright-results
           path: tests/output/results
