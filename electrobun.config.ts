@@ -92,13 +92,17 @@ export default {
       defaultRenderer: 'native',
       createDmg: false,
 
-      // Sign with the identity set into process.env above, which Electrobun's
-      // codesign step reads. Only `--env=stable` builds actually
-      // sign — plain `electrobun build` defaults to dev and skips signing — so
-      // the signed path is `bun run install:app`. Signing makes the macOS Full
-      // Disk Access grant persist across launches and shows the app as
-      // "Karttapallo" instead of "launcher" — see docs/gotchas.md and
-      // docs/adr/0012.
+      // Signing runs for canary and stable builds; dev builds are never signed,
+      // whatever this says, so the signed path here is `bun run install:app`.
+      // The identity comes from ELECTROBUN_DEVELOPER_ID, defaulted in that
+      // script. Signing makes the macOS Full Disk Access grant persist across
+      // launches and shows the app as "Karttapallo" instead of "launcher" —
+      // see docs/gotchas.md and docs/adr/0012.
+      //
+      // notarize stays false because that needs a real Developer ID
+      // certificate; ours is the self-signed local identity from
+      // `bun run cert`. Hutch can notarize and staple when there is one — it
+      // reads App Store Connect or Apple ID credentials from the environment.
       codesign: true,
       notarize: false,
       entitlements: {
@@ -106,10 +110,10 @@ export default {
         // signed `bun` process is killed on launch.
         'com.apple.security.cs.allow-jit': true,
         'com.apple.security.cs.allow-unsigned-executable-memory': true,
-        // The launcher loads dylibs (libkarttapallo.dylib, libNativeWrapper.dylib,
-        // and Bun's own) that aren't signed with our identity; without this the
-        // hardened runtime refuses to load them.
-        'com.apple.security.cs.disable-library-validation': true,
+        // No disable-library-validation: Hutch signs every nested Mach-O — the
+        // packaged Bun, its own dylibs, and our libkarttapallo.dylib — with
+        // this identity, so library validation has nothing to reject. Under
+        // Electrobun 1.x they arrived unsigned and it was required.
         // The app drives Photos.app over AppleScript (location/date/timezone
         // edits — see photos-edit.ts). Under the hardened runtime, sending
         // Apple Events is BLOCKED outright without this entitlement: macOS

@@ -4,11 +4,11 @@
 #
 # Under the hardened runtime an Apple Event send is auto-denied with
 # errAEEventNotPermitted (-1743) — and macOS shows NO consent prompt — unless
-# the app's Info.plist carries NSAppleEventsUsageDescription. Electrobun's CLI
-# has an entitlement->usage-description map, but it does NOT include
-# apple-events, and the CLI ships as a prebuilt binary (the `electrobun` npm bin
-# downloads and runs it), so the map can't be patched from source. So we inject
-# the key post-build.
+# the app's Info.plist carries NSAppleEventsUsageDescription. Electrobun writes
+# entitlements but not usage descriptions, and says so outright: "An entitlement
+# does not replace the matching usage-description metadata or application
+# permission flow." There is no config field for it, so we inject the key
+# post-build.
 #
 # The catch: an --env=stable build is a SELF-EXTRACTOR. The real app bundle
 # lives compressed in Contents/Resources/<hash>.tar.zst and is unpacked over the

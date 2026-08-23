@@ -32,3 +32,5 @@ The same serialization boundary broke code signing: `electrobun.config.ts` used 
 `scripts/finalize-stable.sh` survives unchanged: 2.x still emits `entitlements.plist` beside the bundle and still ships the app as a `*.tar.zst` self-extractor payload, so patching `NSAppleEventsUsageDescription` into both copies and re-signing works exactly as before. 2.x has no config field for Info.plist usage descriptions either, so the script is still needed.
 
 What did change is the bundle's shape, and `install:app` now deletes the installed bundle before copying — see [gotchas.md](../gotchas.md).
+
+One entitlement went away with the move. Hutch signs every nested Mach-O — the packaged Bun, its own dylibs, and our `libkarttapallo.dylib` — with the build's identity, so `com.apple.security.cs.disable-library-validation` has nothing left to permit. Verified by building and running a stable bundle without it: the native bridge still resolves the library bookmark, which is the load the entitlement existed for. Under 1.x those dylibs arrived unsigned and it was load-bearing.
