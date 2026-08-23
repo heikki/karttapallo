@@ -1,6 +1,7 @@
 artifacts
 build
 .claude
+.cottontail-tmp
 .data
 .DS_Store
 *.dylib

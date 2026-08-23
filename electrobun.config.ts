@@ -1,11 +1,31 @@
+import { existsSync, readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import type { ElectrobunConfig } from 'electrobun';
 
-// The macOS code-signing identity (create it locally with `bun run cert
-// --create`) is NOT set here: Hutch serializes this config and signs from
-// another process, so mutating process.env here would never reach it. The
-// default lives in the `build:app:stable` script instead, where an explicit
-// ELECTROBUN_DEVELOPER_ID in the environment still wins — e.g. a Developer ID
-// on a release machine.
+// Hutch evaluates this config in its own runtime, which does not read `.env`
+// the way `bun run` does. Without this the PUBLIC_* keys bake in empty and the
+// app ships with the MML basemaps and routing silently switched off — a build
+// that looks successful and is quietly missing features. An exported variable
+// still wins, so CI and release machines can set them the usual way.
+function publicKey(name: string): string {
+  const fromEnv = process.env[name];
+  if (fromEnv !== undefined && fromEnv !== '') return fromEnv;
+  // Anchored to this file: Hutch evaluates the config from a temp directory,
+  // so a cwd-relative path finds nothing.
+  const dotenv = fileURLToPath(new URL('.env', import.meta.url));
+  if (!existsSync(dotenv)) return '';
+  for (const line of readFileSync(dotenv, 'utf8').split('\n')) {
+    const trimmed = line.trim();
+    if (trimmed === '' || trimmed.startsWith('#')) continue;
+    const eq = trimmed.indexOf('=');
+    if (eq === -1 || trimmed.slice(0, eq).trim() !== name) continue;
+    return trimmed
+      .slice(eq + 1)
+      .trim()
+      .replace(/^['"]|['"]$/g, '');
+  }
+  return '';
+}
 
 export default {
   app: {
@@ -33,7 +53,7 @@ export default {
       external: ['prettier'],
       define: {
         'process.env.PUBLIC_ORS_API_KEY': JSON.stringify(
-          process.env.PUBLIC_ORS_API_KEY ?? ''
+          publicKey('PUBLIC_ORS_API_KEY')
         )
       }
     },
@@ -43,10 +63,10 @@ export default {
         entrypoint: 'src/client/index.ts',
         define: {
           'process.env.PUBLIC_MML_API_KEY': JSON.stringify(
-            process.env.PUBLIC_MML_API_KEY ?? ''
+            publicKey('PUBLIC_MML_API_KEY')
           ),
           'process.env.PUBLIC_ORS_API_KEY': JSON.stringify(
-            process.env.PUBLIC_ORS_API_KEY ?? ''
+            publicKey('PUBLIC_ORS_API_KEY')
           )
         }
       }
