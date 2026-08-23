@@ -2,12 +2,12 @@
 
 Geotagged photo map viewer with Apple Photos integration.
 
-## Project Stats (as of 20.08.2026)
+## Project Stats (as of 23.08.2026)
 
 - **TypeScript files**: 133
-- **Lines of code**: 16,913 (+ 6,580 tests)
-- **Total commits**: 676
-- **Total tokens**: ~3,209M | **Total cost**: ~$2,095
+- **Lines of code**: 16,845 (+ 6,754 tests)
+- **Total commits**: 680
+- **Total tokens**: ~3,228M | **Total cost**: ~$2,108
 
 ## Updating This Diary
 
@@ -36,6 +36,14 @@ git log --pretty=format:"%ad|%s" --date=format:"%Y-%m-%d" | head -50  # Recent c
 - Skip minor tweaks — only significant features and fixes belong, especially on busy days.
 - Describe final outcomes, not reverted intermediate attempts.
 - Flat list, no sub-bullets or prose.
+
+## 23.08.2026 — Desktop shell jumps a major; dependency refresh
+
+**Tokens**: 19M | **Cost**: $13
+
+- A popup now fades out as its photo passes behind the globe, rather than being clipped at the globe's edge
+- Internal: the desktop shell moved to its next major, retiring the build-tool pin that had blocked upgrades since May
+- Internal: map library, linter config and browser-test runner each moved up a major; the type checker's next major waits on its lint tooling
 
 ## 20.08.2026 — The map always has a photo chosen; one owner for the server graph
 
