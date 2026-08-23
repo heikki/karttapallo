@@ -198,7 +198,14 @@ const fetch = createRequestHandler({
   // once album directories are named by UUID, a request path can't name one.
   staticRoots: ['src/client'],
   vendorFiles: {
-    '/maplibre-gl.css': 'node_modules/maplibre-gl/dist/maplibre-gl.css'
+    '/maplibre-gl.css': 'node_modules/maplibre-gl/dist/maplibre-gl.css',
+    // maplibre 6 loads its worker as a real URL, resolved against the bundle,
+    // and the worker imports the shared chunk beside it. Without both served
+    // the worker 404s and the map never finishes loading — see docs/gotchas.md.
+    '/maplibre-gl-worker.mjs':
+      'node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs',
+    '/maplibre-gl-shared.mjs':
+      'node_modules/maplibre-gl/dist/maplibre-gl-shared.mjs'
   }
 });
 

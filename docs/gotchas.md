@@ -58,6 +58,10 @@ The failure was invisible for a second reason: `alert()` is a **no-op** in Elect
 
 Hutch evaluates `electrobun.config.ts` in its own runtime, with the working directory set to `.cottontail-tmp/electrobun/<pid>` — not the project root — and it does not read `.env` the way `bun run` does. Both bite the `define` block that bakes the `PUBLIC_*` API keys into the bundles: reading them straight off `process.env` yields `""`, and reading `.env` by a cwd-relative path finds nothing. The build still succeeds; the app just ships with the MML basemaps and the routing service silently switched off, which looks like the keys were never set. The config reads `.env` through a path anchored to `import.meta.url`, and an exported variable still takes precedence.
 
+### maplibre's worker is a served file, and a 404 kills the map silently
+
+From maplibre 6 the worker is fetched as a real URL derived from the bundle's own URL, and it imports a sibling shared chunk — so `maplibre-gl-worker.mjs` and `maplibre-gl-shared.mjs` have to be reachable next to the bundle in every serving path: the packaged app copies them into the view directory, and the dev and E2E servers map them as vendor files. When they are missing the map never finishes loading, which surfaces as no popup, no tile requests, and a map stuck at the world view — a 404 in the console is the only direct clue. Raster-only styles survive it often enough on a fast machine to pass a local test run and fail in CI.
+
 ### The views bundle is ESM — the page must load it as a module
 
 `src/client/index.html` loads the bundle with `<script type="module">`. A plain `<script src>` parses the bundle as a classic script, where `import.meta` is a syntax error: the whole bundle fails to parse, the webview renders nothing, and **no error reaches the terminal** — the only symptom is that the webview's own console output (the Lit dev-mode warning, the image-cache line) stops appearing. maplibre-gl 6 is what put `import.meta.url` in the bundle, to resolve its worker; anything else ESM-only will do the same.
