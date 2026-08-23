@@ -1,10 +1,11 @@
-*.dylib
-*.photoslibrary
+artifacts
+build
 .claude
 .data
 .DS_Store
+*.dylib
 .env
-artifacts
-build
+.hutch
 node_modules
+*.photoslibrary
 tests/output

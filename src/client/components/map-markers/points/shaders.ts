@@ -1,4 +1,4 @@
-import type { CustomRenderMethodInput, Map as MapGL } from 'maplibre-gl';
+import type { CustomRenderMethodInput } from 'maplibre-gl';
 
 export const MIP_LEVELS = 4;
 
@@ -93,27 +93,11 @@ function projectionPrelude(shaderData: ShaderData) {
 export function setProjectionUniforms(
   gl: WebGL2RenderingContext,
   s: Shader,
-  map: MapGL,
   options: CustomRenderMethodInput
 ) {
-  const t = map.transform as unknown as Record<string, unknown>;
-  if (typeof t.getProjectionDataForCustomLayer !== 'function') {
-    gl.uniformMatrix4fv(
-      s.u('u_matrix'),
-      false,
-      options.modelViewProjectionMatrix as Float32Array
-    );
-    return;
-  }
-  const pd = (
-    t.getProjectionDataForCustomLayer as (b: boolean) => {
-      mainMatrix: Float32Array;
-      fallbackMatrix: Float32Array;
-      tileMercatorCoords: [number, number, number, number];
-      clippingPlane: [number, number, number, number];
-      projectionTransition: number;
-    }
-  )(true);
+  // maplibre 6 hands custom layers their projection data directly; v5 only
+  // exposed it on the internal `map.transform`.
+  const pd = options.defaultProjectionData;
   gl.uniformMatrix4fv(s.u('u_projection_matrix'), false, pd.mainMatrix);
   gl.uniformMatrix4fv(
     s.u('u_projection_fallback_matrix'),

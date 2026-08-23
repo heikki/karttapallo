@@ -151,145 +151,154 @@ export class FilterPanel extends SignalWatcher(LitElement) {
             ${FilterPanel._renderStats()}
           </p>
         </div>
-        ${this._collapsed
-          ? nothing
-          : html`
-              <div class="panel-body">
-                <search-field></search-field>
-                ${renderSelect('Year', years, f.year, onYearChange)}
-                ${renderSelect('Album', albumOpts, f.album, onAlbumChange)}
-                ${renderSelect('Camera', cameraOpts, f.camera, onCameraChange)}
-                <label>Media</label>
-                ${renderFilterBtns(
-                  f.media,
-                  [
-                    { value: 'photo', label: 'Photos' },
-                    { value: 'video', label: 'Videos' }
-                  ],
-                  (v) => {
-                    this._onMediaClick(v);
-                  },
-                  (v) => {
-                    this._onMediaDblClick(v);
-                  }
-                )}
-                <label>Location</label>
-                ${renderFilterBtns(
-                  f.gps,
-                  [
-                    { value: 'exif', label: 'Exif', color: '#3b82f6' },
-                    { value: 'inferred', label: 'Inferred', color: '#f59e0b' },
-                    { value: 'user', label: 'User', color: '#22c55e' },
-                    { value: 'none', label: 'None', color: '#9ca3af' }
-                  ],
-                  (v) => {
-                    this._onGpsClick(v);
-                  },
-                  (v) => {
-                    this._onGpsDblClick(v);
-                  }
-                )}
-                <label>Map</label>
-                ${renderStyleBtns(
-                  [
-                    { style: 'satellite', label: 'Aerial' },
-                    { style: 'topo', label: 'Topo' },
-                    ...(HAS_MML
-                      ? [
-                          { style: 'mml_maastokartta', label: 'Maasto' },
-                          { style: 'mml_ortokuva', label: 'Orto' }
-                        ]
-                      : [])
-                  ],
-                  viewState.mapStyle.get(),
-                  (s) => {
-                    viewState.mapStyle.set(s);
-                  }
-                )}
-                <label>Markers</label>
-                ${renderStyleBtns(
-                  [
-                    { style: 'classic', label: 'Classic' },
-                    { style: 'points', label: 'Points' }
-                  ],
-                  viewState.markerStyle.get(),
-                  (s) => {
-                    viewState.markerStyle.set(s);
-                  }
-                )}
-                <div class="view-buttons">
-                  <button
-                    class="view-btn"
-                    @click=${() => {
-                      actions.fitToPhotos(true);
-                    }}
-                  >
-                    Fit
-                  </button>
-                  <button class="view-btn" @click=${onReset}>Reset</button>
-                  <button
-                    class="view-btn ${interactionMode.current.get() ===
-                    'measure'
-                      ? 'active'
-                      : ''}"
-                    @click=${() => {
-                      interactionMode.toggle('measure');
-                    }}
-                  >
-                    Measure
-                  </button>
-                </div>
-                <album-controls .album=${f.album}></album-controls>
-                <div class="view-buttons">
-                  <button
-                    class="view-btn"
-                    @click=${() => {
-                      actions.openExternalMap('apple');
-                    }}
-                  >
-                    Apple Maps
-                  </button>
-                  <button
-                    class="view-btn"
-                    @click=${() => {
-                      actions.openExternalMap('google');
-                    }}
-                  >
-                    Google Maps
-                  </button>
-                </div>
-                ${editCount > 0
-                  ? html` <div
-                      class="edit-section"
-                      role="region"
-                      aria-label="Pending edits"
+        ${
+          this._collapsed
+            ? nothing
+            : html`
+                <div class="panel-body">
+                  <search-field></search-field>
+                  ${renderSelect('Year', years, f.year, onYearChange)}
+                  ${renderSelect('Album', albumOpts, f.album, onAlbumChange)}
+                  ${renderSelect('Camera', cameraOpts, f.camera, onCameraChange)}
+                  <label>Media</label>
+                  ${renderFilterBtns(
+                    f.media,
+                    [
+                      { value: 'photo', label: 'Photos' },
+                      { value: 'video', label: 'Videos' }
+                    ],
+                    (v) => {
+                      this._onMediaClick(v);
+                    },
+                    (v) => {
+                      this._onMediaDblClick(v);
+                    }
+                  )}
+                  <label>Location</label>
+                  ${renderFilterBtns(
+                    f.gps,
+                    [
+                      { value: 'exif', label: 'Exif', color: '#3b82f6' },
+                      {
+                        value: 'inferred',
+                        label: 'Inferred',
+                        color: '#f59e0b'
+                      },
+                      { value: 'user', label: 'User', color: '#22c55e' },
+                      { value: 'none', label: 'None', color: '#9ca3af' }
+                    ],
+                    (v) => {
+                      this._onGpsClick(v);
+                    },
+                    (v) => {
+                      this._onGpsDblClick(v);
+                    }
+                  )}
+                  <label>Map</label>
+                  ${renderStyleBtns(
+                    [
+                      { style: 'satellite', label: 'Aerial' },
+                      { style: 'topo', label: 'Topo' },
+                      ...(HAS_MML
+                        ? [
+                            { style: 'mml_maastokartta', label: 'Maasto' },
+                            { style: 'mml_ortokuva', label: 'Orto' }
+                          ]
+                        : [])
+                    ],
+                    viewState.mapStyle.get(),
+                    (s) => {
+                      viewState.mapStyle.set(s);
+                    }
+                  )}
+                  <label>Markers</label>
+                  ${renderStyleBtns(
+                    [
+                      { style: 'classic', label: 'Classic' },
+                      { style: 'points', label: 'Points' }
+                    ],
+                    viewState.markerStyle.get(),
+                    (s) => {
+                      viewState.markerStyle.set(s);
+                    }
+                  )}
+                  <div class="view-buttons">
+                    <button
+                      class="view-btn"
+                      @click=${() => {
+                        actions.fitToPhotos(true);
+                      }}
                     >
-                      <span class="count" aria-label="Pending edit count"
-                        >${editCount}</span
-                      >
-                      pending edits
-                      <div class="edit-buttons">
-                        <button
-                          ?disabled=${isSaving}
-                          @click=${() => {
-                            actions.saveEdits();
-                          }}
+                      Fit
+                    </button>
+                    <button class="view-btn" @click=${onReset}>Reset</button>
+                    <button
+                      class="view-btn ${
+                        interactionMode.current.get() === 'measure'
+                          ? 'active'
+                          : ''
+                      }"
+                      @click=${() => {
+                        interactionMode.toggle('measure');
+                      }}
+                    >
+                      Measure
+                    </button>
+                  </div>
+                  <album-controls .album=${f.album}></album-controls>
+                  <div class="view-buttons">
+                    <button
+                      class="view-btn"
+                      @click=${() => {
+                        actions.openExternalMap('apple');
+                      }}
+                    >
+                      Apple Maps
+                    </button>
+                    <button
+                      class="view-btn"
+                      @click=${() => {
+                        actions.openExternalMap('google');
+                      }}
+                    >
+                      Google Maps
+                    </button>
+                  </div>
+                  ${
+                    editCount > 0
+                      ? html` <div
+                          class="edit-section"
+                          role="region"
+                          aria-label="Pending edits"
                         >
-                          ${isSaving ? 'Saving...' : 'Save to Photos'}
-                        </button>
-                        <button
-                          class="secondary"
-                          @click=${() => {
-                            edits.clear();
-                          }}
-                        >
-                          Discard
-                        </button>
-                      </div>
-                    </div>`
-                  : nothing}
-              </div>
-            `}
+                          <span class="count" aria-label="Pending edit count"
+                            >${editCount}</span
+                          >
+                          pending edits
+                          <div class="edit-buttons">
+                            <button
+                              ?disabled=${isSaving}
+                              @click=${() => {
+                                actions.saveEdits();
+                              }}
+                            >
+                              ${isSaving ? 'Saving...' : 'Save to Photos'}
+                            </button>
+                            <button
+                              class="secondary"
+                              @click=${() => {
+                                edits.clear();
+                              }}
+                            >
+                              Discard
+                            </button>
+                          </div>
+                        </div>`
+                      : nothing
+                  }
+                </div>
+              `
+        }
       </div>
     `;
   }

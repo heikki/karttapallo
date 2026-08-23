@@ -7,7 +7,7 @@ const {
   ApplicationMenu,
   Utils,
   default: Electrobun
-} = await import('electrobun/bun');
+} = await import('electrobun/main');
 
 const { parseDeepLink, deepLinkViewUrl } = await import('./deep-link');
 const { openLibrarySession } = await import('./library-session');

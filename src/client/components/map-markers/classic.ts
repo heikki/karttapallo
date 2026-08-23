@@ -208,7 +208,7 @@ export class ClassicLayer implements MarkerLayer {
     if (this.map === null) return;
 
     const source = this.map.getSource<GeoJSONSource>('classic-source');
-    if (source !== undefined) source.setData(buildGeoJSON(view.photos));
+    if (source !== undefined) void source.setData(buildGeoJSON(view.photos));
 
     const v = view.hidden ? 'none' : 'visible';
     for (const id of LAYER_IDS) {

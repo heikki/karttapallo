@@ -139,7 +139,7 @@ export function raiseEditPoints(map: MapGL) {
 function updateLineSrc(map: MapGL, r: RouteData) {
   const src = map.getSource<GeoJSONSource>('route-edit-line');
   if (src === undefined) return;
-  src.setData({
+  void src.setData({
     type: 'FeatureCollection',
     features: buildLineFeatures(r)
   });
@@ -150,7 +150,7 @@ export function updateEditSources(map: MapGL, r: RouteData) {
   if (pointsSrc !== undefined) {
     const photoMap = new Map<string, Photo>();
     for (const p of data.filteredPhotos.get()) photoMap.set(p.uuid, p);
-    pointsSrc.setData({
+    void pointsSrc.setData({
       type: 'FeatureCollection',
       features: r.points.map((p, i) => ({
         type: 'Feature' as const,
@@ -169,7 +169,7 @@ export function updateEditSources(map: MapGL, r: RouteData) {
 
   const hitSrc = map.getSource<GeoJSONSource>('route-edit-hit');
   if (hitSrc !== undefined) {
-    hitSrc.setData({
+    void hitSrc.setData({
       type: 'FeatureCollection',
       features: r.segments.map((seg, i) => ({
         type: 'Feature' as const,
@@ -184,5 +184,5 @@ export function updateEditSources(map: MapGL, r: RouteData) {
 
 export function setHoverSource(map: MapGL, geojson: object) {
   const src = map.getSource<GeoJSONSource>('route-edit-hover');
-  src?.setData(geojson as GeoJSON.GeoJSON);
+  void src?.setData(geojson as GeoJSON.GeoJSON);
 }

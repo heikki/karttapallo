@@ -248,21 +248,23 @@ export class PhotoLightbox extends SignalWatcher(LitElement) {
 
     return html`
       <div class="image-wrap" @click=${stopPropagation}>
-        ${isVideo(photo)
-          ? html`<video
-              src=${getVideoUrl(photo)}
-              poster=${getFullUrl(photo)}
-              autoplay
-              playsinline
-              @mousemove=${() => {
-                this._onVideoMouseMove();
-              }}
-              @volumechange=${(e: Event) => {
-                this._videoMuted = (e.target as HTMLVideoElement).muted;
-              }}
-              .muted=${this._videoMuted}
-            ></video>`
-          : html`<img src=${getFullUrl(photo)} alt="" />`}
+        ${
+          isVideo(photo)
+            ? html`<video
+                src=${getVideoUrl(photo)}
+                poster=${getFullUrl(photo)}
+                autoplay
+                playsinline
+                @mousemove=${() => {
+                  this._onVideoMouseMove();
+                }}
+                @volumechange=${(e: Event) => {
+                  this._videoMuted = (e.target as HTMLVideoElement).muted;
+                }}
+                .muted=${this._videoMuted}
+              ></video>`
+            : html`<img src=${getFullUrl(photo)} alt="" />`
+        }
       </div>
     `;
   }

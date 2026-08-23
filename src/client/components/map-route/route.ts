@@ -7,8 +7,7 @@ import * as routeData from './data';
 import type { RouteData, SegMethod } from './data';
 
 type FetchResult =
-  | { ok: true; coords: Array<[number, number]> }
-  | { ok: false };
+  { ok: true; coords: Array<[number, number]> } | { ok: false };
 
 async function fetchRouteGeometry(
   start: [number, number],

@@ -153,18 +153,20 @@ export class MapView extends LitElement implements MapApi {
     return html`
       <link rel="stylesheet" href="./maplibre-gl.css" />
       <div id="container"></div>
-      ${this._map === undefined
-        ? nothing
-        : html`
-            <map-gpx></map-gpx>
-            <map-route></map-route>
-            <map-accuracy-ring></map-accuracy-ring>
-            <map-markers></map-markers>
-            <map-measure></map-measure>
-            <map-popup></map-popup>
-            <map-fit></map-fit>
-            <map-placement></map-placement>
-          `}
+      ${
+        this._map === undefined
+          ? nothing
+          : html`
+              <map-gpx></map-gpx>
+              <map-route></map-route>
+              <map-accuracy-ring></map-accuracy-ring>
+              <map-markers></map-markers>
+              <map-measure></map-measure>
+              <map-popup></map-popup>
+              <map-fit></map-fit>
+              <map-placement></map-placement>
+            `
+      }
     `;
   }
 }

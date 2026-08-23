@@ -164,27 +164,29 @@ export class SearchField extends SignalWatcher(LitElement) {
     const applied = data.filters.get().search;
     return html`
       <label for="search">Search</label>
-      ${applied === ''
-        ? html`
-            <input
-              id="search"
-              type="search"
-              role="combobox"
-              aria-expanded=${this._query.trim() !== ''}
-              aria-controls="search-suggestions"
-              autocomplete="off"
-              placeholder="Place or description"
-              .value=${this._query}
-              @input=${(e: Event) => {
-                this._onInput(e);
-              }}
-              @keydown=${(e: KeyboardEvent) => {
-                this._onKeyDown(e);
-              }}
-            />
-            ${this._renderSuggestions(this._suggestions)}
-          `
-        : this._renderToken(applied)}
+      ${
+        applied === ''
+          ? html`
+              <input
+                id="search"
+                type="search"
+                role="combobox"
+                aria-expanded=${this._query.trim() !== ''}
+                aria-controls="search-suggestions"
+                autocomplete="off"
+                placeholder="Place or description"
+                .value=${this._query}
+                @input=${(e: Event) => {
+                  this._onInput(e);
+                }}
+                @keydown=${(e: KeyboardEvent) => {
+                  this._onKeyDown(e);
+                }}
+              />
+              ${this._renderSuggestions(this._suggestions)}
+            `
+          : this._renderToken(applied)
+      }
     `;
   }
 }

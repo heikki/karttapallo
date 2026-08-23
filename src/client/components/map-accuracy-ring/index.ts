@@ -57,7 +57,7 @@ export class MapAccuracyRing extends MapFeatureElement {
   private draw(ring: AccuracyRing | null) {
     const source = this.api.map.getSource<GeoJSONSource>(SOURCE);
     if (source === undefined) return;
-    source.setData({
+    void source.setData({
       type: 'FeatureCollection',
       features: ring === null ? [] : [ringFeature(ring)]
     });

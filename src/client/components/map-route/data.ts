@@ -12,12 +12,7 @@ export interface RoutePoint {
 }
 
 export type SegMethod =
-  | 'straight'
-  | 'driving'
-  | 'walking'
-  | 'hiking'
-  | 'cycling'
-  | 'none';
+  'straight' | 'driving' | 'walking' | 'hiking' | 'cycling' | 'none';
 
 export interface RouteSegment {
   method: SegMethod;

@@ -59,7 +59,7 @@ const loadAlbum = computed<string | null>(() => {
 function applyDisplaySource(map: MapGL, r: RouteData | null) {
   const src = map.getSource<GeoJSONSource>('photo-route');
   if (src === undefined) return;
-  src.setData({
+  void src.setData({
     type: 'FeatureCollection',
     features: r === null ? [] : buildLineFeatures(r)
   });

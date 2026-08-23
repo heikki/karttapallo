@@ -54,6 +54,10 @@ The subtle part: an `--env=stable` build is a **self-extractor**. The real app b
 
 The failure was invisible for a second reason: `alert()` is a **no-op** in Electrobun's WKWebView (the host wires up no JS-dialog delegate), and the save path both swallowed the per-edit error and mutated the display optimistically — so a rejected write looked applied until the next rebuild reverted it. Fixed by returning per-edit `failures` from `/api/save-edits`, only mutating on success, and routing failures to the Shift+D debug log (not just `alert`). When surfacing errors to the user, prefer the debug log — `alert()` cannot be relied on here.
 
+### The views bundle is ESM — the page must load it as a module
+
+`src/client/index.html` loads the bundle with `<script type="module">`. A plain `<script src>` parses the bundle as a classic script, where `import.meta` is a syntax error: the whole bundle fails to parse, the webview renders nothing, and **no error reaches the terminal** — the only symptom is that the webview's own console output (the Lit dev-mode warning, the image-cache line) stops appearing. maplibre-gl 6 is what put `import.meta.url` in the bundle, to resolve its worker; anything else ESM-only will do the same.
+
 ### `electrobun dev` reuses cached binaries
 
 `electrobun dev` may reuse a cached `Resources/app` bundle, so source edits silently don't take effect. To force a clean rebuild, delete `build/dev-macos-arm64/.../Resources/app`, or run `electrobun build` first.

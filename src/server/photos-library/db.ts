@@ -151,10 +151,9 @@ function discoverJoinTable(db: Database): JoinTableInfo {
   if (cached !== undefined) return cached;
 
   const tables = db
-    .query<
-      { name: string },
-      []
-    >("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'Z_%ASSETS' AND name GLOB 'Z_[0-9]*ASSETS' ORDER BY name")
+    .query<{ name: string }, []>(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'Z_%ASSETS' AND name GLOB 'Z_[0-9]*ASSETS' ORDER BY name"
+    )
     .all();
 
   for (const { name } of tables) {
@@ -404,10 +403,9 @@ function loadAlbums(
 export function queryPhotos(db: Database): PhotoRecord[] {
   const joinTable = discoverJoinTable(db);
   const rows = db
-    .query<
-      RawRow,
-      []
-    >(`${BASE_SQL} WHERE a.ZKIND = 0 AND a.ZHIDDEN = 0 AND a.ZTRASHEDSTATE = 0`)
+    .query<RawRow, []>(
+      `${BASE_SQL} WHERE a.ZKIND = 0 AND a.ZHIDDEN = 0 AND a.ZTRASHEDSTATE = 0`
+    )
     .all();
   return buildRecords(db, rows, joinTable);
 }
@@ -415,10 +413,9 @@ export function queryPhotos(db: Database): PhotoRecord[] {
 export function queryVideos(db: Database): PhotoRecord[] {
   const joinTable = discoverJoinTable(db);
   const rows = db
-    .query<
-      RawRow,
-      []
-    >(`${BASE_SQL} WHERE a.ZKIND = 1 AND a.ZHIDDEN = 0 AND a.ZTRASHEDSTATE = 0`)
+    .query<RawRow, []>(
+      `${BASE_SQL} WHERE a.ZKIND = 1 AND a.ZHIDDEN = 0 AND a.ZTRASHEDSTATE = 0`
+    )
     .all();
   return buildRecords(db, rows, joinTable);
 }
@@ -431,10 +428,9 @@ export function queryVideos(db: Database): PhotoRecord[] {
  */
 export function queryNotInAlbumUuid(db: Database) {
   const row = db
-    .query<
-      { ZUUID: string },
-      []
-    >(`SELECT ZUUID FROM ZGENERICALBUM WHERE ZKIND = 1507 AND ZTITLE = 'Not in album' LIMIT 1`)
+    .query<{ ZUUID: string }, []>(
+      `SELECT ZUUID FROM ZGENERICALBUM WHERE ZKIND = 1507 AND ZTITLE = 'Not in album' LIMIT 1`
+    )
     .get();
   return row?.ZUUID ?? '';
 }

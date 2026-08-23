@@ -21,8 +21,7 @@ function toRad(deg: number) {
 async function ringRadius(page: Page, centre: { lat: number; lon: number }) {
   const first = await page.evaluate(() => {
     const view = document.querySelector('map-view') as
-      | (HTMLElement & { _map?: MapLike })
-      | null;
+      (HTMLElement & { _map?: MapLike }) | null;
     const data = view?._map?.getSource('accuracy-ring').serialize().data;
     return data?.features?.[0]?.geometry.coordinates[0] ?? null;
   });

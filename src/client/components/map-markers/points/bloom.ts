@@ -212,7 +212,7 @@ export class BloomLayer implements CustomLayerInterface {
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     gl.colorMask(true, true, true, false);
-    setProjectionUniforms(gl, s, this.map!, options);
+    setProjectionUniforms(gl, s, options);
     const { width: nw, height: nh } = this.map!.getCanvas();
     gl.uniform2f(s.u('u_viewport'), nw, nh);
     gl.uniform2f(s.u('u_subsolar'), sun.lng, sun.lat);
@@ -243,7 +243,7 @@ export class BloomLayer implements CustomLayerInterface {
     gl.useProgram(s.program);
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_COLOR);
-    setProjectionUniforms(gl, s, this.map!, options);
+    setProjectionUniforms(gl, s, options);
     const zoom = this.map!.getZoom();
     const slng = sun.lng * DEG2RAD;
     const slat = sun.lat * DEG2RAD;

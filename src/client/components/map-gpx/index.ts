@@ -240,7 +240,7 @@ export class MapGpx extends MapFeatureElement {
         type: 'FeatureCollection',
         features: this.trackFeatures
       };
-      trackSrc.setData(fc);
+      void trackSrc.setData(fc);
     }
 
     const wptSrc = this.api.map.getSource<GeoJSONSource>('gpx-waypoints');
@@ -249,7 +249,7 @@ export class MapGpx extends MapFeatureElement {
         type: 'FeatureCollection',
         features: this.waypointFeatures
       };
-      wptSrc.setData(fc);
+      void wptSrc.setData(fc);
     }
   }
 }

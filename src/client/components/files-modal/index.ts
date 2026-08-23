@@ -290,12 +290,16 @@ export class FilesModal extends LitElement {
           >
         </div>
         <div class="body">
-          ${this._loading
-            ? html`<div class="loading">Loading...</div>`
-            : nothing}
-          ${!this._loading && this._files.length === 0
-            ? html`<div class="empty">No files</div>`
-            : nothing}
+          ${
+            this._loading
+              ? html`<div class="loading">Loading...</div>`
+              : nothing
+          }
+          ${
+            !this._loading && this._files.length === 0
+              ? html`<div class="empty">No files</div>`
+              : nothing
+          }
           ${this._files.map(
             (f) => html`
               <div class="file-row">

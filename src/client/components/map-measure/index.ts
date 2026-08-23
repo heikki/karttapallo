@@ -149,7 +149,7 @@ export class MapMeasure extends SignalWatcher(MapFeatureElement) {
   private updateSources() {
     const pointSource = this.api.map.getSource<GeoJSONSource>('measure-points');
     if (pointSource !== undefined) {
-      pointSource.setData({
+      void pointSource.setData({
         type: 'FeatureCollection',
         features: this.coords.map((c, i) => ({
           type: 'Feature' as const,
@@ -161,7 +161,7 @@ export class MapMeasure extends SignalWatcher(MapFeatureElement) {
 
     const lineSource = this.api.map.getSource<GeoJSONSource>('measure-line');
     if (lineSource !== undefined) {
-      lineSource.setData(
+      void lineSource.setData(
         this.coords.length >= 2
           ? {
               type: 'Feature',

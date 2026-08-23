@@ -569,18 +569,23 @@ export class InfoPanel extends SignalWatcher(LitElement) {
           >
         </div>
         <div class="body">
-          ${this._loading
-            ? html`<div class="loading">Loading...</div>`
-            : nothing}
-          ${this._error !== null && this._error !== ''
-            ? html`<div class="loading">
-                Failed to load metadata: ${this._error}
-              </div>`
-            : nothing}
+          ${this._renderStatus()}
           ${this._data === null ? nothing : this._renderTable()}
         </div>
       </div>
     `;
+  }
+
+  // `_error` is only ever set next to `_settleLoading()`, and a new load clears
+  // it before starting, so the two states never show at once.
+  private _renderStatus() {
+    if (this._loading) return html`<div class="loading">Loading...</div>`;
+    if (this._error !== null && this._error !== '') {
+      return html`<div class="loading">
+        Failed to load metadata: ${this._error}
+      </div>`;
+    }
+    return nothing;
   }
 
   private _renderTable() {

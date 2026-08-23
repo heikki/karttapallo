@@ -153,7 +153,7 @@ export class PointsLayer implements MarkerLayer {
 
     const source = map.getSource<GeoJSONSource>('points-source');
     if (source !== undefined) {
-      source.setData({ type: 'FeatureCollection', features });
+      void source.setData({ type: 'FeatureCollection', features });
     }
     this.bloom.updateData(positions);
   }

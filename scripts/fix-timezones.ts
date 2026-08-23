@@ -53,10 +53,9 @@ const photosDb = new Database(
 );
 
 const tables = photosDb
-  .query<
-    { name: string },
-    []
-  >("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'Z_%ASSETS' AND name GLOB 'Z_[0-9]*ASSETS' ORDER BY name")
+  .query<{ name: string }, []>(
+    "SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'Z_%ASSETS' AND name GLOB 'Z_[0-9]*ASSETS' ORDER BY name"
+  )
   .all();
 
 let joinTable = '';

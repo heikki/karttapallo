@@ -80,10 +80,9 @@ const db = new Database(photosDbPath, { readonly: true });
 // ---------- album join table (dynamic name, see fix-timezones.ts) ----------
 
 const tables = db
-  .query<
-    { name: string },
-    []
-  >("SELECT name FROM sqlite_master WHERE type='table' AND name GLOB 'Z_[0-9]*ASSETS'")
+  .query<{ name: string }, []>(
+    "SELECT name FROM sqlite_master WHERE type='table' AND name GLOB 'Z_[0-9]*ASSETS'"
+  )
   .all();
 
 let joinTable = '';

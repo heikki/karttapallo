@@ -13,7 +13,6 @@ import { MapFeatureElement } from '@components/map-view/api';
 import type { PhotoPopup } from '@components/photo-popup';
 
 import * as gestures from './gestures';
-import * as globeMask from './globe-mask';
 import { flyToPopupTo, panToFitPopup } from './pan';
 
 // Decode the new thumb before we swap it onto the popup, so the
@@ -180,14 +179,16 @@ export class MapPopup extends MapFeatureElement {
       maxWidth: '320px',
       anchor: 'bottom',
       offset: this.popupOffset(),
-      subpixelPositioning: true
+      subpixelPositioning: true,
+      // Fade the popup out while its photo is behind the globe (maplibre 6
+      // owns this; it replaced a hand-rolled silhouette mask of ours).
+      locationOccludedOpacity: 0
     })
       .setLngLat([lon, lat])
       .setDOMContent(el)
       .addTo(this.api.map);
 
     gestures.attach(this.api.map, popup);
-    globeMask.attach(this.api.map, popup);
     this.mounted = { popup, el, uuid: photo.uuid };
 
     popup.on('close', () => {

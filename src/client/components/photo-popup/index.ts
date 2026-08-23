@@ -413,26 +413,30 @@ export class PhotoPopup extends SignalWatcher(LitElement) {
         >
           set
         </button>
-        ${loc !== null && photo.gps === 'inferred'
-          ? html`<button
-              class="action-btn"
-              @click=${() => {
-                this._confirmLocation();
-              }}
-            >
-              confirm
-            </button>`
-          : nothing}
-        ${loc === null
-          ? nothing
-          : html`<button
-              class="action-btn"
-              @click=${() => {
-                this._copyLocation();
-              }}
-            >
-              copy
-            </button>`}
+        ${
+          loc !== null && photo.gps === 'inferred'
+            ? html`<button
+                class="action-btn"
+                @click=${() => {
+                  this._confirmLocation();
+                }}
+              >
+                confirm
+              </button>`
+            : nothing
+        }
+        ${
+          loc === null
+            ? nothing
+            : html`<button
+                class="action-btn"
+                @click=${() => {
+                  this._copyLocation();
+                }}
+              >
+                copy
+              </button>`
+        }
         <button
           class="action-btn"
           @click=${() => {
@@ -460,9 +464,9 @@ export class PhotoPopup extends SignalWatcher(LitElement) {
               actions.showLightbox();
             }}
           />
-          ${isVideo(photo)
-            ? html`<div class="video-indicator"></div>`
-            : nothing}
+          ${
+            isVideo(photo) ? html`<div class="video-indicator"></div>` : nothing
+          }
         </div>
         <div class="info">
           ${this._renderDateLine()}<br />
