@@ -5,9 +5,9 @@ Geotagged photo map viewer with Apple Photos integration.
 ## Project Stats (as of 24.08.2026)
 
 - **TypeScript files**: 130
-- **Lines of code**: 15,797 (+ 6,930 tests)
-- **Total commits**: 698
-- **Total tokens**: ~3,299M | **Total cost**: ~$2,157
+- **Lines of code**: 15,832 (+ 6,930 tests)
+- **Total commits**: 702
+- **Total tokens**: ~3,329M | **Total cost**: ~$2,179
 
 ## Updating This Diary
 
@@ -47,14 +47,15 @@ git log --pretty=format:"%ad|%s" --date=format:"%Y-%m-%d" | head -50  # Recent c
 - Describe final outcomes, not reverted intermediate attempts.
 - Flat list, no sub-bullets or prose.
 
-## 24.08.2026 — Desktop shell migration, settled; the map opens on your latest photo
+## 24.08.2026 — Desktop shell migration, settled; the map opens on your latest photo; a smoother globe
 
-**Tokens**: 71M | **Cost**: $47.90
+**Tokens**: 101M | **Cost**: $70.21
 
 - The app opens on your latest photo, and Reset returns you to it instead of keeping the old one
 - Picking an album takes you to its first photo and fits the map to it, even from one already in it
 - Filter dropdowns list newest first, with albums named by number at the top
 - The Points marker style is gone; the classic markers are what the map draws
+- The globe holds its frame rate as you spin or zoom, and stepping photos no longer stutters
 - Internal: packaged builds read their API keys again — the Finnish basemaps and the routing service came back after the shell upgrade had silently dropped them
 - Internal: installing replaces the app bundle instead of merging into it, so a new build can no longer inherit files from the old one
 - Internal: dropped a code-signing entitlement the new shell makes unnecessary, and verified a clean first install from a wiped machine state
