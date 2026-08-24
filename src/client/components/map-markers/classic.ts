@@ -84,19 +84,12 @@ const hitAreaRadius: ExpressionSpecification = [
   16
 ];
 
-const sortKey = [
-  '-',
-  ['*', -1000000, ['get', 'lat']],
-  ['get', 'index']
-] as ExpressionSpecification;
-
 const LAYERS: LayerSpecification[] = [
   // Transparent hit area — larger than visible markers for easier clicking.
   {
     id: 'classic-hit-area',
     type: 'circle',
     source: 'classic-source',
-    layout: { 'circle-sort-key': sortKey },
     paint: {
       'circle-color': 'transparent',
       'circle-radius': hitAreaRadius,
@@ -109,7 +102,6 @@ const LAYERS: LayerSpecification[] = [
     id: 'classic-outlines',
     type: 'circle',
     source: 'classic-source',
-    layout: { 'circle-sort-key': sortKey },
     paint: {
       'circle-color': '#fff',
       'circle-radius': outlineRadius,
@@ -121,7 +113,6 @@ const LAYERS: LayerSpecification[] = [
     id: 'classic-markers',
     type: 'circle',
     source: 'classic-source',
-    layout: { 'circle-sort-key': sortKey },
     paint: {
       'circle-color': gpsColor,
       'circle-radius': radius,
@@ -240,21 +231,35 @@ function lerpStops(zoom: number, stops: number[]) {
   return stops[stops.length - 1]!;
 }
 
+/**
+ * Northernmost marker first, so the ones below overlap the ones above — the
+ * painter's order a field of pins wants.
+ *
+ * Carried by the array rather than `circle-sort-key`, which expresses the same
+ * order but costs per frame: a key that differs per feature puts every marker
+ * in its own segment, and MapLibre then rebuilds, re-sorts and re-issues that
+ * whole list on every frame it draws — 4.8k draw calls a layer, three layers,
+ * enough to drop frames on a spin of the globe. Ordering the features instead
+ * is free: MapLibre draws a bucket in the order it was given.
+ *
+ * `index` stays the position in `photos`, which is what the click handler
+ * looks up — it is the features that are reordered, not what they point at.
+ */
 function buildGeoJSON(photos: Photo[]): FeatureCollection<Point> {
+  const placed = photos.map((photo, index) => ({
+    index,
+    uuid: photo.uuid,
+    gps: photo.gps ?? 'none',
+    ...edits.getEffectiveCoords(photo)
+  }));
+  // Ties break on the later photo first, as the retired sort key had them.
+  placed.sort((a, b) => (a.lat === b.lat ? b.index - a.index : b.lat - a.lat));
   return {
     type: 'FeatureCollection',
-    features: photos.map((photo, index) => {
-      const { lon, lat } = edits.getEffectiveCoords(photo);
-      return {
-        type: 'Feature',
-        geometry: { type: 'Point', coordinates: [lon, lat] },
-        properties: {
-          index,
-          uuid: photo.uuid,
-          lat,
-          gps: photo.gps ?? 'none'
-        }
-      };
-    })
+    features: placed.map(({ index, uuid, gps, lon, lat }) => ({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [lon, lat] },
+      properties: { index, uuid, gps }
+    }))
   };
 }
