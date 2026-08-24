@@ -21,8 +21,18 @@ Gather data with:
 ```bash
 bunx ccusage                    # Token usage and cost per day
 git log --oneline | wc -l       # Total commits
-find . -name "*.ts" -not -path "./node_modules/*" -not -name "*.test.ts" -not -name "*.e2e.ts" -not -path "./e2e/*" -not -name "test-setup.ts" | xargs wc -l | tail -1  # Source lines
-find . \( -name "*.test.ts" -o -name "*.e2e.ts" -o -name "test-setup.ts" -o -path "./e2e/*.ts" \) -not -path "./node_modules/*" | xargs wc -l | tail -1  # Test lines
+
+# One list, pruned of what isn't the project's own code: dependencies, the
+# desktop shell's vendored sources, build output and the e2e tempdir. Without
+# the prune the shell alone adds ~200 files and ~25k lines to every count.
+TS=$(find . \( -path ./node_modules -o -path ./.hutch -o -path ./build \
+  -o -path ./artifacts -o -path ./tests/output \) -prune -o -name '*.ts' -print)
+TESTS='\.(test|e2e)\.ts$|test-setup\.ts$'
+
+echo "$TS" | wc -l                                        # TypeScript files
+echo "$TS" | grep -vE "$TESTS" | xargs wc -l | tail -1    # Source lines
+echo "$TS" | grep -E "$TESTS" | xargs wc -l | tail -1     # Test lines
+
 git log --pretty=format:"%ad|%s" --date=format:"%Y-%m-%d" | head -50  # Recent commits
 ```
 
