@@ -7,6 +7,7 @@ import * as data from '@common/data';
 import * as edits from '@common/edits';
 import { HAS_MML } from '@common/features';
 import * as interactionMode from '@common/interaction-mode';
+import selection from '@common/selection';
 import { resetUrl } from '@common/url-state';
 import { isVideo } from '@common/utils';
 import { viewState } from '@common/view-state';
@@ -47,6 +48,7 @@ function onReset() {
   viewState.markerStyle.set('classic');
   viewState.routeVisible.set(false);
   data.resetFilters();
+  selection.selectNewest();
   resetUrl();
   actions.fitToPhotos(true);
 }

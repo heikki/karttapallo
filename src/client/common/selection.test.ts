@@ -73,6 +73,25 @@ describe('selectPhoto', () => {
   });
 });
 
+describe('selectNewest', () => {
+  test('selects the last photo of the filtered set', async () => {
+    data.photos.set([
+      photo({ uuid: 'old', date: '2023:01:01 00:00:00' }),
+      photo({ uuid: 'new', date: '2025:12:01 00:00:00' })
+    ]);
+    await flush();
+    selection.selectPhoto('old');
+    selection.selectNewest();
+    expect(selection.selectedPhotoUuid.get()).toBe('new');
+  });
+
+  test('leaves the selection alone when the filters match nothing', () => {
+    selection.selectPhoto('p1');
+    selection.selectNewest();
+    expect(selection.selectedPhotoUuid.get()).toBe('p1');
+  });
+});
+
 describe('isPopupOpen', () => {
   test('returns false when nothing is selected', () => {
     expect(selection.isPopupOpen()).toBe(false);

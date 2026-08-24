@@ -70,6 +70,16 @@ function selectPhoto(uuid: string) {
   }
 }
 
+// Reset's cursor: the far end of the same ordering that makes [0] the
+// oldest, so an undated photo (`sortByDate` keys those last) takes the spot
+// when there is one. User-initiated, so Reset's own fit owns the camera.
+function selectNewest() {
+  const photos = data.filteredPhotos.get();
+  const newest = photos[photos.length - 1];
+  if (newest === undefined) return;
+  selectPhoto(newest.uuid);
+}
+
 function next() {
   const idx = getPhotoIndex();
   if (idx === null) return false;
@@ -145,6 +155,7 @@ export default {
   togglePopup,
   revealPopup,
   selectPhoto,
+  selectNewest,
   next,
   prev
 };

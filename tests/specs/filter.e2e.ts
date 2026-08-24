@@ -40,9 +40,11 @@ test('Filter by year and album', async ({ page }) => {
   await expect(page).toHaveURL(/year=2023/);
   await expect(page).not.toHaveURL(/album=/);
 
-  // Reset wipes every filter and clears the URL.
+  // Reset wipes every filter and clears the URL, and moves off the photo you
+  // were on to the newest one in the restored set.
   await page.getByRole('button', { name: 'Reset' }).click();
 
+  await expect(page).toHaveURL(/id=e2e-3/);
   await expect(page.getByLabel('Year')).toHaveValue('all');
   await expect(page.getByLabel('Album')).toHaveValue('all');
   await expect(page.getByLabel('Camera')).toHaveValue('all');
