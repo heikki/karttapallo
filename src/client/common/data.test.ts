@@ -129,13 +129,13 @@ describe('filteredPhotos', () => {
 });
 
 describe('option cascades', () => {
-  test('albumOptions are sorted unique album names from the year-filtered set', () => {
+  test('albumOptions are unique album names from the year-filtered set', () => {
     photos.set([
       photo({ uuid: 'a', albums: ['Tampere', 'Lahti'] }),
       photo({ uuid: 'b', albums: ['Helsinki'] }),
       photo({ uuid: 'c', albums: ['Helsinki'] })
     ]);
-    expect(albumOptions.get()).toEqual(['Helsinki', 'Lahti', 'Tampere']);
+    expect(albumOptions.get()).toEqual(['Tampere', 'Lahti', 'Helsinki']);
   });
 
   test('albumOptions narrow when year is set', () => {
@@ -169,7 +169,7 @@ describe('option cascades', () => {
       photo({ uuid: 'a', albums: ['Helsinki'] }),
       photo({ uuid: 'b', albums: [] })
     ]);
-    expect(albumOptions.get()).toEqual(['(no album)', 'Helsinki']);
+    expect(albumOptions.get()).toEqual(['Helsinki', '(no album)']);
   });
 
   test('albumOptions excludes "(no album)" when every photo has an album', () => {
@@ -177,17 +177,17 @@ describe('option cascades', () => {
       photo({ uuid: 'a', albums: ['Helsinki'] }),
       photo({ uuid: 'b', albums: ['Tampere'] })
     ]);
-    expect(albumOptions.get()).toEqual(['Helsinki', 'Tampere']);
+    expect(albumOptions.get()).toEqual(['Tampere', 'Helsinki']);
   });
 
-  test('yearOptions are sorted unique years, skipping undated photos', () => {
+  test('yearOptions are unique years newest first, skipping undated photos', () => {
     photos.set([
       photo({ uuid: 'a', date: '2024:01:01 00:00:00' }),
       photo({ uuid: 'b', date: '2019:01:01 00:00:00' }),
       photo({ uuid: 'c', date: '2024:07:01 00:00:00' }),
       photo({ uuid: 'd', date: '' })
     ]);
-    expect(yearOptions.get()).toEqual(['2019', '2024']);
+    expect(yearOptions.get()).toEqual(['2024', '2019']);
   });
 
   test('an active search narrows every select below it', () => {
@@ -221,7 +221,7 @@ describe('option cascades', () => {
     setSearch('Näätämö');
     expect(albumOptions.get()).toEqual(['Lappi']);
     setSearch('');
-    expect(albumOptions.get()).toEqual(['Kainuu', 'Lappi']);
+    expect(albumOptions.get()).toEqual(['Lappi', 'Kainuu']);
   });
 
   test('cameraOptions narrow to albumless photos when album is "(no album)"', () => {

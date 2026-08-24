@@ -133,9 +133,19 @@ function byCamera(ps: Photo[], camera: string): Photo[] {
   return camera === 'all' ? ps : ps.filter((p) => cameraOf(p) === camera);
 }
 
-/** Options for one rung, sorted and deduped; year drops its nulls. */
+/**
+ * Options for one rung, sorted and deduped; year drops its nulls.
+ *
+ * Descending, so the newest year is the first thing under "All" rather than
+ * the last thing after a scroll. Albums and cameras ride along: their names
+ * carry the date often enough that reverse-alphabetical reads as newest-first
+ * too, and the ones that don't were in no meaningful order to lose.
+ * `(no album)` falls to the bottom, which is where a catch-all belongs.
+ */
 function sortedUnique(values: Array<string | null>): string[] {
-  return [...new Set(values.filter((v): v is string => v !== null))].sort();
+  return [...new Set(values.filter((v): v is string => v !== null))]
+    .sort()
+    .reverse();
 }
 
 function keepIfValid(value: string, valid: Set<string | null>): string {

@@ -141,11 +141,12 @@ test('An applied term narrows the selects below it', async ({ page }) => {
   const album = page.getByLabel('Album');
   const camera = page.getByLabel('Camera');
 
-  await expect(year.locator('option')).toHaveText(['All', '2023', '2024']);
+  // Newest first under "All", and albums and cameras ride the same reversal.
+  await expect(year.locator('option')).toHaveText(['All', '2024', '2023']);
   await expect(album.locator('option')).toHaveText([
     'All',
-    'Helsinki',
-    'Tampere'
+    'Tampere',
+    'Helsinki'
   ]);
 
   // Kuusamo is the 2023 / Tampere / Sony photo alone, so the selects below the
@@ -159,8 +160,8 @@ test('An applied term narrows the selects below it', async ({ page }) => {
 
   // Clearing restores them — narrowing hides options, it never drops them.
   await page.getByRole('button', { name: 'Clear search' }).click();
-  await expect(year.locator('option')).toHaveText(['All', '2023', '2024']);
-  await expect(camera.locator('option')).toHaveText(['All', 'Sony', 'iPhone']);
+  await expect(year.locator('option')).toHaveText(['All', '2024', '2023']);
+  await expect(camera.locator('option')).toHaveText(['All', 'iPhone', 'Sony']);
 });
 
 test('Keyboard drives the suggestion list, and Cmd+F focuses it', async ({
