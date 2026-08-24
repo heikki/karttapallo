@@ -148,6 +148,21 @@ function sortedUnique(values: Array<string | null>): string[] {
     .reverse();
 }
 
+/**
+ * Albums whose names start with a number lead the list.
+ *
+ * A dated album is the reversal's one blind spot: digits sort below every
+ * letter, so reversing drops exactly the names that carry a date to the
+ * bottom, under every place name. Each half keeps the order it came in with,
+ * so the numbered ones stay newest first and `(no album)` stays last.
+ */
+function numberedFirst(names: string[]): string[] {
+  function numbered(name: string) {
+    return /^\d/v.test(name);
+  }
+  return [...names.filter(numbered), ...names.filter((n) => !numbered(n))];
+}
+
 function keepIfValid(value: string, valid: Set<string | null>): string {
   return value !== 'all' && !valid.has(value) ? 'all' : value;
 }
@@ -178,7 +193,7 @@ export const yearOptions = computed(() => {
 export const albumOptions = computed(() => {
   const f = _filters.get();
   const yearPs = byYear(bySearch(photos.get(), f.search), f.year);
-  return sortedUnique(yearPs.flatMap(albumsOf));
+  return numberedFirst(sortedUnique(yearPs.flatMap(albumsOf)));
 });
 
 export const cameraOptions = computed(() => {

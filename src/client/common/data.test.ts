@@ -138,6 +138,21 @@ describe('option cascades', () => {
     expect(albumOptions.get()).toEqual(['Tampere', 'Lahti', 'Helsinki']);
   });
 
+  test('albumOptions lead with the albums named by number', () => {
+    photos.set([
+      photo({ uuid: 'a', albums: ['Helsinki'] }),
+      photo({ uuid: 'b', albums: ['2023 Kuusamo'] }),
+      photo({ uuid: 'c', albums: ['2024 Lappi'] }),
+      photo({ uuid: 'd', albums: [] })
+    ]);
+    expect(albumOptions.get()).toEqual([
+      '2024 Lappi',
+      '2023 Kuusamo',
+      'Helsinki',
+      '(no album)'
+    ]);
+  });
+
   test('albumOptions narrow when year is set', () => {
     photos.set([
       photo({
