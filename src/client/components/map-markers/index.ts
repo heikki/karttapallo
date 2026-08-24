@@ -6,56 +6,18 @@ import * as edits from '@common/edits';
 import * as interactionMode from '@common/interaction-mode';
 import selection from '@common/selection';
 import { effect } from '@common/signals';
-import type { MarkerLayer } from '@common/types';
-import { viewState } from '@common/view-state';
 import { MapFeatureElement } from '@components/map-view/api';
 
 import { ClassicLayer } from './classic';
-import { PointsLayer } from './points';
-
-const markerStyles: Record<string, () => MarkerLayer> = {
-  points: () => new PointsLayer(),
-  classic: () => new ClassicLayer()
-};
-
-// Persistent invisible symbol layer that markers' own layers stack
-// just below — preserves marker z-position across classic↔points swaps,
-// since the implementation layers come and go but the anchor never does.
-const ANCHOR = 'markers-anchor';
 
 @customElement('map-markers')
 export class MapMarkers extends MapFeatureElement {
-  private currentStyle = 'classic';
-  private currentLayer: MarkerLayer | null = null;
-  private interactionCleanup: (() => void) | null = null;
+  private readonly layer = new ClassicLayer();
 
   override firstUpdated() {
-    const map = this.api.map;
-
-    if (map.getSource(ANCHOR) === undefined) {
-      map.addSource(ANCHOR, {
-        type: 'geojson',
-        data: { type: 'FeatureCollection', features: [] }
-      });
-    }
-    if (map.getLayer(ANCHOR) === undefined) {
-      map.addLayer({ id: ANCHOR, type: 'symbol', source: ANCHOR });
-    }
-
-    this.install();
+    this.layer.install(this.api.map);
     this.bindInteractions();
     this.refreshView();
-
-    effect(() => {
-      const style = viewState.markerStyle.get();
-      if (!(style in markerStyles)) return;
-      if (style === this.currentStyle) return;
-      this.currentStyle = style;
-      if (this.currentLayer === null) return;
-      this.install();
-      this.bindInteractions();
-      this.refreshView();
-    });
 
     effect(() => {
       data.filteredPhotos.get();
@@ -67,28 +29,27 @@ export class MapMarkers extends MapFeatureElement {
   }
 
   getRadius(zoom: number) {
-    return this.currentLayer?.markerRadius(zoom) ?? 0;
+    return this.layer.markerRadius(zoom);
   }
 
   /**
-   * Is a marker under this screen point? `<map-popup>` asks before treating
-   * a click as a click on the map — the layer handler below claims marker
-   * clicks, but it re-registers on every marker-style swap, so its position
-   * in MapLibre's listener order (and with it `defaultPrevented`) isn't
-   * something another feature can rely on.
+   * Is a marker under this screen point? `<map-popup>` asks before treating a
+   * click as a click on the map, rather than reading `defaultPrevented` from
+   * the layer handler below: MapLibre's listener order decides which of the
+   * two runs first, and that is not something another feature should depend
+   * on.
    */
   hitTest(point: PointLike) {
-    const layerId = this.currentLayer?.id;
-    if (layerId === undefined) return false;
     const map = this.api.map;
-    if (map.getLayer(layerId) === undefined) return false;
-    return map.queryRenderedFeatures(point, { layers: [layerId] }).length > 0;
+    if (map.getLayer(this.layer.id) === undefined) return false;
+    return (
+      map.queryRenderedFeatures(point, { layers: [this.layer.id] }).length > 0
+    );
   }
 
   private refreshView() {
-    if (this.currentLayer === null) return;
     const mode = interactionMode.current.get();
-    this.currentLayer.setView({
+    this.layer.setView({
       photos: data.filteredPhotos.get(),
       selectedPhoto: selection.isPopupOpen()
         ? (selection.getPhoto() ?? null)
@@ -97,18 +58,8 @@ export class MapMarkers extends MapFeatureElement {
     });
   }
 
-  private install() {
-    this.currentLayer?.uninstall();
-    this.currentLayer = markerStyles[this.currentStyle]!();
-    this.currentLayer.install(this.api.map, ANCHOR);
-  }
-
   private bindInteractions() {
-    this.interactionCleanup?.();
-
-    const layerId = this.currentLayer?.id;
-    if (layerId === undefined) return;
-
+    const layerId = this.layer.id;
     const map = this.api.map;
     const canvas = map.getCanvas();
 
@@ -139,12 +90,6 @@ export class MapMarkers extends MapFeatureElement {
     map.on('click', layerId, onLayerClick);
     map.on('mouseenter', layerId, onMouseEnter);
     map.on('mouseleave', layerId, onMouseLeave);
-
-    this.interactionCleanup = () => {
-      map.off('click', layerId, onLayerClick);
-      map.off('mouseenter', layerId, onMouseEnter);
-      map.off('mouseleave', layerId, onMouseLeave);
-    };
   }
 }
 

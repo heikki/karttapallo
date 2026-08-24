@@ -60,8 +60,7 @@ function uuidFromPath(url: URL): string | null {
  *
  * Filters and map position are deliberately dropped: a deep link means "show
  * me this photo", and inheriting a restored year/album filter is exactly what
- * would hide it. Basemap and marker style carry over because they're taste,
- * not scope.
+ * would hide it. The basemap carries over because it's taste, not scope.
  */
 export function deepLinkViewUrl(
   baseUrl: string,
@@ -69,9 +68,7 @@ export function deepLinkViewUrl(
   savedView: Record<string, string> = {}
 ): string {
   const params = new URLSearchParams({ id: uuid, focus: '1' });
-  for (const key of ['style', 'markers']) {
-    const value = savedView[key];
-    if (value !== undefined && value !== '') params.set(key, value);
-  }
+  const style = savedView.style;
+  if (style !== undefined && style !== '') params.set('style', style);
   return `${baseUrl}?${params.toString()}`;
 }

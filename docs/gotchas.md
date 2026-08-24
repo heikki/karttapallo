@@ -111,7 +111,6 @@ The basemap swap in `src/client/components/map-view/setup.ts` uses `setStyle(nex
 Smoke-tested 2026-04-29 (10 scenarios). The following survive the swap and do **not** need a `style.load` re-install hook:
 
 - **GeoJSON `setData()` state** — sources installed at boot and populated via `setData()` keep their data.
-- **Custom WebGL layers** — `CustomLayerInterface` instances (e.g. `BloomLayer` in `points-layer/`) are carried like any other layer.
 - **Layer-bound event handlers** — `map.on('click' | 'mouseenter' | 'mouseleave', layerId, fn)` bindings remain attached.
 
 When adding a new map subsystem (GeoJSON source, custom WebGL layer, or layer-bound handler), install it once at boot in `initMap()`'s `map.on('load', ...)` handler. Do not add a `style.load` re-install — `transformStyle` will carry it across basemap swaps.

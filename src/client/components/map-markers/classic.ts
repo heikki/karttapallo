@@ -8,7 +8,7 @@ import type {
 } from 'maplibre-gl';
 
 import * as edits from '@common/edits';
-import type { MarkerLayer, Photo } from '@common/types';
+import type { Photo } from '@common/types';
 
 const gpsColor = [
   'match',
@@ -170,11 +170,13 @@ const LAYERS: LayerSpecification[] = [
 
 const LAYER_IDS = LAYERS.map((l) => l.id);
 
-export class ClassicLayer implements MarkerLayer {
+export class ClassicLayer {
   readonly id = 'classic-hit-area';
   private map: MapGL | null = null;
 
-  install(map: MapGL, before: string) {
+  // No `before`: the layers land on top of whatever `<map-view>`'s earlier
+  // feature children added, which is what puts markers above them (ADR-0008).
+  install(map: MapGL) {
     this.map = map;
 
     map.addSource('classic-source', {
@@ -183,21 +185,7 @@ export class ClassicLayer implements MarkerLayer {
       maxzoom: 22
     });
 
-    for (const spec of LAYERS) map.addLayer(spec, before);
-  }
-
-  uninstall() {
-    if (this.map === null) return;
-    for (let i = LAYER_IDS.length - 1; i >= 0; i--) {
-      const id = LAYER_IDS[i]!;
-      if (this.map.getLayer(id) !== undefined) {
-        this.map.removeLayer(id);
-      }
-    }
-    if (this.map.getSource('classic-source') !== undefined) {
-      this.map.removeSource('classic-source');
-    }
-    this.map = null;
+    for (const spec of LAYERS) map.addLayer(spec);
   }
 
   setView(view: {

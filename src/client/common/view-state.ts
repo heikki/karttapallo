@@ -11,11 +11,6 @@ export const viewState = {
     },
     (v) => (v === 'satellite' ? null : v)
   ),
-  markerStyle: urlSignal(
-    'markers',
-    (raw) => raw ?? 'classic',
-    (v) => (v === 'classic' ? null : v)
-  ),
   routeVisible: urlSignal(
     'route',
     (raw) => raw === '1',

@@ -47,10 +47,9 @@ describe('deepLinkViewUrl', () => {
     );
   });
 
-  test('carries style and markers over, but not filters or map position', () => {
+  test('carries the basemap over, but not filters or map position', () => {
     const url = deepLinkViewUrl('http://127.0.0.1:5000', UUID, {
       style: 'mml_topo',
-      markers: 'points',
       year: '2019',
       album: 'Iceland',
       lat: '64.1',
@@ -58,13 +57,7 @@ describe('deepLinkViewUrl', () => {
       z: '12'
     });
     const params = new URLSearchParams(new URL(url).search);
-    expect([...params.keys()].sort()).toEqual([
-      'focus',
-      'id',
-      'markers',
-      'style'
-    ]);
+    expect([...params.keys()].sort()).toEqual(['focus', 'id', 'style']);
     expect(params.get('style')).toBe('mml_topo');
-    expect(params.get('markers')).toBe('points');
   });
 });

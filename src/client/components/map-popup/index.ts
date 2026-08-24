@@ -9,7 +9,6 @@ import selection from '@common/selection';
 import { effect } from '@common/signals';
 import type { Photo } from '@common/types';
 import { getThumbUrl } from '@common/utils';
-import { viewState } from '@common/view-state';
 import { MapFeatureElement } from '@components/map-view/api';
 import type { PhotoPopup } from '@components/photo-popup';
 
@@ -61,18 +60,6 @@ export class MapPopup extends MapFeatureElement {
 
     this.api.map.on('click', (e) => {
       this.handleMapClick(e);
-    });
-
-    // Defer so markers' effect swaps the layer first; getRadius() then
-    // returns the new style's radius.
-    let lastMarkerStyle = viewState.markerStyle.get();
-    effect(() => {
-      const next = viewState.markerStyle.get();
-      if (next === lastMarkerStyle) return;
-      lastMarkerStyle = next;
-      queueMicrotask(() => {
-        this.reanchorPopup();
-      });
     });
 
     effect(() => {

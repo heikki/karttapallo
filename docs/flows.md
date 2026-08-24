@@ -24,7 +24,6 @@ Canonical inventory of user-visible flows. Each Tier 5 e2e spec maps to one or m
 ## Map view
 
 - **Switch basemap** — Aerial / Topo / Maasto / Orto buttons; layers survive the swap.
-- **Switch marker style** — Classic / Points buttons.
 - **Switch projection** — globe control (bottom-right) toggles globe ↔ mercator.
 - **Reset the app** — exits modes, defaults filters/styles, clears URL, selects the newest photo, fits to all photos.
 - **Open in Apple Maps / Google Maps** — opens external map at the selected photo, or at the current view when the filters match nothing.

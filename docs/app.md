@@ -7,7 +7,7 @@ Lit + signals client (`src/client/`), Bun server (`src/server/`), ObjC++ native 
 - **Components** — `<filter-panel>`, `<photo-popup>`, `<photo-lightbox>`, `<info-panel>`, `<files-modal>`, `<app-root>`, `<map-view>` and the `<map-*>` map features. Built on Lit ([ADR-0003](adr/0003-lit-web-components-for-ui.md)).
 - **Map features** — each `<map-*>` element extends `MapFeatureElement`, gets the map handle via `@consume(mapContext)`, and lives in `src/client/components/map-*/`. `<map-view>` owns `setupMap()` and the basemap-style effect.
 - **Cross-feature ops** go through the `MapApi` interface — see [ADR-0007](adr/0007-mapapi-cross-feature-seam.md). Adding one is a deliberate two-step: declare in `MapApi`, implement the forwarder.
-- **Layer order** = template order — see [ADR-0008](adr/0008-dom-order-as-z-order.md). `<map-markers>` keeps its z-position across runtime layer swaps via the invisible `markers-anchor` symbol layer.
+- **Layer order** = template order — see [ADR-0008](adr/0008-dom-order-as-z-order.md).
 - **State** lives in `@lit-labs/signals` stores under `@common/` — see [ADR-0004](adr/0004-signals-for-state.md). The stores are `data`, `edits`, `selection`, `view-state`, `interaction-mode`, plus the `urlSignal()` primitive in `url-state`.
 - **Interaction modes** (`placement` | `measure` | `route-edit`) are mutually exclusive via one signal — see [ADR-0009](adr/0009-single-interaction-mode-signal.md).
 - **Selection** is never idly empty: the app auto-selects when a filter change leaves it without one, and fits the camera when it does — see [ADR-0016](adr/0016-always-keep-a-selection.md).
@@ -15,7 +15,7 @@ Lit + signals client (`src/client/`), Bun server (`src/server/`), ObjC++ native 
 
 ### Startup
 
-1. URL-bound view-state signals (`mapStyle`, `markerStyle`, `routeVisible`, `selectedPhotoUuid`) seed synchronously at module load.
+1. URL-bound view-state signals (`mapStyle`, `routeVisible`, `selectedPhotoUuid`) seed synchronously at module load.
 2. `<app-root>` mounts, installs window-level handlers, kicks off `data.loadPhotos()`, renders `<map-view>` plus panel components.
 3. `<map-view>`'s `firstUpdated` calls `setupMap(container, this)` and registers `map.once('style.load')` — not `load`, which also waits for the first frame to be drawn and so never fires if the basemap host doesn't answer.
 4. On style load, `<map-view>` flips `_map`, which mounts the `<map-*>` feature children. Each feature's `firstUpdated` adds its layers and effects (template order = z-order).

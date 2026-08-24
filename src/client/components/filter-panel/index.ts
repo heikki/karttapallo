@@ -46,7 +46,6 @@ function onCameraChange(e: Event) {
 function onReset() {
   interactionMode.exit();
   viewState.mapStyle.set('satellite');
-  viewState.markerStyle.set('classic');
   viewState.routeVisible.set(false);
   data.resetFilters();
   selection.selectNewest();
@@ -212,17 +211,6 @@ export class FilterPanel extends SignalWatcher(LitElement) {
                     viewState.mapStyle.get(),
                     (s) => {
                       viewState.mapStyle.set(s);
-                    }
-                  )}
-                  <label>Markers</label>
-                  ${renderStyleBtns(
-                    [
-                      { style: 'classic', label: 'Classic' },
-                      { style: 'points', label: 'Points' }
-                    ],
-                    viewState.markerStyle.get(),
-                    (s) => {
-                      viewState.markerStyle.set(s);
                     }
                   )}
                   <div class="view-buttons">
