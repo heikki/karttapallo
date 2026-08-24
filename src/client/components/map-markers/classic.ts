@@ -161,9 +161,17 @@ const LAYERS: LayerSpecification[] = [
 
 const LAYER_IDS = LAYERS.map((l) => l.id);
 
+// Named off the signal rather than exported from `@common/edits`, which keeps
+// the pending-edit shape that module's own business.
+type PendingCoords = ReturnType<typeof edits.pendingCoords.get>;
+
 export class ClassicLayer {
   readonly id = 'classic-hit-area';
   private map: MapGL | null = null;
+  // What the source currently holds. Identity is enough to compare: a
+  // `computed` hands back the same array until its inputs change, and an edit
+  // replaces the pending map wholesale rather than mutating it.
+  private builtFrom: { photos: Photo[]; coords: PendingCoords } | null = null;
 
   // No `before`: the layers land on top of whatever `<map-view>`'s earlier
   // feature children added, which is what puts markers above them (ADR-0008).
@@ -181,13 +189,13 @@ export class ClassicLayer {
 
   setView(view: {
     photos: Photo[];
+    coords: PendingCoords;
     selectedPhoto: Photo | null;
     hidden: boolean;
   }) {
     if (this.map === null) return;
 
-    const source = this.map.getSource<GeoJSONSource>('classic-source');
-    if (source !== undefined) void source.setData(buildGeoJSON(view.photos));
+    this.refeed(view.photos, view.coords);
 
     const v = view.hidden ? 'none' : 'visible';
     for (const id of LAYER_IDS) {
@@ -205,6 +213,27 @@ export class ClassicLayer {
         this.map.setFilter(id, filter);
       }
     }
+  }
+
+  /**
+   * Hand the source its features, but only when they are not the ones it
+   * already holds.
+   *
+   * Only the photos and their pending coords are in there; which one is
+   * selected, and whether the markers show at all, are a filter and a
+   * visibility away. Worth telling apart — re-feeding the source costs tens of
+   * milliseconds at a real library's marker count, and moving the selection is
+   * what the arrow keys do continuously.
+   */
+  private refeed(photos: Photo[], coords: PendingCoords) {
+    const built = this.builtFrom;
+    if (built !== null && built.photos === photos && built.coords === coords) {
+      return;
+    }
+    const source = this.map?.getSource<GeoJSONSource>('classic-source');
+    if (source === undefined) return;
+    void source.setData(buildGeoJSON(photos));
+    this.builtFrom = { photos, coords };
   }
 
   markerRadius = classicMarkerRadius;

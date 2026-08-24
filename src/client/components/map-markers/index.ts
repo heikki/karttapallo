@@ -51,6 +51,7 @@ export class MapMarkers extends MapFeatureElement {
     const mode = interactionMode.current.get();
     this.layer.setView({
       photos: data.filteredPhotos.get(),
+      coords: edits.pendingCoords.get(),
       selectedPhoto: selection.isPopupOpen()
         ? (selection.getPhoto() ?? null)
         : null,
