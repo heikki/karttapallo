@@ -4,7 +4,7 @@ Canonical inventory of user-visible flows. Each Tier 5 e2e spec maps to one or m
 
 ## Browse and view
 
-- **Browse the collection** — see all photos and videos on the map; URL state restores filters / view / styles / open popup. One photo is always selected with its popup open, unless the filters match nothing; a filter that drops the selected photo picks the newest that is left — or the oldest, when an album is the filter, since an album is a trip and you want to walk it forwards — and fits the map to it.
+- **Browse the collection** — see all photos and videos on the map; URL state restores filters / view / styles / open popup. One photo is always selected with its popup open, unless the filters match nothing; a filter that drops the selected photo picks the newest that is left and fits the map to it.
 - **Find a photo on the map** — click marker → popup; arrow keys cycle filtered items; Space or thumbnail click → lightbox. Escape, or a click on bare map, hides the popup to show the map under it and hides nothing else; the photo stays selected and its marker lit, and either of those, Space or any change of selection brings the popup back — Space reveals the card rather than skipping it for the lightbox.
 - **View a photo full size** — lightbox shows the photo and nothing else; arrows cycle; Escape/Space/backdrop closes; trackpad pinch zooms.
 - **Watch a video** — videos play inline in lightbox; native controls auto-hide; Enter toggles play/pause (Space closes the lightbox, whatever is in it); mute persists across videos.
@@ -16,7 +16,7 @@ Canonical inventory of user-visible flows. Each Tier 5 e2e spec maps to one or m
 
 - **Search by place, description or category** — Cmd+F (ignored while the lightbox is up, since the box is behind it) or the Search box; typing offers matching terms grouped by kind (Places / Descriptions / Categories) with photo counts, taken by arrows + Enter or click; picking one applies it as a token and fits the map to the result, like the Fit button; whichever photo ends up selected follows the usual rule — kept if it matches the term, otherwise the newest that does (applying a term clears the album, so a search never lands you in an album's chronological order). Escape abandons a half-typed query, and pressing it again on an empty box gives up focus so the arrows drive the map. Case- and accent-insensitive on word starts — `naatamo` finds `Näätämö`. Always searches the whole library: applying a term clears the three dropdowns below, so a suggestion's count is what lands on the map, and they then list only what the term covers.
 - **Filter by year** — dropdown (limited by search); cascades to repopulate album and camera.
-- **Filter by album** — dropdown (limited by search + year); cascades to camera; loads visible GPX tracks if any.
+- **Filter by album** — dropdown (limited by search + year), or an album name in the info panel; takes you to the album's first photo and fits the map to it — an album is a trip, so you enter at the start of it even when the photo you were on is in the album; cascades to camera; loads visible GPX tracks if any. Leaving the album returns you to the photo you came in on.
 - **Filter by camera** — dropdown (limited by search + year + album).
 - **Filter by media type** — toggle Photos / Videos; double-click solos.
 - **Filter by location precision** — toggle Exif / Inferred / User / None (color-coded; double-click solos; "None" excluded by default).

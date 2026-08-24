@@ -2,7 +2,12 @@ import { rmSync } from 'node:fs';
 import type { Page } from '@playwright/test';
 
 import { expect, test } from './_fixtures';
-import { layerVisibility, sourceFeatureCount } from './_helpers';
+import {
+  cameraSettled,
+  layerVisibility,
+  screenPoint,
+  sourceFeatureCount
+} from './_helpers';
 
 // The autosave-and-load tests below mutate `_route.json` on disk. Without a
 // reset, state leaks between tests: a previous run's waypoint sits at the
@@ -41,14 +46,23 @@ async function clickViewBtn(page: Page, label: string) {
     .click();
 }
 
-async function canvasBox(
-  page: Page
-): Promise<{ x: number; y: number; width: number; height: number }> {
-  const box = await page
-    .locator('map-view >> canvas.maplibregl-canvas')
-    .boundingBox();
-  if (box === null) throw new Error('canvas not laid out');
-  return box;
+// The card is anchored over the line these specs need to click — Tampere's
+// two photos are half a kilometre apart and the card is 320px wide — and a
+// click that lands on it opens the lightbox instead of reaching the map.
+// Escape hides it and leaves the selection standing (ADR-0016). Before Edit,
+// where Escape belongs to the mode.
+async function hidePhotoCard(page: Page) {
+  await page.keyboard.press('Escape');
+  await expect(page.locator('photo-popup')).toHaveCount(0);
+}
+
+// Midway between Tampere's two photos (61.5,23.78 and 61.51,23.79), which is
+// a point on the route line drawn between them — what a click has to land on
+// to add a waypoint rather than land on bare map.
+async function clickRouteSegment(page: Page) {
+  await cameraSettled(page);
+  const { x, y } = await screenPoint(page, 23.785, 61.505);
+  await page.mouse.click(x, y);
 }
 
 test('Toggle photo route on the map', async ({ page }) => {
@@ -95,6 +109,7 @@ test('Edit mode adds a waypoint via clicking a segment', async ({ page }) => {
     '3 photos'
   );
   await selectAlbum(page, 'Tampere');
+  await hidePhotoCard(page);
   await clickViewBtn(page, 'Route');
   await expect
     .poll(() => sourceFeatureCount(page, 'photo-route'))
@@ -112,8 +127,7 @@ test('Edit mode adds a waypoint via clicking a segment', async ({ page }) => {
 
   // A click on the canvas adds a waypoint at the nearest segment, so the
   // edit-points source grows by exactly one feature.
-  const box = await canvasBox(page);
-  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  await clickRouteSegment(page);
   await expect
     .poll(() => sourceFeatureCount(page, 'route-edit-points'))
     .toBe(before + 1);
@@ -125,6 +139,7 @@ test('Route edits persist across a page reload', async ({ page }) => {
     '3 photos'
   );
   await selectAlbum(page, 'Tampere');
+  await hidePhotoCard(page);
   await clickViewBtn(page, 'Route');
   await expect
     .poll(() => sourceFeatureCount(page, 'photo-route'))
@@ -136,8 +151,7 @@ test('Route edits persist across a page reload', async ({ page }) => {
   const before = await sourceFeatureCount(page, 'route-edit-points');
 
   // Add a waypoint.
-  const box = await canvasBox(page);
-  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  await clickRouteSegment(page);
   await expect
     .poll(() => sourceFeatureCount(page, 'route-edit-points'))
     .toBe(before + 1);
@@ -177,6 +191,7 @@ test('Route edits persist across album switch and back', async ({ page }) => {
     '3 photos'
   );
   await selectAlbum(page, 'Tampere');
+  await hidePhotoCard(page);
   await clickViewBtn(page, 'Route');
   await expect
     .poll(() => sourceFeatureCount(page, 'photo-route'))
@@ -188,8 +203,7 @@ test('Route edits persist across album switch and back', async ({ page }) => {
   const before = await sourceFeatureCount(page, 'route-edit-points');
 
   // Add a waypoint and exit edit mode (flushes the pending autosave).
-  const box = await canvasBox(page);
-  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  await clickRouteSegment(page);
   await expect
     .poll(() => sourceFeatureCount(page, 'route-edit-points'))
     .toBe(before + 1);

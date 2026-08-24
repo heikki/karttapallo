@@ -36,6 +36,7 @@ function onYearChange(e: Event) {
 
 function onAlbumChange(e: Event) {
   data.setAlbum((e.target as HTMLSelectElement).value);
+  selection.enterAlbum();
 }
 
 function onCameraChange(e: Event) {

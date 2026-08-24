@@ -9,6 +9,7 @@ interface MapLike {
   getSource: (id: string) => GeoJSONLike | undefined;
   getLayoutProperty: (layerId: string, prop: string) => string | undefined;
   getCenter: () => { lat: number; lng: number };
+  project: (lngLat: [number, number]) => { x: number; y: number };
   isMoving: () => boolean;
 }
 
@@ -73,4 +74,30 @@ export async function cameraSettled(page: Page) {
       { intervals: [300] }
     )
     .toBe(true);
+}
+
+/**
+ * Page coordinates of a lng/lat, for clicking something the map drew there.
+ *
+ * Where a feature lands is the camera's business — a fit reserves room for
+ * the popup, so the middle of the canvas is not the middle of the photos.
+ * A spec that means "click the route line" has to ask the map where it is.
+ * Wait out the camera first: projecting mid-flight aims at a frame the
+ * click will never see.
+ */
+export async function screenPoint(page: Page, lon: number, lat: number) {
+  const box = await page
+    .locator('map-view >> canvas.maplibregl-canvas')
+    .boundingBox();
+  if (box === null) throw new Error('canvas not laid out');
+  const point = await page.evaluate(
+    (lngLat) => {
+      const view = document.querySelector('map-view') as MapViewElement | null;
+      const p = view?._map?.project(lngLat);
+      return p === undefined ? null : { x: p.x, y: p.y };
+    },
+    [lon, lat] as [number, number]
+  );
+  if (point === null) throw new Error('map not ready');
+  return { x: box.x + point.x, y: box.y + point.y };
 }

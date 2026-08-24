@@ -253,6 +253,63 @@ describe('next / prev navigation', () => {
   });
 });
 
+describe('enterAlbum', () => {
+  const trip = [
+    photo({ uuid: 'trip-1', date: '2024:06:01 00:00:00', albums: ['Tampere'] }),
+    photo({ uuid: 'trip-2', date: '2024:06:02 00:00:00', albums: ['Tampere'] }),
+    photo({ uuid: 'other', date: '2025:01:01 00:00:00' })
+  ];
+
+  test("jumps to the album's first photo", async () => {
+    data.photos.set([...trip]);
+    await flush();
+    data.setAlbum('Tampere');
+    selection.enterAlbum();
+    expect(selection.selectedPhotoUuid.get()).toBe('trip-1');
+  });
+
+  test('jumps even from a photo already in the album', async () => {
+    data.photos.set([...trip]);
+    await flush();
+    selection.selectPhoto('trip-2');
+    data.setAlbum('Tampere');
+    selection.enterAlbum();
+    await flush();
+    expect(selection.selectedPhotoUuid.get()).toBe('trip-1');
+  });
+
+  test('fits the camera, since the app chose', async () => {
+    data.photos.set([...trip]);
+    await flush();
+    const before = selection.autoSelectCount.get();
+    data.setAlbum('Tampere');
+    selection.enterAlbum();
+    expect(selection.autoSelectCount.get()).toBe(before + 1);
+  });
+
+  test('leaving the album returns to the photo you came in on', async () => {
+    data.photos.set([...trip]);
+    await flush();
+    selection.selectPhoto('other');
+    data.setAlbum('Tampere');
+    selection.enterAlbum();
+    await flush();
+    data.setAlbum('all');
+    await flush();
+    expect(selection.selectedPhotoUuid.get()).toBe('other');
+  });
+
+  test('does nothing for the all-albums option', async () => {
+    data.photos.set([...trip]);
+    await flush();
+    selection.selectPhoto('trip-2');
+    data.setAlbum('all');
+    selection.enterAlbum();
+    await flush();
+    expect(selection.selectedPhotoUuid.get()).toBe('trip-2');
+  });
+});
+
 describe('the selection invariant', () => {
   const photos = [
     photo({ uuid: 'old', date: '2023:01:01 00:00:00' }),
@@ -276,26 +333,6 @@ describe('the selection invariant', () => {
     data.setYear('2024');
     await flush();
     expect(selection.selectedPhotoUuid.get()).toBe('b');
-  });
-
-  test('picks the oldest inside an album, so the arrows walk it forward', async () => {
-    data.photos.set([
-      photo({
-        uuid: 'trip-1',
-        date: '2024:06:01 00:00:00',
-        albums: ['Tampere']
-      }),
-      photo({
-        uuid: 'trip-2',
-        date: '2024:06:02 00:00:00',
-        albums: ['Tampere']
-      }),
-      photo({ uuid: 'other', date: '2025:01:01 00:00:00' })
-    ]);
-    await flush();
-    data.setAlbum('Tampere');
-    await flush();
-    expect(selection.selectedPhotoUuid.get()).toBe('trip-1');
   });
 
   test('auto-selects when a filter drops the selected photo', async () => {

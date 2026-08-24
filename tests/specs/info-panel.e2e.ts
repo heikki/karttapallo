@@ -108,10 +108,11 @@ test('Clicking an album name filters the map to it', async ({ page }) => {
   await expect(page.getByLabel('Photo stats')).toHaveText('2 photos');
   await expect(page).toHaveURL(/album=Tampere/);
 
-  // The photo is in the album it just filtered to, so it stays selected and
-  // the panel stays open on it rather than closing under the click.
+  // Picking an album enters it at its first photo, e2e-2, even though the
+  // photo you clicked from is in the album too — and the panel follows rather
+  // than closing under the click.
   await expect(popup).toBeVisible();
-  await expect(body.getByText('e2e-3.jpg', { exact: true })).toBeVisible();
+  await expect(body.getByText('e2e-2.jpg', { exact: true })).toBeVisible();
 });
 
 test('Every scene label shows, wrapped rather than scrolled', async ({

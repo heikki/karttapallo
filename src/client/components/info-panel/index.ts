@@ -683,6 +683,7 @@ export class InfoPanel extends SignalWatcher(LitElement) {
                   title="Filter the map to this album"
                   @click=${() => {
                     data.setAlbum(album);
+                    selection.enterAlbum();
                   }}
                 >
                   ${album}

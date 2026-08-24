@@ -70,27 +70,33 @@ function selectPhoto(uuid: string) {
   }
 }
 
-// `filteredPhotos` is sorted oldest first, and an undated photo (`sortByDate`
-// keys those last) counts as the newest when there is one.
-function oldest(): Photo | undefined {
-  return data.filteredPhotos.get()[0];
-}
-
+// `filteredPhotos` is sorted oldest first, so its last entry is the newest —
+// an undated photo (`sortByDate` keys those last) counting as one when there
+// is any. Undefined only when the filters match nothing.
 function newest(): Photo | undefined {
   const photos = data.filteredPhotos.get();
   return photos[photos.length - 1];
 }
 
-// What the app picks when it has to pick for you (ADR-0016): the newest,
-// except inside a single album, where the photos are a trip and the first one
-// is where it starts — landing there leaves the arrows to walk it forward.
-// Undefined only when the filters match nothing.
-function autoTarget(): Photo | undefined {
-  return data.filters.get().album === 'all' ? newest() : oldest();
+// Picking an album is a jump to the start of a trip rather than a filter
+// change you might survive, so it moves even when the photo you were on is in
+// the album — being in it is no reason to enter halfway through. An app
+// choice, so the camera fits the album; call it after `data.setAlbum`, whose
+// filter it reads. 'all' is not a trip, and the invariant has it.
+function enterAlbum() {
+  if (data.filters.get().album === 'all') return;
+  const photos = data.filteredPhotos.get();
+  const first = photos[0];
+  if (first === undefined) return;
+  const cur = selectedPhotoUuid.get();
+  // Remembered only when the album leaves it behind, so leaving the album
+  // returns you to the photo you came in on. A photo the album kept was never
+  // displaced, and the invariant would hand it straight back on its next run.
+  if (cur !== null && !photos.some((p) => p.uuid === cur)) droppedUuid = cur;
+  pick(first.uuid);
 }
 
-// Reset's cursor. Reset clears the album along with everything else, so this
-// is always the newest. User-initiated, so Reset's own fit owns the camera.
+// Reset's cursor. User-initiated, so Reset's own fit owns the camera.
 function selectNewest() {
   const p = newest();
   if (p === undefined) return;
@@ -154,7 +160,7 @@ effect(() => {
 
   if (cur !== null && filtered.some((p) => p.uuid === cur)) return;
   if (cur !== null) droppedUuid = cur;
-  const target = autoTarget();
+  const target = newest();
   if (target === undefined) {
     selectedPhotoUuid.set(null);
     return;
@@ -173,6 +179,7 @@ export default {
   revealPopup,
   selectPhoto,
   selectNewest,
+  enterAlbum,
   next,
   prev
 };
