@@ -260,10 +260,42 @@ describe('the selection invariant', () => {
     photo({ uuid: 'new', date: '2025:12:01 00:00:00' })
   ];
 
-  test('auto-selects the oldest once photos load', async () => {
+  test('auto-selects the newest once photos load', async () => {
     data.photos.set([...photos]);
     await flush();
-    expect(selection.selectedPhotoUuid.get()).toBe('old');
+    expect(selection.selectedPhotoUuid.get()).toBe('new');
+  });
+
+  test('picks the newest when a non-album filter drops the selection', async () => {
+    data.photos.set([
+      photo({ uuid: 'a', date: '2024:01:01 00:00:00' }),
+      photo({ uuid: 'b', date: '2024:02:01 00:00:00' }),
+      photo({ uuid: 'c', date: '2025:01:01 00:00:00' })
+    ]);
+    await flush();
+    data.setYear('2024');
+    await flush();
+    expect(selection.selectedPhotoUuid.get()).toBe('b');
+  });
+
+  test('picks the oldest inside an album, so the arrows walk it forward', async () => {
+    data.photos.set([
+      photo({
+        uuid: 'trip-1',
+        date: '2024:06:01 00:00:00',
+        albums: ['Tampere']
+      }),
+      photo({
+        uuid: 'trip-2',
+        date: '2024:06:02 00:00:00',
+        albums: ['Tampere']
+      }),
+      photo({ uuid: 'other', date: '2025:01:01 00:00:00' })
+    ]);
+    await flush();
+    data.setAlbum('Tampere');
+    await flush();
+    expect(selection.selectedPhotoUuid.get()).toBe('trip-1');
   });
 
   test('auto-selects when a filter drops the selected photo', async () => {

@@ -38,7 +38,7 @@ test('Search by place, applied as a token', async ({ page }) => {
     .poll(async () => (await mapCenter(page))?.lon)
     .toBeCloseTo(24.94, 1);
 
-  // ...and opens the oldest match once the flight lands, exactly as the Fit
+  // ...and opens the newest match once the flight lands, exactly as the Fit
   // button does — a search leaves you on a photo, not just near one.
   await expect(page).toHaveURL(/id=e2e-1/);
   await expect(page.locator('photo-popup')).toBeVisible();

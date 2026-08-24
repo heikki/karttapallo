@@ -11,6 +11,9 @@ import { expect, test } from './_fixtures';
 test('Filter by year and album', async ({ page }) => {
   await page.goto('/');
 
+  // Nothing in the URL, so the app chooses for you: the newest photo.
+  await expect(page).toHaveURL(/id=e2e-3/);
+
   const yearSelect = page.getByLabel('Year');
   const albumSelect = page.getByLabel('Album');
   const cameraSelect = page.getByLabel('Camera');

@@ -18,7 +18,7 @@ export const selectedPhotoUuid = urlSignal<string | null>(
 const autoSelectCount = signal(0);
 
 // Whatever the last filter change knocked out of the filtered set, preferred
-// over the oldest photo if it comes back — so flicking a solo toggle off and
+// over the newest photo if it comes back — so flicking a solo toggle off and
 // on returns you to where you were. Cleared whenever the user selects.
 let droppedUuid: string | null = null;
 
@@ -70,14 +70,31 @@ function selectPhoto(uuid: string) {
   }
 }
 
-// Reset's cursor: the far end of the same ordering that makes [0] the
-// oldest, so an undated photo (`sortByDate` keys those last) takes the spot
-// when there is one. User-initiated, so Reset's own fit owns the camera.
-function selectNewest() {
+// `filteredPhotos` is sorted oldest first, and an undated photo (`sortByDate`
+// keys those last) counts as the newest when there is one.
+function oldest(): Photo | undefined {
+  return data.filteredPhotos.get()[0];
+}
+
+function newest(): Photo | undefined {
   const photos = data.filteredPhotos.get();
-  const newest = photos[photos.length - 1];
-  if (newest === undefined) return;
-  selectPhoto(newest.uuid);
+  return photos[photos.length - 1];
+}
+
+// What the app picks when it has to pick for you (ADR-0016): the newest,
+// except inside a single album, where the photos are a trip and the first one
+// is where it starts — landing there leaves the arrows to walk it forward.
+// Undefined only when the filters match nothing.
+function autoTarget(): Photo | undefined {
+  return data.filters.get().album === 'all' ? newest() : oldest();
+}
+
+// Reset's cursor. Reset clears the album along with everything else, so this
+// is always the newest. User-initiated, so Reset's own fit owns the camera.
+function selectNewest() {
+  const p = newest();
+  if (p === undefined) return;
+  selectPhoto(p.uuid);
 }
 
 function next() {
@@ -102,7 +119,6 @@ function prev() {
   return true;
 }
 
-// `filteredPhotos` inherits `loadPhotos`'s sort, so [0] is the oldest.
 function pick(uuid: string) {
   revealPopup();
   selectedPhotoUuid.set(uuid);
@@ -138,11 +154,12 @@ effect(() => {
 
   if (cur !== null && filtered.some((p) => p.uuid === cur)) return;
   if (cur !== null) droppedUuid = cur;
-  if (filtered.length === 0) {
+  const target = autoTarget();
+  if (target === undefined) {
     selectedPhotoUuid.set(null);
     return;
   }
-  pick(filtered[0]!.uuid);
+  pick(target.uuid);
 });
 
 export default {

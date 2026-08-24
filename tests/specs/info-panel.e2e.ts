@@ -188,8 +188,9 @@ test('A filter that excludes the photo moves the info on', async ({ page }) => {
   await expect(modal).toBeVisible();
 
   // e2e-1 is the only Helsinki photo; switching to Tampere drops it from the
-  // filtered set, so the app auto-selects the oldest that is left — e2e-2,
-  // from 2023 — and the panel follows it rather than closing (ADR-0016).
+  // filtered set, so the app auto-selects — and an album picks its first
+  // photo, e2e-2 from 2023 — and the panel follows it rather than closing
+  // (ADR-0016).
   await page.getByLabel('Album').selectOption('Tampere');
 
   await expect(popup).toBeVisible();
