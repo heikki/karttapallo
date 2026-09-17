@@ -1,10 +1,21 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  chmodSync,
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  writeFileSync
+} from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { ActiveLibraryResult } from '@native/native-bridge';
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 
-import { libraryTitle, resolveLibrary, volumeOf } from './resolve-library';
+import {
+  hasFullDiskAccess,
+  libraryTitle,
+  resolveLibrary,
+  volumeOf
+} from './resolve-library';
 
 let tmp = '';
 
@@ -154,5 +165,31 @@ describe('libraryTitle', () => {
     expect(libraryTitle('/opt/photos/Archive.photoslibrary')).toBe(
       'Archive (/opt/photos)'
     );
+  });
+});
+
+describe('hasFullDiskAccess', () => {
+  test('granted when a probe reads', () => {
+    const probe = join(tmp, 'readable.db');
+    writeFileSync(probe, '');
+
+    expect(hasFullDiskAccess([join(tmp, 'gone.db'), probe])).toBe(true);
+  });
+
+  test('denied when a probe exists but the read fails', () => {
+    const probe = join(tmp, 'locked.db');
+    writeFileSync(probe, '');
+    chmodSync(probe, 0o000);
+
+    expect(hasFullDiskAccess([probe])).toBe(false);
+  });
+
+  // macOS 27 deleted the per-user TCC store the probe used to read, so every
+  // launch reported "denied" however the grant stood. Absent probes must not
+  // be read as a denial.
+  test('granted when every probe is missing', () => {
+    expect(
+      hasFullDiskAccess([join(tmp, 'gone.db'), join(tmp, 'also-gone')])
+    ).toBe(true);
   });
 });

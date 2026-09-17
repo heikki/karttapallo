@@ -82,6 +82,20 @@ function hasDatabase(libraryPath: string) {
 }
 
 /**
+ * Files readable only with Full Disk Access, tried in order.
+ *
+ * macOS 27 deleted the per-user TCC store this used to probe
+ * (`~/Library/Application Support/com.apple.TCC/TCC.db`), which made the probe
+ * report "denied" on every machine, grant or no grant. Hence a list, and hence
+ * `hasFullDiskAccess` telling a missing probe apart from a denied one.
+ */
+const FDA_PROBES = [
+  '/Library/Application Support/com.apple.TCC/TCC.db',
+  join(homedir(), 'Library/Application Support/com.apple.TCC/TCC.db'),
+  join(homedir(), 'Library/Safari')
+];
+
+/**
  * Promptless Full Disk Access probe.
  *
  * Reading the TCC database requires FDA but — unlike an app container — never
@@ -89,18 +103,23 @@ function hasDatabase(libraryPath: string) {
  * That asymmetry is the whole point. It lets us decide whether to attempt the
  * container read at all, rather than letting macOS put its own dialog on screen
  * (see `resolveLibrary`).
+ *
+ * A probe that isn't there says nothing about the grant, so it is skipped. If
+ * none of them exist we assume the grant: the cost of being wrong is the macOS
+ * prompt this gate was avoiding, while the cost of assuming denial is an app
+ * that insists on a permission the user has already given.
  */
-function hasFullDiskAccess() {
-  try {
-    const fd = openSync(
-      join(homedir(), 'Library/Application Support/com.apple.TCC/TCC.db'),
-      'r'
-    );
-    closeSync(fd);
-    return true;
-  } catch {
-    return false;
+export function hasFullDiskAccess(probes: readonly string[] = FDA_PROBES) {
+  let denied = false;
+  for (const probe of probes) {
+    try {
+      closeSync(openSync(probe, 'r'));
+      return true;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') denied = true;
+    }
   }
+  return !denied;
 }
 
 /**
