@@ -5,9 +5,9 @@ Geotagged photo map viewer with Apple Photos integration.
 ## Project Stats (as of 17.09.2026)
 
 - **TypeScript files**: 131
-- **Lines of code**: 15,937 (+ 7,048 tests)
-- **Total commits**: 708
-- **Total tokens**: ~3,360M | **Total cost**: ~$2,200
+- **Lines of code**: 15,970 (+ 7,069 tests)
+- **Total commits**: 714
+- **Total tokens**: ~3,381M | **Total cost**: ~$2,213
 
 ## Updating This Diary
 
@@ -47,14 +47,15 @@ git log --pretty=format:"%ad|%s" --date=format:"%Y-%m-%d" | head -50  # Recent c
 - Describe final outcomes, not reverted intermediate attempts.
 - Flat list, no sub-bullets or prose.
 
-## 17.09.2026 — a macOS update, undone
+## 17.09.2026 — a macOS update, undone; a filter that wouldn't clear
 
-**Tokens**: 31M | **Cost**: $21.27
+**Tokens**: 52M | **Cost**: $34.21
 
 - The app no longer asks for Full Disk Access you have already given it
 - Search finds places, scene labels, titles and captions again
 - The info window shows a photo's details again instead of an error
 - Installing no longer leaves a setup window stranded behind the app
+- Reset brings the photos back even when it lands right after a filter click
 
 ## 24.08.2026 — Desktop shell migration, settled; the map opens on your latest photo; a smoother globe
 
