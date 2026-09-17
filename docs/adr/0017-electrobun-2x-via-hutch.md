@@ -16,7 +16,7 @@ The bug itself is nonetheless fixed. Electrobun 2.x bundles through Cottontail r
 
 Hutch projects the SDK into a generated `.hutch/devkit/` sysroot, and the npm `electrobun` package is a bootstrap whose only export is an error pointing there. Consequences worth knowing:
 
-- `.hutch/` is generated and gitignored. `electrobun sync` creates it, and **typecheck needs it** — CI runs `electrobun sync` before `tsc`, or `electrobun/*` imports resolve to that error module and fail with TS7016.
+- `.hutch/` is generated and gitignored. `bun run sync` creates it, and **typecheck needs it** — CI runs it before `tsc`, or `electrobun/*` imports resolve to that error module and fail with TS7016.
 - `tsconfig.json` maps `electrobun` and `electrobun/main` into the devkit itself rather than extending `.hutch/devkit/tsconfig.json`, because that file sets its own `baseUrl` and a child's `paths` block replaces rather than merges — extending it would silently re-root every `@client/*` alias inside `.hutch/devkit/`.
 - `@types/three` is gone. It was a devDependency only because electrobun 1.16 shipped raw `.ts` that imported the untyped `three`; nothing in this repo imports three.
 - `hutch.config.ts` declares `packageManager: "bun"`. Hutch's built-in resolver would otherwise own dependencies and write its own `hutch.lock`, ignoring `bun.lock` entirely.
