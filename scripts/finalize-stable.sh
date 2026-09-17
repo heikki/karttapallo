@@ -19,6 +19,12 @@
 # is created by Electrobun with a plain `tar -cf` of `Karttapallo.app`, so we
 # repack the same way.
 #
+# It also tells the self-extractor to dismiss its own "Installation complete"
+# panel. That panel is modeless and the extractor launches the app before the
+# user gets to it, so it is left stranded behind the app window with a Close
+# button nobody asked for. ELECTROBUN_INSTALLER_UI_AUTOCLOSE closes it as soon
+# as extraction finishes; LSEnvironment is how a Finder launch gets to see it.
+#
 # Idempotent: safe to re-run.
 set -euo pipefail
 
@@ -75,12 +81,18 @@ zstd -q -f -o "$TAR" "$WORK/payload.tar"
 # 3. Patch the OUTER (self-extractor stub) Info.plist too, then re-seal the outer
 #    bundle — we just changed a sealed resource (the tarball).
 set_usage_key "$APP/Contents/Info.plist"
+# Outer bundle only: this plist is the one in play on the single launch that
+# extracts, and extraction then replaces it with the payload's copy — so the
+# variable is gone by the time the app runs normally.
+/usr/bin/plutil -replace LSEnvironment -json \
+  '{"ELECTROBUN_INSTALLER_UI_AUTOCLOSE": "1"}' "$APP/Contents/Info.plist"
 codesign --force --sign "$IDENTITY" --entitlements "$ENT" --options runtime "$APP"
 
 # 4. Verify both copies carry the key and the entitlement survived.
 zstd -dc "$TAR" | tar -xOf - Karttapallo.app/Contents/Info.plist \
   | grep -q NSAppleEventsUsageDescription
 /usr/libexec/PlistBuddy -c "Print :NSAppleEventsUsageDescription" "$APP/Contents/Info.plist" >/dev/null
+/usr/libexec/PlistBuddy -c "Print :LSEnvironment:ELECTROBUN_INSTALLER_UI_AUTOCLOSE" "$APP/Contents/Info.plist" >/dev/null
 codesign -d --entitlements - "$APP" 2>/dev/null | grep -q apple-events
 
 echo "finalize-stable: usage key injected into payload + outer bundle, both re-signed"
