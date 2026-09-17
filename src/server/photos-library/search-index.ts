@@ -1,8 +1,8 @@
 /**
  * Reads the whole search corpus out of the Photos search index (ADR-0014).
  *
- * `psi.sqlite` sits beside `Photos.sqlite` and backs Photos.app's own search
- * field. Its `groups` table holds one row per searchable term, tagged with a
+ * `leo.sqlite` sits beside `Photos.sqlite` and backs Photos.app's own search
+ * field. Its `lexicon` table holds one row per searchable term, tagged with a
  * category saying what kind of thing the term is, already localized — so
  * reading it gives Finnish place names and scene labels for free rather than
  * reverse-geocoding or classifying anything ourselves.
@@ -11,13 +11,14 @@
  * the same index Photos.app searches makes "Photos finds it" and "Karttapallo
  * finds it" one condition rather than two. The previous split — places from
  * `ZMOMENT.ZTITLE`, labels from here — could and did go half-empty, when a
- * Photos database migration regenerated every moment without a title while
- * `psi.sqlite` stayed rich.
+ * Photos database migration regenerated every moment without a title while the
+ * search index stayed rich.
  *
  * Coverage varies by category, and empty is a normal result. Categories derived
  * from metadata (place, description) are populated for any library Photos has
  * indexed; scene labels need Apple's image analysis, which only runs on a
- * library Photos has been given reason to analyze.
+ * library Photos has been given reason to analyze. A library mid-reindex has
+ * the file with nothing in it yet.
  *
  * Internal to photos-library/.
  */
@@ -30,7 +31,7 @@ import { Database } from 'bun:sqlite';
 export interface SearchTerms {
   /** Reverse-geocoded place names, from the point of interest out to the country. */
   place: string[];
-  /** Caption the user typed in Photos. */
+  /** Title or caption the user typed in Photos. */
   description: string[];
   /** Apple's scene labels; empty for assets Photos hasn't analyzed. */
   labels: string[];
@@ -39,42 +40,51 @@ export interface SearchTerms {
 export type SearchField = keyof SearchTerms;
 
 /**
- * Which `groups.category` values feed which field.
+ * Which `lexicon.category` values feed which field.
  *
  * Place spans the whole geocoded hierarchy Photos names, point of interest
  * through country. Broad levels earn their place by being how you actually
  * reach a trip — `Islanti` and `Portugali` are the terms for libraries with no
- * album for them. The cost is that they are true of thousands of items at once
- * (`Suomi`: 2817 of 4841), so they head the Places group whenever they match;
- * they are last in this list, which is the order terms read in.
+ * album for them. The cost is that they are true of thousands of items at once,
+ * so they head the Places group whenever they match; they are last in this
+ * list, which is the order terms read in.
  *
- * The two-letter codes are the exception — `FI` (13) and `MA` (11) duplicate
- * `Suomi` and `Massachusetts` at identical counts under a worse label, so a
- * query for `fi` would offer the code above the name it stands for.
- *
- * Deliberately absent: camera (2300), year (1101) and media type (1900) have
- * dedicated filters, and folding them in would make a hit ambiguous about why
- * it matched (ADR-0014). Keywords (1200) and persons (1300) reach a handful of
- * assets each.
+ * Deliberately absent: the country code (2170) duplicates the country name at
+ * an identical count under a worse label, so a query for `fi` would offer `FI`
+ * above `Suomi`; continent and subcontinent (2180, 2190) are broader than any
+ * search that means something; `Koti` (2010) and place *types* like `Ravintola`
+ * (2030) are concepts rather than names. Camera (6000), dates (1xxx) and media
+ * type (5xxx) have dedicated filters, and folding them in would make a hit
+ * ambiguous about why it matched (ADR-0014). Albums (7010), filenames (8050),
+ * persons (3000) and recognized text (4120) reach few assets or match noise.
  */
 const CATEGORIES: Record<SearchField, number[]> = {
   place: [
-    1, // point of interest — Siida, Urho Kekkosen kansallispuisto
-    2, // street — Halmekankaantie
-    3, // neighborhood — Lontoon City
-    6, // district — North End
-    8, // borough — Hammersmith and Fulham
-    9, // park or island — Isle of Skye
-    4, // waterway — River Thames
-    14, // water body — Lokan tekojärvi
-    5, // city — Inari, Kuhmo
-    7, // region — Central London, Home Counties
-    10, // state or province — Lappi, Massachusetts
-    12 // country — Suomi, Iso-Britannia
+    2060, // point of interest — Siida, Ison-Palosen ja Maariansärkkien luonnonsuojelualue
+    2050, // street — Halmekankaantie
+    2070, // neighborhood — Ullanlinna
+    2130, // island or cape — Purunpää, Gran Canaria
+    2210, // water body — Saaristomeri, Hepojärvi
+    2090, // city — Inari, Kuhmo
+    2140, // region — Kainuu, Etelä-Savo
+    2160 // country — Suomi, Espanja
   ],
-  description: [1202],
-  labels: [1500]
+  // The two fields Photos gives the user to type in: title, then caption. A
+  // caption's text is also in the lexicon under 7000, but as a lexeme no item
+  // references — reading 7000 alone finds titles only.
+  description: [
+    7000, // title — Puolukkaselästä?
+    8080 // caption
+  ],
+  labels: [4000]
 };
+
+/**
+ * Canonical form of a term. The index also stores every inflection and synonym
+ * Photos will match (`Suomi` carries `Suomen`, `Suomea`, `FI`) as type 2 — good
+ * for matching, wrong for showing, and we surface what we match.
+ */
+const CANONICAL = 1;
 
 /** Category → field, and category → how specific it is within that field. */
 const FIELD_OF = new Map<number, { field: SearchField; rank: number }>(
@@ -85,27 +95,15 @@ const FIELD_OF = new Map<number, { field: SearchField; rank: number }>(
   )
 );
 
-interface TermRow {
-  uuid_0: bigint;
-  uuid_1: bigint;
-  category: bigint;
-  content_string: string;
+interface LexemeRow {
+  lexeme_id: number;
+  category: number;
+  content: string;
 }
 
-/**
- * Rebuild a Photos UUID from the index's `uuid_0`/`uuid_1` pair — the 16 UUID
- * bytes as two **signed** little-endian int64s.
- *
- * The handle must be opened with `safeIntegers`. Bun's SQLite driver otherwise
- * returns integers as float64, which silently rounds values of this magnitude
- * and produces well-formed UUIDs that match no asset at all.
- */
-function uuidFromHalves(low: bigint, high: bigint): string {
-  const bytes = Buffer.alloc(16);
-  bytes.writeBigInt64LE(low, 0);
-  bytes.writeBigInt64LE(high, 8);
-  const h = bytes.toString('hex').toUpperCase();
-  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+interface ItemRow {
+  identifier: string;
+  lexeme_ids: Uint8Array;
 }
 
 function emptyTerms(): SearchTerms {
@@ -118,6 +116,46 @@ interface Collected {
   rank: number;
 }
 
+type Slot = Collected & { field: SearchField };
+
+/**
+ * Every term we care about, by the lexeme id the item rows reference.
+ *
+ * A name Photos files under two categories — a city and the island sharing its
+ * name — arrives as two lexemes, so the specific one wins here only when both
+ * happen to share an id; the ordinary case is settled by `orderTerms`.
+ */
+function readLexicon(db: Database): Map<number, Slot> {
+  const categories = [...FIELD_OF.keys()];
+  const rows = db
+    .query<LexemeRow, []>(
+      `SELECT lexeme_id, category, content
+       FROM lexicon
+       WHERE type = ${CANONICAL} AND category IN (${categories.join(',')})`
+    )
+    .all();
+
+  const slots = new Map<number, Slot>();
+  for (const row of rows) {
+    const slot = FIELD_OF.get(row.category);
+    if (slot === undefined) continue;
+    const term = row.content.trim().normalize('NFC');
+    if (term === '') continue;
+    const existing = slots.get(row.lexeme_id);
+    if (existing !== undefined && existing.rank <= slot.rank) continue;
+    slots.set(row.lexeme_id, { term, field: slot.field, rank: slot.rank });
+  }
+  return slots;
+}
+
+/** The lexeme ids of one item: its blob is a packed little-endian uint32 array. */
+function* lexemeIds(blob: Uint8Array): Generator<number> {
+  const view = new DataView(blob.buffer, blob.byteOffset, blob.byteLength);
+  for (let offset = 0; offset + 4 <= blob.byteLength; offset += 4) {
+    yield view.getUint32(offset, true);
+  }
+}
+
 /**
  * Every searchable term in the library, keyed by asset UUID.
  *
@@ -126,51 +164,40 @@ interface Collected {
  * corpus is a bonus; failing to read it must never fail a rebuild.
  */
 export function readSearchTerms(libraryPath: string): Map<string, SearchTerms> {
-  const path = join(libraryPath, 'database/search/psi.sqlite');
+  const path = join(libraryPath, 'database/search/leo.sqlite');
   if (!existsSync(path)) return new Map();
 
-  const collected = new Map<string, Record<SearchField, Collected[]>>();
-  const categories = [...FIELD_OF.keys()];
-
   try {
-    // safeIntegers keeps the UUID halves as bigint — see uuidFromHalves.
-    const db = new Database(path, { readonly: true, safeIntegers: true });
+    const db = new Database(path, { readonly: true });
     try {
-      const query = db.query<TermRow, []>(
-        `SELECT a.uuid_0, a.uuid_1, g.category, g.content_string
-         FROM ga
-         JOIN groups g ON g.rowid = ga.groupid
-         JOIN assets a ON a.rowid = ga.assetid
-         WHERE g.category IN (${categories.join(',')})`
-      );
-      for (const row of query.all()) {
-        const slot = FIELD_OF.get(Number(row.category));
-        if (slot === undefined) continue;
-        // Stored NUL-terminated, and decomposed for accented terms. Typed
-        // input is composed, so an un-normalized value would never match.
-        const term = row.content_string
-          .replace(/\0/g, '')
-          .trim()
-          .normalize('NFC');
-        if (term === '') continue;
-        const uuid = uuidFromHalves(row.uuid_0, row.uuid_1);
-        let fields = collected.get(uuid);
-        if (fields === undefined) {
-          fields = { place: [], description: [], labels: [] };
-          collected.set(uuid, fields);
+      const slots = readLexicon(db);
+      const collected = new Map<string, SearchTerms>();
+
+      for (const item of db
+        .query<ItemRow, []>('SELECT identifier, lexeme_ids FROM items')
+        .all()) {
+        const fields: Record<SearchField, Collected[]> = {
+          place: [],
+          description: [],
+          labels: []
+        };
+        let found = false;
+        for (const id of lexemeIds(item.lexeme_ids)) {
+          const slot = slots.get(id);
+          if (slot === undefined) continue;
+          fields[slot.field].push(slot);
+          found = true;
         }
-        fields[slot.field].push({ term, rank: slot.rank });
+        if (found) collected.set(item.identifier, orderTerms(fields));
       }
+
+      return collected;
     } finally {
       db.close();
     }
   } catch {
     return new Map();
   }
-
-  return new Map(
-    [...collected].map(([uuid, fields]) => [uuid, orderTerms(fields)])
-  );
 }
 
 /**
@@ -198,7 +225,7 @@ function orderTerms(fields: Record<SearchField, Collected[]>): SearchTerms {
   return out;
 }
 
-/** Terms for one asset, or empty when the index has nothing for it. */
+/** Terms for one asset, empty when the index has nothing for it. */
 export function termsFor(
   index: Map<string, SearchTerms> | undefined,
   uuid: string

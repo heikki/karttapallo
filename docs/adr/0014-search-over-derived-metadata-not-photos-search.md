@@ -1,6 +1,6 @@
 # Search reads Photos' search index directly, not its search API
 
-Karttapallo's text search matches against terms it reads out of `psi.sqlite`, the search index Photos.app builds for its own search field — places, descriptions and scene labels — folded into the item snapshot and matched client-side. It reads that index directly; it does **not** call Photos.app's search, and it does not classify images itself.
+Karttapallo's text search matches against terms it reads out of the search index Photos.app builds for its own search field (`leo.sqlite` since macOS 27, `psi.sqlite` before it) — places, descriptions and scene labels — folded into the item snapshot and matched client-side. It reads that index directly; it does **not** call Photos.app's search, and it does not classify images itself.
 
 ## Why
 
@@ -25,6 +25,14 @@ The decisive argument is not coverage but agreement. Places previously came from
 
 Reading the index Photos.app reads makes "Photos finds it" and "Karttapallo finds it" one condition instead of two. That does not make the corpus immune to going empty — `psi.sqlite` is derived and Photos rebuilds it — but it makes an empty corpus something the user can see in Photos.app itself, rather than a divergence only a SQL query can explain.
 
+### The index moved, and that is the bet paying off
+
+On 2026-09-16 the macOS 27 upgrade migrated this library to `LibrarySchemaVersion` 5001, deleted `psi.sqlite` and built `leo.sqlite` in its place — a different schema, not a rename. Karttapallo's search went silently empty, because it was reading a file that no longer existed. Every library opened since has made the same move; a backup library never reopened still carries its `psi.sqlite`, stale from July.
+
+This reads like the `ZMOMENT.ZTITLE` collapse repeating, and it is the opposite. Photos' own search field was empty at the same time and for the same reason — the library was still reindexing — so the two never disagreed. The corpus moved as a unit, the user could see it in Photos.app, and the fix was to follow the file rather than to reconstruct what it used to hold. Reconstructing was seriously considered on the evidence available before `leo.sqlite` was found: places rebuilt from `ZADDITIONALASSETATTRIBUTES.ZREVERSELOCATIONDATA`, an `NSKeyedArchiver` blob carrying the same hierarchy per asset. It would have worked for places, given nothing for scene labels, and put us back to two sources that can disagree.
+
+The new shape is better than the old one in three ways worth recording. `items` gives the asset UUID as text. Each term's inflections and synonyms sit on its own lexeme as type 2 rows, so Photos' Finnish inflection handling — the thing the AppleScript alternative was credited with below — is now in the same table we already read, should matching ever want it; we take the canonical type 1 form, because we surface what we match. And the user's two text fields are separate categories: a title reaches its asset, while a caption reaches it only through the caption category, its copy in the title category being a lexeme no item references.
+
 ### On analysis
 
 An earlier revision of this record concluded that scene labels would stay near zero forever, because `ZANALYSISSTATEMODIFICATIONDATE` was NULL for 4823 of 4841 assets and the library is not the System Photo Library (`photolibraryd` still names `~/Pictures/Photos Library.photoslibrary` in `search.coreSpotlight.lastKnownSPLPath`). That prediction was wrong. The same migration analyzed 2122 assets and populated the index fully — labels went from 17 items to 2095, and every metadata-derived category filled in for all 4841.
@@ -47,7 +55,7 @@ Three further costs stand independent of that. `runAppleScript` in the native br
 
 All three are lists, because the index attaches terms rather than a value — a photo sits in a point of interest and a street and a city at once. The snapshot grows by roughly four short strings per item.
 
-Places span the full hierarchy Photos names, point of interest through country. The broad levels are how a trip is actually reached — `Islanti` and `Portugali` are the terms for a journey with no album of its own — at the cost of matching thousands of items each (`Suomi`: 2817 of 4841), which puts them at the head of the Places group whenever they match. Only the two-letter codes are dropped (11, 13): `FI` duplicates `Suomi` at an identical count under a worse label, so a query for `fi` would offer the code above the name it stands for.
+Places span the full hierarchy Photos names, point of interest through country. The broad levels are how a trip is actually reached — `Islanti` and `Portugali` are the terms for a journey with no album of its own — at the cost of matching thousands of items each (`Suomi`: 2817 of 4841), which puts them at the head of the Places group whenever they match. Only the two-letter codes are dropped: `FI` duplicates `Suomi` at an identical count under a worse label, so a query for `fi` would offer the code above the name it stands for.
 
 Nothing is dropped for reading oddly. Finland's `Aluehallintovirasto` regions shadow every province at nearly the same count (`Lappi` 1234, `Lapin Aluehallintovirasto` 1233) and look like noise in the suggestion list, but Photos.app offers them too — and a term the user has already met there is not noise, it is the corpus. Matching what Photos shows is the whole point of reading its index, so the bar for excluding a category is that it duplicates another term, not that it is ugly.
 
@@ -55,6 +63,6 @@ Terms are ordered specific-first within each field, which is what lets the info 
 
 Search is a filter dimension, not a separate result list. It composes with the existing cascade and reuses `filteredPhotos`, marker rendering, fit-to-view and the stats line, so there is exactly one model of "what the map is showing". It follows the other filters into URL state, and `revealPhoto` must clear it for the same reason it widens the GPS filter — a deep link has to land on its photo whatever filter state arrived with it.
 
-`psi.sqlite` is a second database handle per library, opened read-only from `<library>/database/search/psi.sqlite` and tolerating absence: a library Photos has never indexed may not have one. An empty corpus is a normal result, not a failure, and must never break a rebuild — which is also why a snapshot on disk may hold either older shape of these fields, and `fieldValues` reads all three. Its `assets` table identifies photos by `uuid_0`/`uuid_1`, a pair of **signed int64s** that are the UUID's 16 bytes little-endian. Bun's SQLite driver returns integers as float64 by default, which silently rounds values of this magnitude and yields plausible-looking but wrong UUIDs that match nothing — the handle is opened with `safeIntegers` so the halves arrive as `BigInt`.
+The index is a second database handle per library, opened read-only from `<library>/database/search/leo.sqlite` and tolerating absence: a library Photos has never indexed may not have one, and one it is still reindexing has the file with nothing in it. An empty corpus is a normal result, not a failure, and must never break a rebuild — which is also why a snapshot on disk may hold either older shape of these fields, and `fieldValues` reads all three. An item's terms are reached through `lexeme_ids`, a packed little-endian `uint32` array joining it to the lexicon. `psi.sqlite`'s signed-int64 UUID halves are gone with it, and so is the `safeIntegers` handle they demanded — read as float64 they rounded into plausible-looking UUIDs that matched nothing.
 
 Matching is confined to place, description and label. Album, camera, year and media already have dedicated filters, and folding them into the same box would make a hit ambiguous about why it matched — `Kuhmo` is both a place and part of seven album names.

@@ -83,7 +83,7 @@ test("Search finds Apple's scene labels", async ({ page }) => {
   const search = page.getByRole('combobox', { name: 'Search' });
   const suggestions = page.getByRole('listbox', { name: 'Search suggestions' });
 
-  // `Lintu` is a scene label from psi.sqlite, not a place or a description —
+  // `Lintu` is a scene label from the search index, not a place or description —
   // the corpus Photos' own search matches and ours previously missed.
   await search.fill('lintu');
   await expect(suggestions).toContainText('Categories');

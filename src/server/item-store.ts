@@ -57,8 +57,8 @@ export interface ItemEntry {
   gps_accuracy: number | null;
   albums: string[];
   /**
-   * The search corpus, all three read from `psi.sqlite` (ADR-0014). Each is a
-   * list because that index attaches terms, not a single value: a photo sits in
+   * The search corpus, all three read from Photos' search index (ADR-0014).
+   * Each is a list because that index attaches terms, not a single value: a photo sits in
    * a point of interest AND a street AND a city, and Photos indexes every one.
    * Empty where the index has nothing — the normal case for `labels` on a
    * library Photos hasn't analyzed.

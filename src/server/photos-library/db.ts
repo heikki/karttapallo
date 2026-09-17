@@ -122,7 +122,7 @@ function validateSchema(db: Database) {
     ZEXTENDEDATTRIBUTES: ['ZASSET', 'ZCAMERAMAKE', 'ZCAMERAMODEL'],
     ZGENERICALBUM: ['Z_PK', 'ZUUID', 'ZTITLE', 'ZKIND'],
     // Read by queryMetadata for the info panel's Description row, not by the
-    // rebuild — the searchable copy comes from psi.sqlite (ADR-0014).
+    // rebuild — the searchable copy comes from the search index (ADR-0014).
     ZASSETDESCRIPTION: ['ZASSETATTRIBUTES', 'ZLONGDESCRIPTION']
   };
 

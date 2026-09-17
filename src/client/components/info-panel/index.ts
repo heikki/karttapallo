@@ -12,8 +12,8 @@ import { styles } from './styles';
  * Rows taken from the client's own photo record rather than from the metadata
  * response, which `queryMetadata` builds out of `Photos.sqlite` alone.
  *
- * Place and Categories are there because it has neither: both come from
- * `psi.sqlite` (ADR-0014), already assembled onto the record by the item store,
+ * Place and Categories are there because it has neither: both come from the
+ * search index (ADR-0014), already assembled onto the record by the item store,
  * so re-querying them per open would be a second source for data in hand. The
  * Description row is the exception that stays on the response — the searchable
  * copy is in the record too, but `queryMetadata` reads the caption from

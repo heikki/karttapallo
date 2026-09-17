@@ -15,7 +15,7 @@ export interface Photo {
    */
   gps_accuracy: number | null;
   albums: string[];
-  /** The search corpus, from psi.sqlite — see ItemEntry on the server. */
+  /** The search corpus, from Photos' search index — see ItemEntry on the server. */
   place: string[];
   description: string[];
   labels: string[];

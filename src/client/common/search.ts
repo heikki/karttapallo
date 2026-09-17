@@ -7,9 +7,9 @@
  * `naatamo` finds `Näätämö`, and `uhm` finds nothing.
  *
  * Photos' inflection and synonym expansion (`Nurmikko` → `Ruoho`) is not
- * reproduced here. It lives in a category of `psi.sqlite` we don't read, and it
- * buys little over the terms we do — places are proper nouns you type as
- * `Kuhmo`, never as `Kuhmossa`.
+ * reproduced here. The index carries it as further forms of each term, which
+ * the corpus doesn't take, and it buys little over the canonical ones — places
+ * are proper nouns you type as `Kuhmo`, never as `Kuhmossa`.
  */
 
 import type { Photo } from './types';
@@ -26,8 +26,8 @@ export interface Suggestion {
 }
 
 /**
- * Case- and diacritic-folded form, matching Photos' `normalized_string`:
- * `Kevät` → `kevat`, `Yö` → `yo`. Decomposing first turns `ä` into `a` plus a
+ * Case- and diacritic-folded form, matching how Photos folds a term for its
+ * own index: `Kevät` → `kevat`, `Yö` → `yo`. Decomposing first turns `ä` into `a` plus a
  * combining mark, so stripping marks leaves the base letter.
  */
 export function fold(value: string): string {
@@ -54,7 +54,7 @@ export function matchesPrefix(candidate: string, query: string): boolean {
 
 /**
  * Every value a photo carries for one field. All three are lists now that the
- * whole corpus comes from `psi.sqlite`, which attaches as many terms as apply —
+ * whole corpus comes from one index, which attaches as many terms as apply —
  * a photo has a point of interest and a street and a city, not one "place".
  *
  * Two shapes still reach this from disk. A snapshot written before these fields
