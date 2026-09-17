@@ -70,6 +70,12 @@ interface JoinTableInfo {
   assetColumn: string;
 }
 
+export interface KeywordJoinInfo {
+  tableName: string;
+  keywordColumn: string;
+  attributesColumn: string;
+}
+
 interface AlbumEntry {
   albumTitle: string;
   albumUuid: string;
@@ -177,6 +183,55 @@ function discoverJoinTable(db: Database): JoinTableInfo {
   }
 
   throw new Error('Could not find album-asset join table (Z_nnASSETS)');
+}
+
+const keywordJoinCache = new WeakMap<Database, KeywordJoinInfo | null>();
+
+/**
+ * The keyword join table, found by shape rather than by name.
+ *
+ * Core Data numbers a join column after the entity it points at, and those
+ * numbers move: the macOS 27 library migration renumbered keywords from 52 to
+ * 53, and the hardcoded `Z_52KEYWORDS` turned every info panel into a 500.
+ * Only the digits differ, so match the shape and let the schema renumber.
+ *
+ * Null when the library has no such table at all — keywords are then simply a
+ * row the panel doesn't show, not a reason to fail the whole read.
+ */
+export function discoverKeywordJoin(db: Database): KeywordJoinInfo | null {
+  const cached = keywordJoinCache.get(db);
+  if (cached !== undefined) return cached;
+
+  const tables = db
+    .query<{ name: string }, []>(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name GLOB 'Z_[0-9]*KEYWORDS' ORDER BY name"
+    )
+    .all();
+
+  for (const { name } of tables) {
+    const cols = db
+      .query<{ name: string }, []>(`PRAGMA table_info(${name})`)
+      .all()
+      .map((r) => r.name);
+
+    const keywordCol = cols.find((c) => /^Z_\d+KEYWORDS$/.exec(c) !== null);
+    const attributesCol = cols.find(
+      (c) => /^Z_\d+ASSETATTRIBUTES$/.exec(c) !== null
+    );
+
+    if (keywordCol !== undefined && attributesCol !== undefined) {
+      const info = {
+        tableName: name,
+        keywordColumn: keywordCol,
+        attributesColumn: attributesCol
+      };
+      keywordJoinCache.set(db, info);
+      return info;
+    }
+  }
+
+  keywordJoinCache.set(db, null);
+  return null;
 }
 
 // ---------- Formatting helpers ----------
@@ -726,16 +781,20 @@ function formatMetaGpsAccuracy(row: MetaRow, set: SetFn) {
 }
 
 function queryMetaRelations(db: Database, uuid: string, set: SetFn) {
-  const keywords = db
-    .query<{ ZTITLE: string }, [string]>(
-      `SELECT k.ZTITLE FROM ZKEYWORD k
-       JOIN Z_1KEYWORDS jk ON k.Z_PK = jk.Z_52KEYWORDS
-       JOIN ZADDITIONALASSETATTRIBUTES aa ON aa.Z_PK = jk.Z_1ASSETATTRIBUTES
+  const keywordJoin = discoverKeywordJoin(db);
+  const keywords =
+    keywordJoin === null
+      ? []
+      : db
+          .query<{ ZTITLE: string }, [string]>(
+            `SELECT k.ZTITLE FROM ZKEYWORD k
+       JOIN ${keywordJoin.tableName} jk ON k.Z_PK = jk.${keywordJoin.keywordColumn}
+       JOIN ZADDITIONALASSETATTRIBUTES aa ON aa.Z_PK = jk.${keywordJoin.attributesColumn}
        JOIN ZASSET a ON a.Z_PK = aa.ZASSET
        WHERE a.ZUUID = ?`
-    )
-    .all(uuid)
-    .map((r) => r.ZTITLE);
+          )
+          .all(uuid)
+          .map((r) => r.ZTITLE);
   if (keywords.length > 0) set('keywords', keywords.join(', '));
 
   const joinTable = discoverJoinTable(db);
