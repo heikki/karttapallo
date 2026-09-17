@@ -4,7 +4,7 @@ Lit + signals client (`src/client/`), Bun server (`src/server/`), ObjC++ native 
 
 ## Client
 
-- **Components** — `<filter-panel>`, `<photo-popup>`, `<photo-lightbox>`, `<info-panel>`, `<files-modal>`, `<app-root>`, `<map-view>` and the `<map-*>` map features. Built on Lit ([ADR-0003](adr/0003-lit-web-components-for-ui.md)).
+- **Components** — `<filter-panel>`, `<search-field>`, `<photo-popup>`, `<photo-lightbox>`, `<info-panel>`, `<files-modal>`, `<app-root>`, `<map-view>` and the `<map-*>` map features. Built on Lit ([ADR-0003](adr/0003-lit-web-components-for-ui.md)).
 - **Map features** — each `<map-*>` element extends `MapFeatureElement`, gets the map handle via `@consume(mapContext)`, and lives in `src/client/components/map-*/`. `<map-view>` owns `setupMap()` and the basemap-style effect.
 - **Cross-feature ops** go through the `MapApi` interface — see [ADR-0007](adr/0007-mapapi-cross-feature-seam.md). Adding one is a deliberate two-step: declare in `MapApi`, implement the forwarder.
 - **Layer order** = template order — see [ADR-0008](adr/0008-dom-order-as-z-order.md).
@@ -26,7 +26,7 @@ Lit + signals client (`src/client/`), Bun server (`src/server/`), ObjC++ native 
 Module set under `src/server/`:
 
 - **`library-session.ts`** — everything the app holds open for one library: the stores below, the image cache, the routing client, and the API routes over them. Owns construction and the two orderings that have to hold — the cache root is claimed before the image cache builds its directories, and orphaned album subtrees are dropped only once a rebuild has proved the library readable. All three entries open one; what each supplies is below.
-- **`item-store.ts`** — `Item` records in memory, built from `Photos.sqlite` + `geo-tz`, with the searchable terms (place, description, categories) merged in from `psi.sqlite` — see [ADR-0014](adr/0014-search-over-derived-metadata-not-photos-search.md). Persists a snapshot to `items.json` in the cache root so cold starts serve immediately while the post-startup rebuild refreshes. `applyEdits` re-resolves the active library first and refuses the batch if it no longer matches the one loaded at startup — see [ADR-0012](adr/0012-track-active-photos-library.md).
+- **`item-store.ts`** — `Item` records in memory, built from `Photos.sqlite` + `geo-tz`, with the searchable terms (place, description, categories) merged in from Photos' search index — see [ADR-0014](adr/0014-search-over-derived-metadata-not-photos-search.md). Persists a snapshot to `items.json` in the cache root so cold starts serve immediately while the post-startup rebuild refreshes. `applyEdits` re-resolves the active library first and refuses the batch if it no longer matches the one loaded at startup — see [ADR-0012](adr/0012-track-active-photos-library.md).
 - **`album-store.ts`** — per-album subtree at `<library>/karttapallo/albums/{albumUuid}/` with a hard-coded `.gpx`/`.md` allowlist, `_files.json` visibility sidecar, and `_route.json`. Callers address albums by **name**; the store translates to UUID off a roster read from the library, so a rename in Photos doesn't strand a route ([ADR-0015](adr/0015-store-library-data-inside-the-bundle.md)). `pruneOrphans` drops subtrees for albums the library no longer has. Path-traversal is blocked at this seam; the router never builds paths from request strings.
 - **`cache-root.ts`** — claims the derived-data slot for one library, wiping it when `owner.json` names a different one. Runs before the image cache, which creates its subdirectories at construction. Hands back the snapshot's path and the images directory rather than the root, so no caller joins its own way in.
 - **`ors-client.ts`** — OpenRouteService proxy for `/api/route`. Owns API-key resolution (env first, then `ors_api_key` setting).
@@ -71,7 +71,7 @@ App state persists in URL query params, restored on startup:
 - Filters: `year`, `album`, `camera`, `gps`, `media`, `q` (applied search term)
 - Selection: `id` (photo UUID) — present whenever any photo passes the filters, since the app always keeps one selected ([ADR-0016](adr/0016-always-keep-a-selection.md))
 - Map view: `lat`, `lon`, `z`
-- Styles: `style` (basemap), `markers` (marker style)
+- Styles: `style` (basemap)
 - Route: `route` (presence = visible)
 - Deep link: `focus` (one-shot; see below)
 
@@ -83,7 +83,7 @@ Defaults are omitted. The web version mirrors the URL to `localStorage` (`viewSt
 
 The uuid rides in the path, not `?id=`, so the link can be pasted into a shell unquoted — zsh globs on `?` and rejects the command before `open` ever sees it. The older `?id=` form still parses, for links handed out before the switch.
 
-The link resolves to `?id=<uuid>&focus=1`, carrying only `style` and `markers` over from the saved view. `focus` is what makes the difference between a restored selection and a requested one, and it licenses two overrides that plain `id` must never take: `@common/deep-link` widens filters via `data.revealPhoto` until the photo is visible, and `<map-fit>` moves the camera to it instead of fitting all photos. Both matter because the photos most worth linking to are the ones missing a location, which the default GPS filter hides. `focus` is stripped from the URL once acted on, so it can't survive into the persisted view and fire again on the next launch.
+The link resolves to `?id=<uuid>&focus=1`, carrying only `style` over from the saved view. `focus` is what makes the difference between a restored selection and a requested one, and it licenses two overrides that plain `id` must never take: `@common/deep-link` widens filters via `data.revealPhoto` until the photo is visible, and `<map-fit>` moves the camera to it instead of fitting all photos. Both matter because the photos most worth linking to are the ones missing a location, which the default GPS filter hides. `focus` is stripped from the URL once acted on, so it can't survive into the persisted view and fire again on the next launch.
 
 Two arrival times are handled: the app was already running (navigate the existing window and focus it), or macOS launched it to serve the link, in which case the event can land before the window exists and the uuid is buffered as the window's initial URL. A link clicked while the app is closed is lost entirely — see [gotchas.md](gotchas.md).
 

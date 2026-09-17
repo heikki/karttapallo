@@ -27,7 +27,7 @@ Seed: `src/client/common/interaction-mode.test.ts`.
 
 ### Tier 2 — server with fixtures (`bun:test`)
 
-In-process server modules backed by tempdir state. `item-store.ts` opens against a tempdir snapshot with an injected `PhotosWriter` and `buildFreshItems`; `state.ts` and `album-store.ts` round-trip through tempdir JSON, the latter with an injected album roster so no library is needed; `cache-root.ts` and `request-handler.ts` assert on what a tempdir holds and what a request may reach; `photos-library/db.ts` will eventually point at a committed fixture sqlite.
+In-process server modules backed by tempdir state. `item-store.ts` opens against a tempdir snapshot with an injected `PhotosWriter` and `buildFreshItems`; `state.ts` and `album-store.ts` round-trip through tempdir JSON, the latter with an injected album roster so no library is needed; `cache-root.ts` and `request-handler.ts` assert on what a tempdir holds and what a request may reach; `photos-library/db.ts` covers the schema-shape discovery its queries depend on against in-memory databases, and will eventually point the queries themselves at a committed fixture sqlite.
 
 `request-handler.test.ts` asserts on response **status**, not bodies: `bunfig.toml` preloads happy-dom for Tier 3, which replaces the global `Response`, and happy-dom's does not special-case a `BunFile` — a served file reads back as the string `"[object Blob]"`. Anything asserting on served bytes belongs in Tier 5.
 
