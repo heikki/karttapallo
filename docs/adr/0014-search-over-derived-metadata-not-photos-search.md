@@ -6,7 +6,7 @@ Karttapallo's text search matches against terms it reads out of the search index
 
 All 4841 items already live in client memory (`data.photos`, loaded once from `/api/items`). Search is therefore a predicate over an array, not an index or a query service: whatever corpus we can attach to a `Photo` is searchable for free. The only real question is which corpus exists.
 
-Measured against the working library (`/Volumes/Crucial X10`, 4841 visible assets):
+Measured 2026-08-02 against the working library (`/Volumes/Crucial X10`, 4841 visible assets):
 
 | Source                           | Coverage                                   |
 | -------------------------------- | ------------------------------------------ |
