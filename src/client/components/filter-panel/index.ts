@@ -43,16 +43,6 @@ function onCameraChange(e: Event) {
   data.setCamera((e.target as HTMLSelectElement).value);
 }
 
-function onReset() {
-  interactionMode.exit();
-  viewState.mapStyle.set('satellite');
-  viewState.routeVisible.set(false);
-  data.resetFilters();
-  selection.selectNewest();
-  resetUrl();
-  actions.fitToPhotos(true);
-}
-
 @customElement('filter-panel')
 export class FilterPanel extends SignalWatcher(LitElement) {
   @litState() private _collapsed = false;
@@ -89,7 +79,33 @@ export class FilterPanel extends SignalWatcher(LitElement) {
 
   override disconnectedCallback() {
     document.removeEventListener('keydown', this._onKeydown, true);
+    this._cancelClickTimers();
     super.disconnectedCallback();
+  }
+
+  private _cancelClickTimers() {
+    if (this._gpsClickTimer !== null) {
+      clearTimeout(this._gpsClickTimer);
+      this._gpsClickTimer = null;
+    }
+    if (this._mediaClickTimer !== null) {
+      clearTimeout(this._mediaClickTimer);
+      this._mediaClickTimer = null;
+    }
+  }
+
+  // A toggle click is still sitting in its 250ms timer when Reset lands on top
+  // of it. Left alone, that timer fires afterwards and re-filters the map the
+  // user just cleared, so Reset drops the pending click as well.
+  private _onReset() {
+    this._cancelClickTimers();
+    interactionMode.exit();
+    viewState.mapStyle.set('satellite');
+    viewState.routeVisible.set(false);
+    data.resetFilters();
+    selection.selectNewest();
+    resetUrl();
+    actions.fitToPhotos(true);
   }
 
   private _onGpsClick(value: string) {
@@ -222,7 +238,14 @@ export class FilterPanel extends SignalWatcher(LitElement) {
                     >
                       Fit
                     </button>
-                    <button class="view-btn" @click=${onReset}>Reset</button>
+                    <button
+                      class="view-btn"
+                      @click=${() => {
+                        this._onReset();
+                      }}
+                    >
+                      Reset
+                    </button>
                     <button
                       class="view-btn ${
                         interactionMode.current.get() === 'measure'

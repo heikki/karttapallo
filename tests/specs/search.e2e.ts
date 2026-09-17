@@ -125,6 +125,7 @@ test('Search runs over the library, whatever the selects are set to', async ({
   await expect(page.getByLabel('Photo stats')).toHaveText('No results');
   await expect(page).toHaveURL(/q=Kuusamo/);
   await page.getByRole('button', { name: 'Photos' }).click();
+  await expect(page.getByLabel('Photo stats')).toHaveText('1 photos');
 
   // Reset clears the search along with everything else.
   await page.getByRole('button', { name: 'Reset' }).click();

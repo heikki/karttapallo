@@ -54,3 +54,23 @@ test('Filter by media type and location precision', async ({ page }) => {
   await noneBtn.dblclick();
   await expect(stats).toHaveText('3 photos');
 });
+
+test('Reset beats a toggle still inside its click delay', async ({ page }) => {
+  await page.goto('/');
+
+  const stats = page.getByRole('status', { name: 'Photo stats' });
+  const photosBtn = page.getByRole('button', { name: 'Photos' });
+
+  // Clicking Reset before the 250ms debounce elapses used to leave the toggle
+  // queued: Reset cleared the filters, then the timer fired and hid the photos
+  // again. Nothing is awaited between the two clicks, so Reset lands inside the
+  // window the way an impatient user's would.
+  await photosBtn.click();
+  await page.getByRole('button', { name: 'Reset' }).click();
+
+  // Waiting out the 250ms deadline is the assertion: a surviving timer would
+  // fire in this window, and only after it can the count be called restored.
+  await page.waitForTimeout(500);
+  await expect(stats).toHaveText('3 photos');
+  await expect(photosBtn).toHaveClass(/active/);
+});
