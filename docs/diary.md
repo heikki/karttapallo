@@ -2,12 +2,12 @@
 
 Geotagged photo map viewer with Apple Photos integration.
 
-## Project Stats (as of 17.09.2026)
+## Project Stats (as of 22.09.2026)
 
-- **TypeScript files**: 131
-- **Lines of code**: 15,970 (+ 7,069 tests)
-- **Total commits**: 714
-- **Total tokens**: ~3,381M | **Total cost**: ~$2,213
+- **TypeScript files**: 133
+- **Lines of code**: 15,998 (+ 7,246 tests)
+- **Total commits**: 717
+- **Total tokens**: ~3,441M | **Total cost**: ~$2,252
 
 ## Updating This Diary
 
@@ -47,9 +47,16 @@ git log --pretty=format:"%ad|%s" --date=format:"%Y-%m-%d" | head -50  # Recent c
 - Describe final outcomes, not reverted intermediate attempts.
 - Flat list, no sub-bullets or prose.
 
+## 22.09.2026 — popup edits that stay put
+
+**Tokens**: 11M | **Cost**: $4.57
+
+- Confirming an inferred location queues it like any other edit instead of saving everything to Photos
+- The date field refuses impossible dates and times, and turns red instead of silently rolling them over
+
 ## 17.09.2026 — a macOS update, undone; a filter that wouldn't clear
 
-**Tokens**: 52M | **Cost**: $34.21
+**Tokens**: 98M | **Cost**: $65.44
 
 - The app no longer asks for Full Disk Access you have already given it
 - Search finds places, scene labels, titles and captions again
