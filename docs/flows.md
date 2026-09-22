@@ -31,8 +31,9 @@ Canonical inventory of user-visible flows. Each Tier 5 e2e spec maps to one or m
 ## Edit
 
 - **Set a photo's location** — popup "set" → placement mode → click map → marker reappears at new location as pending edit; Escape cancels.
+- **Confirm a guessed location** — popup "confirm" on an Inferred photo keeps the location Photos guessed as a pending edit, so saving makes it your own; the button goes once confirmed.
 - **Copy and paste a location** — copy on one photo, paste on another; becomes a pending edit.
-- **Adjust a photo's date/time** — popup "edit" → ±1d / ±1h buttons or manual `D.M.YYYY HH:MM` input; pending until saved.
+- **Adjust a photo's date/time** — popup "edit" → ±1d / ±1h buttons or manual `D.M.YYYY HH:MM` input — a date that doesn't exist, like `32.1.` or `24:00`, is refused and the field turns red; pending until saved.
 - **Copy and paste a date** — copy on one photo, paste on another (computes the hour offset).
 - **Save edits** — "Save to Photos" pushes pending edits to Photos.app; data reloads, popup reopens with the date edit row closed; alert on error.
 - **Discard edits** — clears all pending location and time edits.

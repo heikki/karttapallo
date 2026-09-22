@@ -172,6 +172,18 @@ export function computeFullDatetimeOffsetHours(
 const userDatePattern =
   /^(?<dy>\d{1,2})\.(?<mo>\d{1,2})\.(?<yr>\d{4})?\s*(?<tm>\d{1,2}:\d{2}(?::\d{2})?)?$/;
 
+// The offset is computed through `new Date`, which would roll 32.13. over
+// into the next year rather than refuse it — so range-check before it gets there.
+function isRealDay(year: number, month: number, day: number) {
+  const daysInMonth = new Date(year, month, 0).getDate();
+  return month >= 1 && month <= 12 && day >= 1 && day <= daysInMonth;
+}
+
+function isRealTime(time: string) {
+  const [hr = 0, mi = 0, sc = 0] = time.split(':').map(Number);
+  return hr <= 23 && mi <= 59 && sc <= 59;
+}
+
 export function parseUserDatetime(
   input: string,
   fallbackYear: number
@@ -189,6 +201,8 @@ export function parseUserDatetime(
     match.groups.tm !== undefined && match.groups.tm !== ''
       ? match.groups.tm
       : null;
+  if (!isRealDay(year, month, day)) return null;
+  if (time !== null && !isRealTime(time)) return null;
   function pad(n: number) {
     return String(n).padStart(2, '0');
   }

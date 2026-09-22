@@ -52,6 +52,7 @@ export class PhotoPopup extends SignalWatcher(LitElement) {
   // the input clears it directly; Escape elsewhere routes through
   // closeDateEdit() called by <map-popup>.
   @state() private _dateEditMode = false;
+  @state() private _dateInvalid = false;
   private _lastSeenUuid: string | null = null;
 
   static override styles = css`
@@ -145,6 +146,9 @@ export class PhotoPopup extends SignalWatcher(LitElement) {
       outline: none;
       border-color: #007aff;
     }
+    .date-input[aria-invalid='true'] {
+      border-color: #ef4444;
+    }
   `;
 
   private _onPlacement(e: Event) {
@@ -173,7 +177,6 @@ export class PhotoPopup extends SignalWatcher(LitElement) {
     const loc = edits.getEffectiveLocation(photo);
     if (loc === null) return;
     edits.setCoord(photo.uuid, loc.lat, loc.lon);
-    actions.saveEdits();
   }
 
   private _copyDate() {
@@ -204,6 +207,7 @@ export class PhotoPopup extends SignalWatcher(LitElement) {
 
   private _toggleDateEdit() {
     this._dateEditMode = !this._dateEditMode;
+    this._dateInvalid = false;
   }
 
   private _applyManualDate() {
@@ -221,9 +225,12 @@ export class PhotoPopup extends SignalWatcher(LitElement) {
         ? parseInt(yearStr, 10)
         : new Date().getFullYear();
     const parsed = parseUserDatetime(value, fallbackYear);
-    if (parsed === null) return;
-    const offset = computeManualDateOffset(photo.date, parsed);
-    if (offset === null) return;
+    const offset =
+      parsed === null ? null : computeManualDateOffset(photo.date, parsed);
+    if (offset === null) {
+      this._dateInvalid = true;
+      return;
+    }
     // Clear edit mode before the signal write so the next render sees
     // the read-only date row.
     this._dateEditMode = false;
@@ -338,6 +345,11 @@ export class PhotoPopup extends SignalWatcher(LitElement) {
             type="text"
             .value=${inputVal}
             id="date-input"
+            aria-label="Date and time"
+            aria-invalid=${this._dateInvalid ? 'true' : 'false'}
+            @input=${() => {
+              this._dateInvalid = false;
+            }}
             @keydown=${(e: KeyboardEvent) => {
               this._onDateInputKey(e);
             }}
@@ -414,7 +426,9 @@ export class PhotoPopup extends SignalWatcher(LitElement) {
           set
         </button>
         ${
-          loc !== null && photo.gps === 'inferred'
+          loc !== null &&
+          photo.gps === 'inferred' &&
+          !edits.pendingCoords.get().has(photo.uuid)
             ? html`<button
                 class="action-btn"
                 @click=${() => {
