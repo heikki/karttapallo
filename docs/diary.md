@@ -2,12 +2,12 @@
 
 Geotagged photo map viewer with Apple Photos integration.
 
-## Project Stats (as of 22.09.2026)
+## Project Stats (as of 24.09.2026)
 
-- **TypeScript files**: 133
-- **Lines of code**: 15,998 (+ 7,246 tests)
-- **Total commits**: 717
-- **Total tokens**: ~3,441M | **Total cost**: ~$2,252
+- **TypeScript files**: 130
+- **Lines of code**: 14,605 (+ 7,197 tests)
+- **Total commits**: 721
+- **Total tokens**: ~3,448M | **Total cost**: ~$2,256
 
 ## Updating This Diary
 
@@ -46,6 +46,13 @@ git log --pretty=format:"%ad|%s" --date=format:"%Y-%m-%d" | head -50  # Recent c
 - Skip minor tweaks — only significant features and fixes belong, especially on busy days.
 - Describe final outcomes, not reverted intermediate attempts.
 - Flat list, no sub-bullets or prose.
+
+## 24.09.2026 — clearing out what's no longer used
+
+**Tokens**: 4M | **Cost**: $1.83
+
+- The Photos menu is gone: the library refreshes on every launch and the image cache keeps itself current
+- Internal: retired the one-off library repair scripts, their fixes long since applied
 
 ## 22.09.2026 — popup edits that stay put
 
