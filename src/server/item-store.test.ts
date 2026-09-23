@@ -154,19 +154,6 @@ describe('item-store rebuild', () => {
     const store = await open({ fresh });
     expect(store.getAll().map((i) => i.uuid)).toEqual(['AAAA', 'BBBB']);
   });
-
-  test('manual rebuild swaps and persists', async () => {
-    let fresh = [sampleItem({ uuid: 'AAAA' })];
-    const store = openItemStore({
-      snapshotPath,
-      buildFreshItems: () => fresh
-    });
-    await store.rebuildComplete;
-    fresh = [sampleItem({ uuid: 'AAAA' }), sampleItem({ uuid: 'BBBB' })];
-    expect(await store.rebuild()).toBe(true);
-    expect(store.getAll().map((i) => i.uuid)).toEqual(['AAAA', 'BBBB']);
-    expect(readSnapshot().map((i) => i.uuid)).toEqual(['AAAA', 'BBBB']);
-  });
 });
 
 describe('item-store applyEdits', () => {

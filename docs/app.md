@@ -33,7 +33,7 @@ Module set under `src/server/`:
 - **`state.ts`** — generic key-value settings, keyed by which dir is passed in. Machine-scoped keys `window` and `ors_api_key` live in `Application Support/Karttapallo/state.json`; the per-library `view` key (map center, filters, selected photo UUID) lives in `<library>/karttapallo/state.json`, so it travels with the library. Only the session pairs `view` with its root — both the read and the write go through it, so no caller picks. See [ADR-0006](adr/0006-flat-json-files-not-sqlite.md).
 - **`request-handler.ts`** — shared request handling for both dev and desktop entries. Static paths are resolved and then checked for containment in their root: the URL parser strips a literal `../`, but `%2e%2e%2f` survives decoding as a real one.
 - **`photos-library/resolve-library.ts`** — resolves which library the app operates on: always the active one, decoded from the Photos container bookmark by the native bridge, failing loud rather than silently using a different library. See [ADR-0012](adr/0012-track-active-photos-library.md).
-- **`photos-library/image-cache.ts`** — on-demand image conversion via the native dylib, mtime-validated under `Caches/Karttapallo/cache/{full,thumb}/`. Owns that layout outright: resolving, clearing (the Clear Cache menu item) and evicting what a rebuild found gone are all here, so nothing else names a `full/` or a `thumb/`. See [ADR-0010](adr/0010-on-demand-image-cache.md).
+- **`photos-library/image-cache.ts`** — on-demand image conversion via the native dylib, mtime-validated under `Caches/Karttapallo/cache/{full,thumb}/`. Owns that layout outright: resolving and evicting what a rebuild found gone are all here, so nothing else names a `full/` or a `thumb/`. See [ADR-0010](adr/0010-on-demand-image-cache.md).
 - **`photos-edit.ts`** — write-back to Photos.app via NSAppleScript through the dylib (location/date target the active library; timezone is a direct SQLite write to the resolved library path). `itemStore.applyEdits` quits Photos.app at the end of a batch so the user can't undo writes via the recent-changes view.
 
 ### Data layout
@@ -62,7 +62,7 @@ Where the cache root lives stays with the entries rather than moving into the se
 
 ## Desktop app (Electrobun)
 
-Built by Hutch, with Bun as the main-process runtime — see [ADR-0017](adr/0017-electrobun-2x-via-hutch.md). The launcher loads `app/bun/index.js`, which is the bundled `src/server/index.ts`. Application menu, sync, cache-clear, window-state persistence, external-link handling, and the Full Disk Access dialog are all wired in this file.
+Built by Hutch, with Bun as the main-process runtime — see [ADR-0017](adr/0017-electrobun-2x-via-hutch.md). The launcher loads `app/bun/index.js`, which is the bundled `src/server/index.ts`. Application menu, window-state persistence, external-link handling, and the Full Disk Access dialog are all wired in this file.
 
 ## URL state
 

@@ -6,13 +6,7 @@
  * files are left on disk.
  */
 
-import {
-  existsSync,
-  mkdtempSync,
-  readdirSync,
-  rmSync,
-  writeFileSync
-} from 'node:fs';
+import { mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
@@ -40,23 +34,6 @@ beforeEach(() => {
 
 afterEach(() => {
   rmSync(cacheDir, { recursive: true, force: true });
-});
-
-describe('clear', () => {
-  test('drops every image but leaves the tree standing', () => {
-    const cache = openCache();
-    write('full', 'a.jpg');
-    write('thumb', 'a.jpg');
-
-    cache.clear();
-
-    // The directories have to survive: the cache resolved them once at
-    // construction and never looks them up again.
-    expect(existsSync(join(cacheDir, 'full'))).toBe(true);
-    expect(existsSync(join(cacheDir, 'thumb'))).toBe(true);
-    expect(listing('full')).toEqual([]);
-    expect(listing('thumb')).toEqual([]);
-  });
 });
 
 describe('evictExcept', () => {

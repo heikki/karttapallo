@@ -72,10 +72,6 @@ export interface LibrarySession {
   ) => Promise<Response | null> | Response | null;
   /** True once the post-startup rebuild swapped in items that differ. */
   rebuildComplete: Promise<boolean>;
-  /** Rebuild the snapshot from the library ("Sync Photos"). */
-  rebuild: () => Promise<boolean>;
-  /** Drop every converted image; they are re-made on demand (ADR-0010). */
-  clearImageCache: () => void;
   /** The view params saved against this Library, or none. */
   savedView: () => Record<string, string>;
 }
@@ -149,8 +145,6 @@ export function openLibrarySession(
   return {
     routeApiRequest,
     rebuildComplete: itemStore.rebuildComplete,
-    rebuild: itemStore.rebuild,
-    clearImageCache: imageCache.clear,
     savedView
   };
 }

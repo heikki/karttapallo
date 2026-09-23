@@ -136,19 +136,6 @@ describe('cache root', () => {
     expect(existsSync(join(cacheRoot, 'cache', 'full'))).toBe(true);
     expect(existsSync(join(cacheRoot, 'cache', 'thumb'))).toBe(true);
   });
-
-  test('clearImageCache empties the images but keeps the snapshot', async () => {
-    const session = open();
-    await settle(session);
-    writeFileSync(join(cacheRoot, 'cache', 'full', 'a.jpg'), 'x');
-    writeFileSync(join(cacheRoot, 'cache', 'thumb', 'a.jpg'), 'x');
-
-    session.clearImageCache();
-
-    expect(existsSync(join(cacheRoot, 'cache', 'full', 'a.jpg'))).toBe(false);
-    expect(existsSync(join(cacheRoot, 'cache', 'thumb'))).toBe(true);
-    expect(existsSync(join(cacheRoot, 'items.json'))).toBe(true);
-  });
 });
 
 describe('album pruning', () => {

@@ -212,8 +212,6 @@ export interface ItemStore {
    * changed — see docs/app.md "Data layout".
    */
   rebuildComplete: Promise<boolean>;
-  /** Trigger a manual rebuild (e.g. "Sync Photos" menu action). */
-  rebuild: () => Promise<boolean>;
 }
 
 interface OpenItemStoreOptions {
@@ -351,8 +349,7 @@ export function openItemStore(options: OpenItemStoreOptions): ItemStore {
   return {
     getAll: () => items,
     applyEdits,
-    rebuildComplete,
-    rebuild
+    rebuildComplete
   };
 }
 

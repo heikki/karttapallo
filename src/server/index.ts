@@ -210,13 +210,6 @@ ApplicationMenu.setApplicationMenu([
     ]
   },
   {
-    label: 'Photos',
-    submenu: [
-      { label: 'Sync Photos', action: 'resync' },
-      { label: 'Clear Cache', action: 'clear-cache' }
-    ]
-  },
-  {
     label: 'Window',
     submenu: [
       { role: 'minimize', accelerator: 'CmdOrCtrl+M' },
@@ -439,73 +432,11 @@ win.webview.on('new-window-open', (event: unknown) => {
   openInSystem(extractUrl(event as ElectrobunEvent));
 });
 
-// In-process Photos sync (manual "Sync Photos" menu action)
-let syncing = false;
-async function syncPhotos() {
-  if (syncing) {
-    void Utils.showMessageBox({
-      type: 'warning',
-      title: 'Sync Running',
-      message: 'A sync is already in progress. Please wait.',
-      buttons: ['OK']
-    });
-    return;
-  }
-  syncing = true;
-  win.setTitle('Karttapallo — Syncing…');
-  try {
-    const changed = await session.rebuild();
-    if (changed) win.webview.loadURL(buildViewUrl());
-    void Utils.showMessageBox({
-      type: 'info',
-      title: 'Sync Complete',
-      message: changed
-        ? 'Sync complete — items updated.'
-        : 'Sync complete — no changes.',
-      buttons: ['OK']
-    });
-  } catch (err) {
-    void Utils.showMessageBox({
-      type: 'error',
-      title: 'Sync Failed',
-      message: err instanceof Error ? err.message : String(err),
-      buttons: ['OK']
-    });
-  } finally {
-    syncing = false; // eslint-disable-line require-atomic-updates -- intentional sequential reset
-    win.setTitle('Karttapallo');
-  }
-}
-
-/** Delete cached images and reload webview. */
-function clearCache() {
-  session.clearImageCache();
-  console.log('[main] Cache cleared');
-  win.webview.loadURL(buildViewUrl());
-  void Utils.showMessageBox({
-    type: 'info',
-    title: 'Cache Cleared',
-    message:
-      'Image cache has been cleared. Images will be re-cached on demand.',
-    buttons: ['OK']
-  });
-}
-
 // Handle menu actions. Electrobun delivers the action under `event.data`,
 // not the standard CustomEvent `event.detail` shape — easy to get wrong.
 ApplicationMenu.on('application-menu-clicked', (event: unknown) => {
   const action = (event as ElectrobunEvent).data?.action ?? '';
-  switch (action) {
-    case 'quit':
-      process.exit(0);
-      break;
-    case 'resync':
-      void syncPhotos();
-      break;
-    case 'clear-cache':
-      clearCache();
-      break;
-  }
+  if (action === 'quit') process.exit(0);
 });
 
 // The webview already loaded the snapshot view at construction (above). Reload

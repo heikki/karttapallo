@@ -10,7 +10,6 @@ import {
   existsSync,
   mkdirSync,
   readdirSync,
-  rmSync,
   statSync,
   unlinkSync,
   utimesSync
@@ -41,8 +40,6 @@ export interface ImageCache {
     size: 'full' | 'thumb',
     asset: AssetRecord
   ) => string | null;
-  /** Drop every converted image. They are re-made on demand (ADR-0010). */
-  clear: () => void;
   /** Drop the converted images of assets the library no longer has. */
   evictExcept: (liveUuids: Set<string>) => void;
 }
@@ -212,13 +209,6 @@ export function createImageCache(config: ImageCacheConfig): ImageCache {
     return cachedPath;
   }
 
-  function clear() {
-    for (const dir of [fullDir, thumbDir]) {
-      rmSync(dir, { recursive: true, force: true });
-      mkdirSync(dir, { recursive: true });
-    }
-  }
-
   function evictExcept(liveUuids: Set<string>) {
     for (const dir of [fullDir, thumbDir]) {
       try {
@@ -237,5 +227,5 @@ export function createImageCache(config: ImageCacheConfig): ImageCache {
     }
   }
 
-  return { resolve, clear, evictExcept };
+  return { resolve, evictExcept };
 }
