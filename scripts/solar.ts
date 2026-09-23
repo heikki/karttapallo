@@ -10,8 +10,7 @@
  * The test is one-sided. A scene can always be darker than the sun allows
  * (indoors, shade, a subject in shadow) but never brighter, so "too bright for
  * this sun" is evidence and "darker than expected" is not. Treat the pair as an
- * advisory signal for a human to read, not a gate — see the header of
- * fix-offset-derived-dates.ts for how that plays out in practice.
+ * advisory signal for a human to read, not a gate.
  */
 
 const DEG = Math.PI / 180;
