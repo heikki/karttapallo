@@ -14,6 +14,7 @@
     "cert": "bash scripts/cert.sh",
     "reset:install": "bash scripts/reset-install.sh",
     "sync": "electrobun sync",
+    "postinstall": "bun run sync",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "format": "prettier --write .",

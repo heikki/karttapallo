@@ -8,18 +8,19 @@ Photos and videos can be browsed in a built-in full-screen lightbox.
 
 ## Setup
 
-Requires macOS, [Bun](https://bun.sh/), and Apple Photos with geotagged photos.
+Requires macOS, [Bun](https://bun.sh/), [Homebrew](https://brew.sh/), the Xcode Command Line Tools (`xcode-select --install`), and an Apple Photos library.
 
 ```bash
 bun install
-bun dev
+bun dev       # serve the app in a browser
 ```
 
 To build and install to `/Applications`:
 
 ```bash
-bun run cert --create   # one-time: create a self-signed code-signing cert
-bun install:app         # build, sign, and copy to /Applications
+brew install zstd openssl   # one-time
+bun cert --create           # one-time: create a self-signed code-signing cert
+bun install:app             # build, sign, and copy to /Applications
 ```
 
 ### Optional API keys

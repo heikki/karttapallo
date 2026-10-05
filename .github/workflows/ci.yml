@@ -17,9 +17,6 @@ jobs:
         with:
           bun-version: 1.4.0
       - run: bun install --frozen-lockfile
-      # Electrobun 2.x projects its SDK into .hutch/devkit; typecheck resolves
-      # `electrobun/*` there — see docs/adr/0017.
-      - run: bun run sync
       - run: bun run build:native
       # Not `format -- --check`: prettier takes --write and --check together,
       # honours --write, rewrites the files and exits 0 — a gate that can

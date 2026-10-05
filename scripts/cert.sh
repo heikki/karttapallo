@@ -60,6 +60,13 @@ if exists; then
   fi
 fi
 
+# macOS's own /usr/bin/openssl is LibreSSL, which has no `pkcs12 -legacy`. The
+# export below silences stderr, so without this the script would just stop.
+if ! openssl pkcs12 -help 2>&1 | grep -q -- '-legacy'; then
+  echo "cert: $(command -v openssl) has no 'pkcs12 -legacy' — needs OpenSSL 3 (brew install openssl)" >&2
+  exit 1
+fi
+
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
