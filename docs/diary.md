@@ -2,12 +2,12 @@
 
 Geotagged photo map viewer with Apple Photos integration.
 
-## Project Stats (as of 24.09.2026)
+## Project Stats (as of 05.10.2026)
 
 - **TypeScript files**: 130
 - **Lines of code**: 14,605 (+ 7,197 tests)
-- **Total commits**: 721
-- **Total tokens**: ~3,448M | **Total cost**: ~$2,256
+- **Total commits**: 724
+- **Total tokens**: ~3,455M | **Total cost**: ~$2,259
 
 ## Updating This Diary
 
@@ -46,6 +46,14 @@ git log --pretty=format:"%ad|%s" --date=format:"%Y-%m-%d" | head -50  # Recent c
 - Skip minor tweaks — only significant features and fixes belong, especially on busy days.
 - Describe final outcomes, not reverted intermediate attempts.
 - Flat list, no sub-bullets or prose.
+
+## 05.10.2026 — setup that works on a clean Mac
+
+**Tokens**: 7M | **Cost**: $2.70
+
+- The setup instructions name every tool a fresh Mac needs, so following them works the first time
+- Creating the signing certificate says what is missing instead of stopping without a word
+- Internal: installing dependencies leaves type checking ready, with no separate step
 
 ## 24.09.2026 — clearing out what's no longer used
 
