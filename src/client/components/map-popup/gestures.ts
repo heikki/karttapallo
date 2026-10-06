@@ -6,6 +6,8 @@ import { centerPxForZoom } from '@components/map-view/zoom-math';
 
 // One full wheel notch (deltaY ≈ 100) ≈ 1/3 of a zoom level.
 const WHEEL_ZOOM_RATE = 1 / 300;
+// Wheel events closer together than this belong to one scroll.
+const WHEEL_GESTURE_GAP_MS = 200;
 
 /**
  * While the popup is open, treat its chrome as part of the map for
@@ -13,7 +15,9 @@ const WHEEL_ZOOM_RATE = 1 / 300;
  *
  * - Scroll-zoom on either the popup or the canvas anchors at the
  *   selected marker (instead of the cursor) so the marker stays under
- *   the mouse.
+ *   the mouse. A scroll that starts with the marker off-screen anchors at
+ *   the cursor and keeps doing so until it ends, even once the marker
+ *   comes into view.
  * - Mouse drags on the popup are forwarded to the canvas so the user
  *   can pan through it.
  * - MapLibre's default scroll-zoom is disabled while these overrides
@@ -26,11 +30,27 @@ export function attach(map: MapGL, popup: Popup) {
   const popupEl = popup.getElement();
   const canvas = map.getCanvas();
 
+  let lastWheelAt = -Infinity;
+  let anchorAtMarker = true;
+
   function zoomAroundPopup(e: WheelEvent) {
     const coords = getSelectedMarkerCoords();
     if (coords === null) return;
     e.preventDefault();
     e.stopPropagation();
+    const anchorPx = map.project(coords);
+    const { clientWidth: w, clientHeight: h } = canvas;
+
+    // If the marker is off-screen, zoom around cursor position instead.
+    if (e.timeStamp - lastWheelAt > WHEEL_GESTURE_GAP_MS) {
+      anchorAtMarker =
+        anchorPx.x >= 0 &&
+        anchorPx.x <= w &&
+        anchorPx.y >= 0 &&
+        anchorPx.y <= h;
+    }
+    lastWheelAt = e.timeStamp;
+
     const oldZoom = map.getZoom();
     const delta = -e.deltaY * WHEEL_ZOOM_RATE;
     const newZoom = Math.max(
@@ -38,14 +58,8 @@ export function attach(map: MapGL, popup: Popup) {
       Math.min(map.getMaxZoom(), oldZoom + delta)
     );
     if (newZoom === oldZoom) return;
-    const anchorPx = map.project(coords);
-    const { clientWidth: w, clientHeight: h } = canvas;
-
-    // If the marker is off-screen, zoom around cursor position instead.
-    const markerOnScreen =
-      anchorPx.x >= 0 && anchorPx.x <= w && anchorPx.y >= 0 && anchorPx.y <= h;
     const rect = canvas.getBoundingClientRect();
-    const zoomAnchor = markerOnScreen
+    const zoomAnchor = anchorAtMarker
       ? anchorPx
       : { x: e.clientX - rect.left, y: e.clientY - rect.top };
 
