@@ -1,4 +1,4 @@
-# <img src="resources/icon.iconset/icon_128x128.png" alt="" width="40" align="top">&ensp;Karttapallo
+# <img src="resources/icon.svg" alt="" width="40" align="top">&ensp;Karttapallo
 
 Globe view of an Apple Photos library — fix missing locations and wrong dates or timezones in place.
 
