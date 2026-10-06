@@ -2,12 +2,12 @@
 
 Geotagged photo map viewer with Apple Photos integration.
 
-## Project Stats (as of 05.10.2026)
+## Project Stats (as of 06.10.2026)
 
-- **TypeScript files**: 130
-- **Lines of code**: 14,605 (+ 7,197 tests)
-- **Total commits**: 724
-- **Total tokens**: ~3,455M | **Total cost**: ~$2,259
+- **TypeScript files**: 137
+- **Lines of code**: 15,260 (+ 7,376 tests)
+- **Total commits**: 733
+- **Total tokens**: ~3,561M | **Total cost**: ~$2,294
 
 ## Updating This Diary
 
@@ -46,6 +46,16 @@ git log --pretty=format:"%ad|%s" --date=format:"%Y-%m-%d" | head -50  # Recent c
 - Skip minor tweaks — only significant features and fixes belong, especially on busy days.
 - Describe final outcomes, not reverted intermediate attempts.
 - Flat list, no sub-bullets or prose.
+
+## 06.10.2026 — help for a first-time user; pinch to zoom
+
+**Tokens**: 104M | **Cost**: $34.33
+
+- A Help panel lists the keys, gestures and marker colours, and opens by itself on a first launch
+- Opening help moves the map so the photo card stays clear of it
+- Search suggestions float over the filter panel instead of stretching it, and follow the arrow keys
+- Trackpad pinch zooms the map around the cursor and glides on after release
+- Internal: one docs map for agents replaces two lists that repeated each other
 
 ## 05.10.2026 — setup that works on a clean Mac
 
