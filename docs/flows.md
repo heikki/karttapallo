@@ -53,7 +53,7 @@ A flow that adds a key, or a mouse or trackpad gesture the screen doesn't show, 
 
 - **Measure distances** — "Measure" button → click adds points connected by dashed line; cumulative distance overlay; click point to remove.
 - **Collapse the filter panel** — click header to toggle.
-- **Get help** — the `?` in the filter panel's header, there whether the panel is collapsed or not, or Help ▸ Karttapallo Help (Cmd+?) in the desktop app, toggles a floating panel: two sentences on what the app is, then the keys, the mouse and trackpad gestures, and what the marker colours mean. Opens beside the filter panel, and the map moves so the photo card stays clear of it. Movable, non-blocking; the `?`, the menu item or X closes. Opens by itself once, the first time the app runs on a Mac. Every key passes through to the map, so what it lists can be tried while it is up.
+- **Get help** — the `?` in the filter panel's header, there whether the panel is collapsed or not, or Help ▸ Karttapallo Help (Cmd+?) in the desktop app, toggles a floating panel: two sentences on what the app is, then the keys, the mouse and trackpad gestures, and what the marker colours mean. Opens beside the filter panel, and the map moves so the photo card stays clear of it. Non-blocking; the `?`, the menu item or X closes. Opens by itself once, the first time the app runs on a Mac. Every key passes through to the map, so what it lists can be tried while it is up.
 
 ## Dismiss
 

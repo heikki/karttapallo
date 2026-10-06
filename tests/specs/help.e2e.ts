@@ -37,6 +37,13 @@ test('Get help', async ({ page }) => {
   const lightbox = page.locator('photo-lightbox[active]');
   await page.keyboard.press('Space');
   await expect(lightbox).toBeVisible();
+  // The lightbox is the whole screen: the panel waits under it.
+  const box = (await panel.boundingBox())!;
+  const onTop = await page.evaluate(
+    ([x, y]) => document.elementFromPoint(x!, y!)?.tagName.toLowerCase(),
+    [box.x + box.width / 2, box.y + box.height / 2]
+  );
+  expect(onTop).toBe('photo-lightbox');
   await page.keyboard.press('Space');
   await expect(lightbox).toHaveCount(0);
   await page.keyboard.press('Escape');

@@ -21,7 +21,9 @@ export const styles = css`
        beside the ? that opened it and reads as part of that column; the Info
        panel has the top-left corner, and both can be open with this one. */
     pointer-events: none;
-    z-index: 3000;
+    /* The filter panel's layer, under the lightbox: a photo at full size is
+       the whole screen, and this belongs to the map behind it. */
+    z-index: 1000;
     justify-content: flex-end;
     align-items: flex-start;
     font-family:
@@ -50,10 +52,8 @@ export const styles = css`
     border-bottom: 1px solid var(--panel-line);
     font-weight: 600;
     font-size: 14px;
-    cursor: move;
     /* Prefixed only — this WKWebView drops the unprefixed form (gotchas.md). */
     -webkit-user-select: none;
-    touch-action: none;
   }
   .close {
     font-size: 24px;

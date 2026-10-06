@@ -7,8 +7,8 @@ interface Box {
 }
 
 /**
- * Header-drag for a floating panel: the Info panel and the Help panel both
- * park in a corner and can be pulled aside to see what is under them.
+ * Header-drag for a floating panel: the Info panel parks in a corner and can
+ * be pulled aside to see what is under it.
  *
  * The offset from the resting spot is written straight to the box's transform
  * rather than through a reactive property: a pointermove per frame shouldn't

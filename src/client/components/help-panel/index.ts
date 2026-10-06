@@ -2,7 +2,6 @@ import { SignalWatcher } from '@lit-labs/signals';
 import { html, LitElement, nothing } from 'lit';
 import { customElement } from 'lit/decorators.js';
 
-import { PanelDrag } from '@common/panel-drag';
 import { helpPanelOpen, toggleHelp } from '@common/panels';
 import { GPS_COLORS } from '@common/utils';
 
@@ -44,12 +43,6 @@ const COLOURS: Array<[string, string, string]> = [
  */
 @customElement('help-panel')
 export class HelpPanel extends SignalWatcher(LitElement) {
-  private readonly _drag = new PanelDrag(
-    this,
-    () => this.shadowRoot?.querySelector<HTMLElement>('.content') ?? null,
-    () => helpPanelOpen.get()
-  );
-
   static override styles = styles;
 
   override connectedCallback() {
@@ -57,28 +50,17 @@ export class HelpPanel extends SignalWatcher(LitElement) {
     window.addEventListener(MENU_EVENT, toggleHelp);
   }
 
-  override firstUpdated() {
-    // Closed from here or from the `?` button alike: the next open starts in
-    // the corner rather than wherever this one was dragged to.
-    this.updateEffect(() => {
-      if (!helpPanelOpen.get()) this._drag.reset();
-    });
-  }
-
   override disconnectedCallback() {
     super.disconnectedCallback();
     window.removeEventListener(MENU_EVENT, toggleHelp);
   }
 
+  // eslint-disable-next-line @typescript-eslint/class-methods-use-this -- Lit lifecycle
   override render() {
     if (!helpPanelOpen.get()) return nothing;
     return html`
       <div class="content">
-        <div
-          class="header"
-          title="Drag to move"
-          @pointerdown=${this._drag.onPointerDown}
-        >
+        <div class="header">
           <span>Help</span>
           <span
             class="close"

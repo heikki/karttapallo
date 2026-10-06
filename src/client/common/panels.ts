@@ -70,9 +70,8 @@ const MIN_MAP_WIDTH = 360;
  * so the photo card and a fit both land clear of the panels there. Reads the
  * Help panel's signal, so an effect that calls this re-runs when it opens.
  *
- * Where the Help panel opens, that is — one dragged aside still counts. And
- * not in a window too narrow to hold a card beside both: there the card can't
- * be kept clear, and chasing it would only push it off the other edge.
+ * Not in a window too narrow to hold a card beside both panels: there the card
+ * can't be kept clear, and chasing it would only push it off the other edge.
  */
 export function rightInset() {
   if (!helpPanelOpen.get()) return FILTER_PANEL_INSET;

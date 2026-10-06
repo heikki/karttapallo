@@ -51,7 +51,7 @@ The floating panel describing the selected photo (`<info-panel>`), toggled with 
 _Avoid_: metadata modal, inspector.
 
 **Help panel**:
-The floating panel that tells someone who has never seen the app what the screen cannot (`<help-panel>`): a few sentences on what the app is, then the keys, the mouse and trackpad gestures, and what the marker colours mean. It states principles rather than listing every flow, and shows only when asked for — except once, unasked, the first time the app runs on a Mac. Sits beside the **Info panel** and behaves like it — movable, non-blocking, independent of it.
+The floating panel that tells someone who has never seen the app what the screen cannot (`<help-panel>`): a few sentences on what the app is, then the keys, the mouse and trackpad gestures, and what the marker colours mean. It states principles rather than listing every flow, and shows only when asked for — except once, unasked, the first time the app runs on a Mac. Opens beside the filter panel and stays there. Non-blocking like the **Info panel**, and independent of it.
 _Avoid_: shortcuts sheet, legend, guide.
 
 **Place**:
