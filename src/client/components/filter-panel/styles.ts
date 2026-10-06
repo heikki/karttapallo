@@ -120,7 +120,8 @@ export const styles = css`
   }
   .view-btn {
     flex: 1;
-    padding: 5px 10px;
+    padding: 5px 6px;
+    white-space: nowrap;
     border: 1px solid var(--panel-line);
     border-radius: 6px;
     background: var(--panel-raised);
@@ -131,6 +132,14 @@ export const styles = css`
   .view-btn:hover {
     background: var(--panel-line);
     border-color: var(--panel-line);
+  }
+  .view-btn.quiet {
+    background: transparent;
+    color: var(--panel-text-dim);
+  }
+  .view-btn.quiet:hover {
+    background: var(--panel-raised);
+    color: var(--panel-text);
   }
   .view-btn:disabled {
     opacity: 0.4;

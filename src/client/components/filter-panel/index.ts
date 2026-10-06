@@ -286,7 +286,7 @@ export class FilterPanel extends SignalWatcher(LitElement) {
                   <album-controls .album=${f.album}></album-controls>
                   <div class="view-buttons">
                     <button
-                      class="view-btn"
+                      class="view-btn quiet"
                       @click=${() => {
                         actions.openExternalMap('apple');
                       }}
@@ -294,7 +294,7 @@ export class FilterPanel extends SignalWatcher(LitElement) {
                       Apple Maps
                     </button>
                     <button
-                      class="view-btn"
+                      class="view-btn quiet"
                       @click=${() => {
                         actions.openExternalMap('google');
                       }}
