@@ -32,6 +32,8 @@ export default function installPinchZoom(map: MapGL) {
   let cursor: Point = { x: 0, y: 0 };
   let lastScale = 1;
   let samples: Array<{ t: number; dz: number }> = [];
+  let glideFrame = 0;
+  let stepping = false;
 
   function toCanvas(clientX: number, clientY: number): Point {
     const rect = map.getCanvas().getBoundingClientRect();
@@ -52,8 +54,35 @@ export default function installPinchZoom(map: MapGL) {
       oldZoom,
       newZoom
     );
+    stepping = true;
     map.jumpTo({ center: map.unproject(centerPx), zoom: newZoom });
+    stepping = false;
   }
+
+  // Stepped with the same jumps as the pinch itself: on the globe an
+  // easeTo `around` a point wobbles the map by several pixels a frame.
+  function glide(total: number, anchor: Point) {
+    const start = performance.now();
+    let applied = 0;
+    function step() {
+      const t = Math.min(1, (performance.now() - start) / GLIDE_DURATION_MS);
+      const target = total * (1 - (1 - t) ** 3);
+      zoomBy(target - applied, anchor);
+      applied = target;
+      glideFrame = t < 1 ? requestAnimationFrame(step) : 0;
+    }
+    glideFrame = requestAnimationFrame(step);
+  }
+
+  function stopGlide() {
+    cancelAnimationFrame(glideFrame);
+    glideFrame = 0;
+  }
+
+  // Any camera move that isn't the glide's own step takes over from it.
+  map.on('movestart', () => {
+    if (!stepping) stopGlide();
+  });
 
   container.addEventListener('mousemove', (e) => {
     cursor = toCanvas(e.clientX, e.clientY);
@@ -92,16 +121,7 @@ export default function installPinchZoom(map: MapGL) {
     const velocity = recent.reduce((sum, s) => sum + s.dz, 0) / span;
     if (Math.abs(velocity) < MIN_VELOCITY) return;
 
-    const zoom = Math.max(
-      map.getMinZoom(),
-      Math.min(map.getMaxZoom(), map.getZoom() + velocity * GLIDE_MS)
-    );
-    map.easeTo({
-      zoom,
-      around: map.unproject([cursor.x, cursor.y]),
-      duration: GLIDE_DURATION_MS,
-      easing: (t) => 1 - (1 - t) ** 3
-    });
+    glide(velocity * GLIDE_MS, cursor);
   }
 
   container.addEventListener('gesturestart', onGestureStart);
