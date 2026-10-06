@@ -15,6 +15,7 @@ import { viewState } from '@common/view-state';
 import type { MapApi } from './api';
 import background from './background';
 import config from './config';
+import installPinchZoom from './pinch';
 
 function showMapError(msg: string, onClick?: () => void) {
   let banner = document.getElementById('map-error-banner');
@@ -237,6 +238,7 @@ export default function setupMap(container: HTMLElement, api: MapApi): MapGL {
   const map = createMap(container);
   installControls(map);
   installListeners(map, api);
+  installPinchZoom(map);
   installBackground(map);
   installDebugDiagnostics(map);
   installInteractionMode(map);

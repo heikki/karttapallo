@@ -2,6 +2,7 @@ import type { Map as MapGL, Popup } from 'maplibre-gl';
 
 import * as edits from '@common/edits';
 import selection from '@common/selection';
+import { centerPxForZoom } from '@components/map-view/zoom-math';
 
 // One full wheel notch (deltaY ≈ 100) ≈ 1/3 of a zoom level.
 const WHEEL_ZOOM_RATE = 1 / 300;
@@ -48,11 +49,7 @@ export function attach(map: MapGL, popup: Popup) {
       ? anchorPx
       : { x: e.clientX - rect.left, y: e.clientY - rect.top };
 
-    const scale = 2 ** (newZoom - oldZoom);
-    const newCenterPx = [
-      zoomAnchor.x + (w / 2 - zoomAnchor.x) / scale,
-      zoomAnchor.y + (h / 2 - zoomAnchor.y) / scale
-    ] as [number, number];
+    const newCenterPx = centerPxForZoom(zoomAnchor, { w, h }, oldZoom, newZoom);
     map.jumpTo({ center: map.unproject(newCenterPx), zoom: newZoom });
   }
 

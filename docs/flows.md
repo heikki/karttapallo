@@ -5,6 +5,7 @@ Canonical inventory of user-visible flows. Each Tier 5 e2e spec maps to one or m
 ## Browse and view
 
 - **Browse the collection** — see all photos and videos on the map; URL state restores filters / view / styles / open popup. One photo is always selected with its popup open, unless the filters match nothing; a filter that drops the selected photo picks the newest that is left and fits the map to it.
+- **Zoom the map** — scroll zooms around the selected photo while it is on screen; trackpad pinch zooms around the cursor and glides on after release.
 - **Find a photo on the map** — click marker → popup; arrow keys cycle filtered items; Space or thumbnail click → lightbox. Escape, or a click on bare map, hides the popup to show the map under it and hides nothing else; the photo stays selected and its marker lit, and either of those, Space or any change of selection brings the popup back — Space reveals the card rather than skipping it for the lightbox.
 - **View a photo full size** — lightbox shows the photo and nothing else; arrows cycle; Escape/Space/backdrop closes; trackpad pinch zooms.
 - **Watch a video** — videos play inline in lightbox; native controls auto-hide; Enter toggles play/pause (Space closes the lightbox, whatever is in it); mute persists across videos.
