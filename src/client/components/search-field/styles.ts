@@ -70,8 +70,18 @@ export const styles = css`
   }
   .suggestions {
     list-style: none;
-    margin: -4px 0 8px 0;
+    /* Over the controls below, not in flow above them: in flow, every
+       keystroke that changed the number of matches resized the whole filter
+       panel and moved everything under the box. 4px under the input — the
+       host ends 8px below it, on the input's own margin. */
+    position: absolute;
+    top: calc(100% - 4px);
+    left: 0;
+    right: 0;
+    z-index: 1;
+    margin: 0;
     padding: 4px 0;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
     background: #3a3a3c;
     border: 1px solid #48484a;
     border-radius: 6px;

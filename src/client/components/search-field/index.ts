@@ -90,14 +90,31 @@ export class SearchField extends SignalWatcher(LitElement) {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       this._highlighted = (this._highlighted + 1) % items.length;
+      this._revealHighlighted();
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       this._highlighted = (this._highlighted - 1 + items.length) % items.length;
+      this._revealHighlighted();
     } else if (e.key === 'Enter') {
       e.preventDefault();
       const chosen = items[this._highlighted];
       if (chosen !== undefined) this._apply(chosen.term);
     }
+  }
+
+  /** Keep the highlighted suggestion in view as the arrows walk the list. */
+  private _revealHighlighted() {
+    void this.updateComplete.then(() => {
+      const list = this.shadowRoot?.querySelector<HTMLElement>('.suggestions');
+      if (list === null || list === undefined) return;
+      // Back at the top, show the group heading above the first row too.
+      if (this._highlighted === 0) list.scrollTop = 0;
+      else {
+        list
+          .querySelector('.suggestion.active')
+          ?.scrollIntoView({ block: 'nearest' });
+      }
+    });
   }
 
   private _renderToken(term: string) {
@@ -144,8 +161,11 @@ export class SearchField extends SignalWatcher(LitElement) {
               role="option"
               aria-selected=${i === this._highlighted}
               class="suggestion ${i === this._highlighted ? 'active' : ''}"
-              @mouseenter=${() => {
-                this._highlighted = i;
+              @mousemove=${() => {
+                // Not mouseenter: the list scrolling under a parked pointer
+                // enters a new row without the mouse having moved, and would
+                // take the highlight back from the arrow keys.
+                if (this._highlighted !== i) this._highlighted = i;
               }}
               @click=${() => {
                 this._apply(s.term);
