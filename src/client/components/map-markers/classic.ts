@@ -9,18 +9,7 @@ import type {
 
 import * as edits from '@common/edits';
 import type { Photo } from '@common/types';
-
-const gpsColor = [
-  'match',
-  ['get', 'gps'],
-  'exif',
-  '#3b82f6',
-  'user',
-  '#22c55e',
-  'inferred',
-  '#f59e0b',
-  '#9ca3af'
-] as unknown as string;
+import { gpsColorExpression } from '@common/utils';
 
 const radius: ExpressionSpecification = [
   'interpolate',
@@ -114,7 +103,7 @@ const LAYERS: LayerSpecification[] = [
     type: 'circle',
     source: 'classic-source',
     paint: {
-      'circle-color': gpsColor,
+      'circle-color': gpsColorExpression,
       'circle-radius': radius,
       'circle-pitch-alignment': 'map'
     }
@@ -139,7 +128,7 @@ const LAYERS: LayerSpecification[] = [
     type: 'circle',
     source: 'classic-source',
     paint: {
-      'circle-color': gpsColor,
+      'circle-color': gpsColorExpression,
       'circle-radius': radius,
       'circle-stroke-width': [
         'interpolate',

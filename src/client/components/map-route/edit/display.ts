@@ -6,6 +6,7 @@ import type {
 
 import * as data from '@common/data';
 import type { Photo } from '@common/types';
+import { gpsColorExpression } from '@common/utils';
 
 import { buildLineFeatures } from '../data';
 import type { RouteData } from '../data';
@@ -48,18 +49,6 @@ const outlineRadius = [
   14,
   ['match', ['get', 'pointType'], 'photo', 12, 6.5]
 ] as unknown as number;
-
-const gpsColor = [
-  'match',
-  ['get', 'gps'],
-  'exif',
-  '#3b82f6',
-  'user',
-  '#22c55e',
-  'inferred',
-  '#f59e0b',
-  '#9ca3af'
-] as unknown as string;
 
 const EDIT_LAYERS: LayerSpecification[] = [
   {
@@ -108,7 +97,7 @@ const EDIT_LAYERS: LayerSpecification[] = [
     type: 'circle',
     source: 'route-edit-points',
     paint: {
-      'circle-color': gpsColor,
+      'circle-color': gpsColorExpression,
       'circle-radius': pointRadius,
       'circle-pitch-alignment': 'map'
     },

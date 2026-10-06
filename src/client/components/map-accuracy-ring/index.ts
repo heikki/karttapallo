@@ -5,6 +5,7 @@ import * as edits from '@common/edits';
 import { infoPanelOpen } from '@common/panels';
 import selection from '@common/selection';
 import { effect } from '@common/signals';
+import { GPS_COLORS } from '@common/utils';
 import { MapFeatureElement } from '@components/map-view/api';
 
 import { accuracyRing, ringFeature, type AccuracyRing } from './geometry';
@@ -21,7 +22,7 @@ const LAYER: LayerSpecification = {
     // which it sits almost on top of around zoom 18. No fill: the ground
     // inside the circle is exactly what the user is reading to find the
     // real spot.
-    'line-color': '#3b82f6',
+    'line-color': GPS_COLORS.exif,
     'line-width': 1.5,
     'line-opacity': 0.9,
     'line-dasharray': [3, 3]

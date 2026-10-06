@@ -55,7 +55,7 @@ export interface LibraryAdapters {
 export interface OpenLibrarySessionOptions {
   /** Already resolved — the entry owns how a failed resolution is surfaced. */
   libraryPath: string;
-  /** Machine-scoped settings root, for the ORS API key. */
+  /** Machine-scoped settings root, for the ORS API key and the first-run mark. */
   supportDir: string;
   /** Derived-data root. Its *location* is the entry's choice; its contents are not. */
   cacheRoot: string;
@@ -134,6 +134,15 @@ export function openLibrarySession(
   const { routeApiRequest } = createApiHandler({
     saveView: (params) => {
       setSetting(bundleDir, 'view', JSON.stringify(params));
+    },
+    // Machine-scoped, so beside the window frame rather than in the bundle: a
+    // library copied to another Mac arrives there with someone who hasn't
+    // seen the Help panel. Recorded when asked rather than when the panel is
+    // closed, so quitting with it open doesn't bring it back.
+    claimFirstRun: () => {
+      if (getSetting(supportDir, 'help_seen') !== null) return false;
+      setSetting(supportDir, 'help_seen', '1');
+      return true;
     },
     itemStore,
     photosLibrary,

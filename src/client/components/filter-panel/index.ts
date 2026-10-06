@@ -7,9 +7,10 @@ import * as data from '@common/data';
 import * as edits from '@common/edits';
 import { HAS_MML } from '@common/features';
 import * as interactionMode from '@common/interaction-mode';
+import { toggleHelp } from '@common/panels';
 import selection from '@common/selection';
 import { resetUrl } from '@common/url-state';
-import { isVideo } from '@common/utils';
+import { GPS_COLORS, isVideo } from '@common/utils';
 import { viewState } from '@common/view-state';
 
 import './album-controls';
@@ -165,6 +166,17 @@ export class FilterPanel extends SignalWatcher(LitElement) {
           }}
         >
           <h2>Karttapallo</h2>
+          <button
+            class="help-btn"
+            aria-label="Help"
+            @click=${(e: Event) => {
+              // The header it sits in collapses the panel on click.
+              e.stopPropagation();
+              toggleHelp();
+            }}
+          >
+            ?
+          </button>
           <p role="status" aria-label="Photo stats">
             ${FilterPanel._renderStats()}
           </p>
@@ -196,14 +208,26 @@ export class FilterPanel extends SignalWatcher(LitElement) {
                   ${renderFilterBtns(
                     f.gps,
                     [
-                      { value: 'exif', label: 'Exif', color: '#3b82f6' },
+                      {
+                        value: 'exif',
+                        label: 'Exif',
+                        color: GPS_COLORS.exif
+                      },
                       {
                         value: 'inferred',
                         label: 'Inferred',
-                        color: '#f59e0b'
+                        color: GPS_COLORS.inferred
                       },
-                      { value: 'user', label: 'User', color: '#22c55e' },
-                      { value: 'none', label: 'None', color: '#9ca3af' }
+                      {
+                        value: 'user',
+                        label: 'User',
+                        color: GPS_COLORS.user
+                      },
+                      {
+                        value: 'none',
+                        label: 'None',
+                        color: GPS_COLORS.none
+                      }
                     ],
                     (v) => {
                       this._onGpsClick(v);

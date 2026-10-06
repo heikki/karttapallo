@@ -1,6 +1,6 @@
 /**
  * Generic key-value settings backed by `state.json`, keyed by which directory
- * the caller passes: machine-scoped keys (`window`, `ors_api_key`) use the
+ * the caller passes: machine-scoped keys (`window`, `ors_api_key`, `help_seen`) use the
  * Application Support dir; the `view` key belongs to one library and is written
  * inside that library's bundle, so map center, filters and the selected photo
  * restore against the right library — and on whichever Mac it is opened on

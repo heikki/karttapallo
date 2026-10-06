@@ -4,6 +4,7 @@ import { LngLatBounds } from 'maplibre-gl';
 import * as data from '@common/data';
 import * as deepLink from '@common/deep-link';
 import * as edits from '@common/edits';
+import { FILTER_PANEL_INSET, rightInset } from '@common/panels';
 import selection from '@common/selection';
 import { effect } from '@common/signals';
 import { mapViewFromUrl } from '@common/url-state';
@@ -106,6 +107,9 @@ export class MapFit extends MapFeatureElement {
       map.flyTo({
         center: [center.lng, center.lat],
         zoom: SINGLE_PHOTO_ZOOM,
+        // Centred in what the Help panel leaves, when it is open. The filter
+        // panel alone is narrow enough that the card clears it from centre.
+        offset: [-(rightInset() - FILTER_PANEL_INSET) / 2, 0],
         duration
       });
       return;
@@ -116,7 +120,7 @@ export class MapFit extends MapFeatureElement {
         top: this.computeTopPadding(),
         bottom: 40,
         left: 50,
-        right: 270
+        right: rightInset() + 30
       },
       maxZoom: 18,
       duration

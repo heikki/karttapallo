@@ -3,6 +3,7 @@ import { html, LitElement, nothing } from 'lit';
 import { customElement, state as litState, property } from 'lit/decorators.js';
 
 import * as data from '@common/data';
+import { PanelDrag } from '@common/panel-drag';
 import { infoPanelOpen } from '@common/panels';
 import selection from '@common/selection';
 
@@ -244,20 +245,11 @@ export class InfoPanel extends SignalWatcher(LitElement) {
   private _loadSeq = 0;
   private _loadingTimer: ReturnType<typeof setTimeout> | null = null;
 
-  // Header-drag offset from the top-left resting spot, in CSS px. Written
-  // straight to .content's transform rather than through a reactive property:
-  // a pointermove per frame shouldn't cost a render, and the element survives
-  // re-renders, so a dragged panel stays put while the user browses photos.
-  // Closing forgets it — see _close().
-  private _offsetX = 0;
-  private _offsetY = 0;
-  private _dragStart: {
-    pointerX: number;
-    pointerY: number;
-    offsetX: number;
-    offsetY: number;
-    base: { left: number; top: number; width: number } | null;
-  } | null = null;
+  private readonly _drag = new PanelDrag(
+    this,
+    () => this._contentEl,
+    () => this.active
+  );
 
   static override styles = styles;
 
@@ -342,18 +334,13 @@ export class InfoPanel extends SignalWatcher(LitElement) {
     this._clearLoadingTimer();
     this._loading = false;
     this._releaseBodyHeight();
-    // Back to the corner: a panel dragged aside for one photo shouldn't decide
-    // where the next open appears, half a session later.
-    this._offsetX = 0;
-    this._offsetY = 0;
-    this._applyOffset();
+    this._drag.reset();
   }
 
   override connectedCallback() {
     super.connectedCallback();
     document.addEventListener('keydown', this._onKeydown, true);
     document.addEventListener('copy', this._onCopy);
-    window.addEventListener('resize', this._onResize);
   }
 
   override firstUpdated() {
@@ -372,111 +359,11 @@ export class InfoPanel extends SignalWatcher(LitElement) {
     super.disconnectedCallback();
     document.removeEventListener('keydown', this._onKeydown, true);
     document.removeEventListener('copy', this._onCopy);
-    window.removeEventListener('resize', this._onResize);
-    this._endDrag();
     this._clearLoadingTimer();
   }
 
   private get _contentEl(): HTMLElement | null {
     return this.shadowRoot?.querySelector<HTMLElement>('.content') ?? null;
-  }
-
-  private _applyOffset() {
-    const content = this._contentEl;
-    if (content === null) return;
-    content.style.transform =
-      this._offsetX === 0 && this._offsetY === 0
-        ? ''
-        : `translate(${this._offsetX}px, ${this._offsetY}px)`;
-  }
-
-  /**
-   * Where the box sits with no offset applied. Derived from the live rect,
-   * which already includes the applied transform — so this is only correct
-   * while `_offsetX/_offsetY` and that transform agree, i.e. not mid-drag.
-   * Returns null when the box has no layout to measure (closed, or happy-dom).
-   */
-  private _baseBox(): { left: number; top: number; width: number } | null {
-    const content = this._contentEl;
-    if (content === null) return null;
-    const rect = content.getBoundingClientRect();
-    if (rect.width === 0 && rect.height === 0) return null;
-    return {
-      left: rect.left - this._offsetX,
-      top: rect.top - this._offsetY,
-      width: rect.width
-    };
-  }
-
-  /**
-   * Keep the panel grabbable: the header can't leave the top of the viewport,
-   * and a strip of the box always stays inside the other three edges.
-   */
-  private _clampOffset(base: { left: number; top: number; width: number }) {
-    const edge = 60;
-    this._offsetX = Math.min(
-      window.innerWidth - edge - base.left,
-      Math.max(edge - base.width - base.left, this._offsetX)
-    );
-    this._offsetY = Math.min(
-      window.innerHeight - edge - base.top,
-      Math.max(-base.top, this._offsetY)
-    );
-  }
-
-  private readonly _onResize = () => {
-    if (!this.active) return;
-    if (this._offsetX === 0 && this._offsetY === 0) return;
-    const base = this._baseBox();
-    if (base === null) return;
-    this._clampOffset(base);
-    this._applyOffset();
-  };
-
-  private readonly _onHeaderPointerDown = (e: PointerEvent) => {
-    if (e.button !== 0) return;
-    // Let the close button have its click.
-    if (
-      (e.target as HTMLElement | null)?.classList.contains('close') === true
-    ) {
-      return;
-    }
-    e.preventDefault();
-    this._dragStart = {
-      pointerX: e.clientX,
-      pointerY: e.clientY,
-      offsetX: this._offsetX,
-      offsetY: this._offsetY,
-      // Measured once, here: mid-drag the rect lags a frame behind the offset
-      // fields, which would drift the clamp bounds by a step each move.
-      base: this._baseBox()
-    };
-    // On window, not the header: the pointer routinely outruns the box.
-    window.addEventListener('pointermove', this._onDragMove);
-    window.addEventListener('pointerup', this._onDragEnd);
-    window.addEventListener('pointercancel', this._onDragEnd);
-  };
-
-  private readonly _onDragMove = (e: PointerEvent) => {
-    const start = this._dragStart;
-    if (start === null) return;
-    const dx = e.clientX - start.pointerX;
-    const dy = e.clientY - start.pointerY;
-    this._offsetX = start.offsetX + dx;
-    this._offsetY = start.offsetY + dy;
-    if (start.base !== null) this._clampOffset(start.base);
-    this._applyOffset();
-  };
-
-  private readonly _onDragEnd = () => {
-    this._endDrag();
-  };
-
-  private _endDrag() {
-    this._dragStart = null;
-    window.removeEventListener('pointermove', this._onDragMove);
-    window.removeEventListener('pointerup', this._onDragEnd);
-    window.removeEventListener('pointercancel', this._onDragEnd);
   }
 
   /**
@@ -557,7 +444,7 @@ export class InfoPanel extends SignalWatcher(LitElement) {
         <div
           class="header"
           title="Drag to move"
-          @pointerdown=${this._onHeaderPointerDown}
+          @pointerdown=${this._drag.onPointerDown}
         >
           <span>Info</span>
           <span

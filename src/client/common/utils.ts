@@ -1,5 +1,31 @@
 import type { Photo } from './types';
 
+/**
+ * One colour per Location precision. Everything that draws or names the
+ * classification reads these — markers, the route editor's points, the
+ * Location filter and the Help panel's legend — so the legend cannot describe
+ * a colour the map no longer uses.
+ */
+export const GPS_COLORS = {
+  exif: '#3b82f6',
+  inferred: '#f59e0b',
+  user: '#22c55e',
+  none: '#9ca3af'
+} as const;
+
+/** MapLibre paint expression picking the colour for a feature's `gps` property. */
+export const gpsColorExpression = [
+  'match',
+  ['get', 'gps'],
+  'exif',
+  GPS_COLORS.exif,
+  'user',
+  GPS_COLORS.user,
+  'inferred',
+  GPS_COLORS.inferred,
+  GPS_COLORS.none
+] as unknown as string;
+
 export function getYear(photo: Photo): string | null {
   if (photo.date === '') return null;
   return photo.date.split(':')[0] ?? null;

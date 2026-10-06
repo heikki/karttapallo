@@ -39,6 +39,8 @@ interface ApiHandlerOptions {
    * would enforce that on the read and merely hope for it on the write.
    */
   saveView: (params: unknown) => void;
+  /** True exactly once per machine: the first ask, which also records it. */
+  claimFirstRun: () => boolean;
   itemStore: ItemStore;
   photosLibrary: PhotosLibrary;
   albumStore: AlbumStore;
@@ -56,6 +58,7 @@ interface ApiHandlerOptions {
 export function createApiHandler(options: ApiHandlerOptions) {
   const {
     saveView,
+    claimFirstRun,
     itemStore,
     photosLibrary,
     albumStore,
@@ -277,6 +280,11 @@ export function createApiHandler(options: ApiHandlerOptions) {
           return new Response(null, { status: 204 });
         })
         .catch(() => new Response('Bad request', { status: 400 }));
+    }
+
+    // POST, not GET: asking is what uses the first run up.
+    if (pathname === '/api/first-run' && req.method === 'POST') {
+      return Response.json({ firstRun: claimFirstRun() });
     }
 
     if (pathname === '/api/save-edits' && req.method === 'POST') {

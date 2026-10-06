@@ -5,6 +5,7 @@ import type { MapMouseEvent } from 'maplibre-gl';
 import * as actions from '@common/actions';
 import * as edits from '@common/edits';
 import * as interactionMode from '@common/interaction-mode';
+import { helpPanelOpen } from '@common/panels';
 import selection from '@common/selection';
 import { effect } from '@common/signals';
 import type { Photo } from '@common/types';
@@ -50,6 +51,15 @@ export class MapPopup extends MapFeatureElement {
   private navSeq = 0;
 
   override firstUpdated() {
+    // The Help panel opens over where the card may be standing; move the map
+    // so the card clears it. Nothing moves back when it closes — the card was
+    // never in the way of an absent panel.
+    effect(() => {
+      if (!helpPanelOpen.get()) return;
+      if (this.mounted === null) return;
+      panToFitPopup(this.api.map, this.mounted.popup);
+    });
+
     this.api.map.on('zoomend', () => {
       this.reanchorPopup();
     });

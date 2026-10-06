@@ -4,7 +4,7 @@ Lit + signals client (`src/client/`), Bun server (`src/server/`), ObjC++ native 
 
 ## Client
 
-- **Components** — `<filter-panel>`, `<search-field>`, `<photo-popup>`, `<photo-lightbox>`, `<info-panel>`, `<files-modal>`, `<app-root>`, `<map-view>` and the `<map-*>` map features. Built on Lit ([ADR-0003](adr/0003-lit-web-components-for-ui.md)).
+- **Components** — `<filter-panel>`, `<search-field>`, `<photo-popup>`, `<photo-lightbox>`, `<info-panel>`, `<help-panel>`, `<files-modal>`, `<app-root>`, `<map-view>` and the `<map-*>` map features. Built on Lit ([ADR-0003](adr/0003-lit-web-components-for-ui.md)).
 - **Map features** — each `<map-*>` element extends `MapFeatureElement`, gets the map handle via `@consume(mapContext)`, and lives in `src/client/components/map-*/`. `<map-view>` owns `setupMap()` and the basemap-style effect.
 - **Cross-feature ops** go through the `MapApi` interface — see [ADR-0007](adr/0007-mapapi-cross-feature-seam.md). Adding one is a deliberate two-step: declare in `MapApi`, implement the forwarder.
 - **Layer order** = template order — see [ADR-0008](adr/0008-dom-order-as-z-order.md).
@@ -30,7 +30,7 @@ Module set under `src/server/`:
 - **`album-store.ts`** — per-album subtree at `<library>/karttapallo/albums/{albumUuid}/` with a hard-coded `.gpx`/`.md` allowlist, `_files.json` visibility sidecar, and `_route.json`. Callers address albums by **name**; the store translates to UUID off a roster read from the library, so a rename in Photos doesn't strand a route ([ADR-0015](adr/0015-store-library-data-inside-the-bundle.md)). `pruneOrphans` drops subtrees for albums the library no longer has. Path-traversal is blocked at this seam; the router never builds paths from request strings.
 - **`cache-root.ts`** — claims the derived-data slot for one library, wiping it when `owner.json` names a different one. Runs before the image cache, which creates its subdirectories at construction. Hands back the snapshot's path and the images directory rather than the root, so no caller joins its own way in.
 - **`ors-client.ts`** — OpenRouteService proxy for `/api/route`. Owns API-key resolution (env first, then `ors_api_key` setting).
-- **`state.ts`** — generic key-value settings, keyed by which dir is passed in. Machine-scoped keys `window` and `ors_api_key` live in `Application Support/Karttapallo/state.json`; the per-library `view` key (map center, filters, selected photo UUID) lives in `<library>/karttapallo/state.json`, so it travels with the library. Only the session pairs `view` with its root — both the read and the write go through it, so no caller picks. See [ADR-0006](adr/0006-flat-json-files-not-sqlite.md).
+- **`state.ts`** — generic key-value settings, keyed by which dir is passed in. Machine-scoped keys `window`, `ors_api_key` and `help_seen` (the first-run mark behind the Help panel opening by itself once) live in `Application Support/Karttapallo/state.json`; the per-library `view` key (map center, filters, selected photo UUID) lives in `<library>/karttapallo/state.json`, so it travels with the library. Only the session pairs `view` with its root — both the read and the write go through it, so no caller picks. See [ADR-0006](adr/0006-flat-json-files-not-sqlite.md).
 - **`request-handler.ts`** — shared request handling for both dev and desktop entries. Static paths are resolved and then checked for containment in their root: the URL parser strips a literal `../`, but `%2e%2e%2f` survives decoding as a real one.
 - **`photos-library/resolve-library.ts`** — resolves which library the app operates on: always the active one, decoded from the Photos container bookmark by the native bridge, failing loud rather than silently using a different library. See [ADR-0012](adr/0012-track-active-photos-library.md).
 - **`photos-library/image-cache.ts`** — on-demand image conversion via the native dylib, mtime-validated under `Caches/Karttapallo/cache/{full,thumb}/`. Owns that layout outright: resolving and evicting what a rebuild found gone are all here, so nothing else names a `full/` or a `thumb/`. See [ADR-0010](adr/0010-on-demand-image-cache.md).
@@ -40,11 +40,11 @@ Module set under `src/server/`:
 
 Three roots, split by what the data _is_ rather than which library it belongs to ([ADR-0015](adr/0015-store-library-data-inside-the-bundle.md)):
 
-| Root                                         | Holds                                             | Backed up |
-| -------------------------------------------- | ------------------------------------------------- | --------- |
-| `<library>.photoslibrary/karttapallo/`       | `state.json` (`view`), `albums/{albumUuid}/`      | yes       |
-| `~/Library/Application Support/Karttapallo/` | `state.json` (`window`, `ors_api_key`)            | yes       |
-| `~/Library/Caches/Karttapallo/`              | `owner.json`, `items.json`, `cache/{full,thumb}/` | no        |
+| Root                                         | Holds                                               | Backed up |
+| -------------------------------------------- | --------------------------------------------------- | --------- |
+| `<library>.photoslibrary/karttapallo/`       | `state.json` (`view`), `albums/{albumUuid}/`        | yes       |
+| `~/Library/Application Support/Karttapallo/` | `state.json` (`window`, `ors_api_key`, `help_seen`) | yes       |
+| `~/Library/Caches/Karttapallo/`              | `owner.json`, `items.json`, `cache/{full,thumb}/`   | no        |
 
 The rule for anything new: authored by the user → the bundle; recomputable from Photos → Caches; describes this Mac → Application Support.
 

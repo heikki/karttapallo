@@ -77,7 +77,7 @@ fi
 # the next launch from the Library plus the app bundle.
 PATHS=(
   "$APP"
-  "$HOME/Library/Application Support/Karttapallo"    # window state
+  "$HOME/Library/Application Support/Karttapallo"    # window state, first-run mark
   "$HOME/Library/Application Support/$APP_ID"        # Electrobun self-extraction
   "$HOME/Library/Caches/Karttapallo"                 # items.json, owner.json, thumbnails
   "$HOME/Library/WebKit/$APP_ID"                     # WKWebView data store

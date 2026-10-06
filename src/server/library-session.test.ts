@@ -211,3 +211,33 @@ describe('saved view', () => {
     expect(session.savedView()).toEqual({});
   });
 });
+
+describe('first run', () => {
+  async function ask(session: LibrarySession) {
+    const res = await session.routeApiRequest(
+      new Request('http://localhost/api/first-run', { method: 'POST' }),
+      '/api/first-run'
+    );
+    return (await res?.json()) as { firstRun: boolean };
+  }
+
+  test('is true once, then false — also for the next session', async () => {
+    const session = open();
+    await settle(session);
+    expect(await ask(session)).toEqual({ firstRun: true });
+    expect(await ask(session)).toEqual({ firstRun: false });
+
+    const relaunched = open();
+    await settle(relaunched);
+    expect(await ask(relaunched)).toEqual({ firstRun: false });
+  });
+
+  test('is recorded per machine, not inside the library', async () => {
+    const session = open();
+    await settle(session);
+    await ask(session);
+    // A bundle copied to another Mac must not carry "already seen" with it.
+    expect(existsSync(join(supportDir, 'state.json'))).toBe(true);
+    expect(existsSync(join(bundleDir, 'state.json'))).toBe(false);
+  });
+});

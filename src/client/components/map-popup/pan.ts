@@ -1,9 +1,10 @@
 import type { Map as MapGL, Popup } from 'maplibre-gl';
 
-// The filter panel is fixed at 220px wide and pinned 10px from the
-// viewport's right edge, so the popup needs 240px of right padding to
-// stay clear of it (220 + 10 offset + 10 breathing room).
-const PADDING = { top: 10, bottom: 10, left: 10, right: 240 };
+import { rightInset } from '@common/panels';
+
+// The right edge is the panels' — see `rightInset`, which widens it while the
+// Help panel is open.
+const PADDING = { top: 10, bottom: 10, left: 10 };
 
 function getPopupRect(
   map: MapGL,
@@ -36,8 +37,8 @@ function calculatePanOffset(
 
   if (popupRect.left < mapRect.left + PADDING.left) {
     panX = popupRect.left - mapRect.left - PADDING.left;
-  } else if (popupRect.right > mapRect.right - PADDING.right) {
-    panX = popupRect.right - mapRect.right + PADDING.right;
+  } else if (popupRect.right > mapRect.right - rightInset()) {
+    panX = popupRect.right - mapRect.right + rightInset();
   }
 
   return { panX, panY };

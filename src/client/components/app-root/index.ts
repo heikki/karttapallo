@@ -2,6 +2,7 @@ import { html, LitElement } from 'lit';
 import { customElement } from 'lit/decorators.js';
 
 import * as data from '@common/data';
+import { openHelpOnFirstRun } from '@common/panels';
 
 const debugLog: string[] = [];
 
@@ -58,6 +59,7 @@ export class AppRoot extends LitElement {
     document.addEventListener('gesturechange', preventGesture);
 
     void data.loadPhotos();
+    void openHelpOnFirstRun();
   }
 
   // eslint-disable-next-line @typescript-eslint/class-methods-use-this -- Lit lifecycle
@@ -67,6 +69,7 @@ export class AppRoot extends LitElement {
       <filter-panel></filter-panel>
       <photo-lightbox id="lightbox"></photo-lightbox>
       <info-panel id="info-panel"></info-panel>
+      <help-panel></help-panel>
       <files-modal id="files-modal"></files-modal>
     `;
   }

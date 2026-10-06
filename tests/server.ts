@@ -15,6 +15,7 @@ import type { ItemEntry } from '@server/item-store';
 import { openLibrarySession } from '@server/library-session';
 import type { PhotosLibrary } from '@server/photos-library';
 import { createRequestHandler } from '@server/request-handler';
+import { setSetting } from '@server/state';
 import { serve } from 'bun';
 
 const port = Number(process.env.E2E_PORT ?? 4757);
@@ -31,6 +32,11 @@ const bundleDir = join(libraryPath, 'karttapallo');
 const cacheRoot = join(dataDir, 'derived');
 
 mkdirSync(bundleDir, { recursive: true });
+
+// Not a first run: the Help panel would otherwise open over the map in the
+// first spec to load the page and in none after it. The spec that wants the
+// first-run panel stubs the answer instead.
+setSetting(dataDir, 'help_seen', '1');
 
 interface SeedSpec {
   uuid: string;

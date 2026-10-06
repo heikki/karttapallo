@@ -50,6 +50,10 @@ _Avoid_: active photo, current photo, cursor.
 The floating panel describing the selected photo (`<info-panel>`), toggled with Cmd+I. Named for what Photos.app and Finder call the same thing under the same key, and because it acts as well as reports — album names filter the map, the UUID copies and links out. The server side of it keeps the older name: `/api/metadata` really does serve metadata.
 _Avoid_: metadata modal, inspector.
 
+**Help panel**:
+The floating panel that tells someone who has never seen the app what the screen cannot (`<help-panel>`): a few sentences on what the app is, then the keys, the mouse and trackpad gestures, and what the marker colours mean. It states principles rather than listing every flow, and shows only when asked for — except once, unasked, the first time the app runs on a Mac. Sits beside the **Info panel** and behaves like it — movable, non-blocking, independent of it.
+_Avoid_: shortcuts sheet, legend, guide.
+
 **Place**:
 The names Photos' reverse geocoder gives an item, read from the search index Photos.app builds, not geocoded by this app. A list, ordered outward from the point of interest to the country — `Kälkäsentie, Kuhmo, Kainuu, Suomi` — minus the two-letter codes, which restate the country and state under a worse label. Named areas, so unrelated to an item's coordinates or its **Location precision**: an item can carry a Place and no GPS at all, which is why Place reaches assets the map cannot plot.
 

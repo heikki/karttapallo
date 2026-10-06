@@ -29,8 +29,26 @@ export const styles = css`
     margin: 4px 0;
   }
   .panel-header {
+    position: relative;
     cursor: pointer;
     user-select: none;
+  }
+  .help-btn {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 20px;
+    height: 20px;
+    border: 1px solid var(--panel-line);
+    border-radius: 50%;
+    background: var(--panel-raised);
+    color: var(--panel-text-dim);
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .help-btn:hover {
+    background: var(--panel-line);
   }
   .panel-body {
     margin-top: 12px;

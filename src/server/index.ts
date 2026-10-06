@@ -215,6 +215,16 @@ ApplicationMenu.setApplicationMenu([
       { role: 'minimize', accelerator: 'CmdOrCtrl+M' },
       { role: 'close', accelerator: 'CmdOrCtrl+W' }
     ]
+  },
+  {
+    label: 'Help',
+    submenu: [
+      {
+        label: 'Karttapallo Help',
+        action: 'help',
+        accelerator: 'CmdOrCtrl+?'
+      }
+    ]
   }
 ]);
 
@@ -437,6 +447,13 @@ win.webview.on('new-window-open', (event: unknown) => {
 ApplicationMenu.on('application-menu-clicked', (event: unknown) => {
   const action = (event as ElectrobunEvent).data?.action ?? '';
   if (action === 'quit') process.exit(0);
+  // The panel's state lives in the page, so the menu only asks — the listener
+  // is in <help-panel>.
+  if (action === 'help') {
+    win.webview.executeJavascript(
+      "window.dispatchEvent(new CustomEvent('karttapallo:toggle-help'))"
+    );
+  }
 });
 
 // The webview already loaded the snapshot view at construction (above). Reload
