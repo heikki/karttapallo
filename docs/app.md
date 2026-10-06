@@ -86,12 +86,3 @@ The uuid rides in the path, not `?id=`, so the link can be pasted into a shell u
 The link resolves to `?id=<uuid>&focus=1`, carrying only `style` over from the saved view. `focus` is what makes the difference between a restored selection and a requested one, and it licenses two overrides that plain `id` must never take: `@common/deep-link` widens filters via `data.revealPhoto` until the photo is visible, and `<map-fit>` moves the camera to it instead of fitting all photos. Both matter because the photos most worth linking to are the ones missing a location, which the default GPS filter hides. `focus` is stripped from the URL once acted on, so it can't survive into the persisted view and fire again on the next launch.
 
 Two arrival times are handled: the app was already running (navigate the existing window and focus it), or macOS launched it to serve the link, in which case the event can land before the window exists and the uuid is buffered as the window's initial URL. A link clicked while the app is closed is lost entirely — see [gotchas.md](gotchas.md).
-
-## Where things live
-
-- **Why** a thing is the way it is → [docs/adr/](adr/)
-- **What** terms mean → [CONTEXT.md](../CONTEXT.md)
-- **What surprises** are out there → [gotchas.md](gotchas.md)
-- **What the user does** → [flows.md](flows.md)
-- **How we test** → [testing.md](testing.md)
-- **When things changed** → [diary.md](diary.md)

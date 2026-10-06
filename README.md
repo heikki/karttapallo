@@ -33,13 +33,3 @@ PUBLIC_ORS_API_KEY=your-key   # OpenRouteService — Drive/Hike routing
 ```
 
 Get keys from [MML](https://www.maanmittauslaitos.fi/rajapinnat/api-avaimen-ohje) and [OpenRouteService](https://openrouteservice.org/).
-
-## Docs
-
-- [CONTEXT](CONTEXT.md) — terms and relationships
-- [App](docs/app.md) — code shape and seams
-- [Flows](docs/flows.md) — interaction inventory
-- [Gotchas](docs/gotchas.md) — non-obvious behaviors
-- [Testing](docs/testing.md) — five-tier strategy
-- [ADR](docs/adr/) — architectural decisions
-- [Diary](docs/diary.md) — chronological log
