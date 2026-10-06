@@ -36,7 +36,7 @@ test('Open in Apple Maps and Google Maps', async ({ page }) => {
   expect(opened).toHaveLength(2);
   expect(opened[0]).toMatch(/^maps:\/\/\?ll=[\d.-]+,[\d.-]+&z=\d+&t=k$/);
   expect(opened[1]).toMatch(
-    /^https:\/\/www\.google\.com\/maps\/@[\d.-]+,[\d.-]+,\d+z$/
+    /^https:\/\/www\.google\.com\/maps\/@\?api=1&map_action=map&center=[\d.-]+,[\d.-]+&zoom=\d+&basemap=satellite$/
   );
 
   // 2) With a selected photo → URLs include that photo's coordinates.
@@ -61,5 +61,5 @@ test('Open in Apple Maps and Google Maps', async ({ page }) => {
   expect(opened).toHaveLength(2);
   expect(opened[0]).toContain('ll=60.17,24.94');
   expect(opened[0]).toContain('q=60.17,24.94');
-  expect(opened[1]).toContain('?q=60.17,24.94');
+  expect(opened[1]).toContain('/place/60.17,24.94/@60.17,24.94,');
 });

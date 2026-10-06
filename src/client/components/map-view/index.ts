@@ -11,7 +11,19 @@ import type { MapMarkers } from '@components/map-markers';
 import type { MapPopup } from '@components/map-popup';
 
 import { mapContext, type MapApi } from './api';
+import { externalMapUrl } from './external-url';
 import setupMap from './setup';
+
+function isOnScreen(map: MapGL, { lat, lon }: { lat: number; lon: number }) {
+  const point = map.project([lon, lat]);
+  const { clientWidth, clientHeight } = map.getCanvas();
+  if (point.x < 0 || point.x > clientWidth) return false;
+  if (point.y < 0 || point.y > clientHeight) return false;
+  // A point behind the globe still projects onto the screen; what comes
+  // back from there is the near side, somewhere else entirely.
+  const back = map.unproject(point);
+  return Math.abs(back.lat - lat) < 1e-3 && Math.abs(back.lng - lon) < 1e-3;
+}
 
 @customElement('map-view')
 export class MapView extends LitElement implements MapApi {
@@ -132,28 +144,24 @@ export class MapView extends LitElement implements MapApi {
   }
 
   openExternal(target: 'apple' | 'google') {
-    if (this._map === undefined) return;
-    const c = this._map.getCenter();
-    const z = Math.round(this._map.getZoom());
+    const map = this._map;
+    if (map === undefined) return;
+    const zoom = map.getZoom();
     const photo = selection.getPhoto();
-    const loc =
-      photo === undefined
-        ? undefined
-        : (edits.getEffectiveLocation(photo) ?? undefined);
+    const loc = photo === undefined ? null : edits.getEffectiveLocation(photo);
 
-    if (target === 'apple') {
-      const url =
-        loc === undefined
-          ? `maps://?ll=${c.lat},${c.lng}&z=${z}&t=k`
-          : `maps://?ll=${loc.lat},${loc.lon}&q=${loc.lat},${loc.lon}&z=${z}&t=k`;
-      window.open(url, '_blank');
-    } else {
-      const url =
-        loc === undefined
-          ? `https://www.google.com/maps/@${c.lat},${c.lng},${z}z`
-          : `https://www.google.com/maps?q=${loc.lat},${loc.lon}&z=${z}`;
-      window.open(url, '_blank');
-    }
+    // The selection outlives the view of it: panned away from the photo,
+    // the map being looked at is the one to open.
+    const view =
+      loc !== null && isOnScreen(map, loc)
+        ? { lat: loc.lat, lon: loc.lon, zoom, pin: true }
+        : {
+            lat: map.getCenter().lat,
+            lon: map.getCenter().lng,
+            zoom,
+            pin: false
+          };
+    window.open(externalMapUrl(target, view), '_blank');
   }
 
   override render() {

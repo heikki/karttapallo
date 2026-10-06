@@ -29,7 +29,7 @@ A flow that adds a key, or a mouse or trackpad gesture the screen doesn't show, 
 - **Switch basemap** — Aerial / Topo / Maasto / Orto buttons; layers survive the swap.
 - **Switch projection** — globe control (bottom-right) toggles globe ↔ mercator.
 - **Reset the app** — exits modes, defaults filters/styles, clears URL, selects the newest photo, fits to all photos.
-- **Open in Apple Maps / Google Maps** — opens external map at the selected photo, or at the current view when the filters match nothing.
+- **Open in Apple Maps / Google Maps** — opens external map in satellite view, pinned at the selected photo while it is on screen, otherwise at the current view.
 
 ## Edit
 
