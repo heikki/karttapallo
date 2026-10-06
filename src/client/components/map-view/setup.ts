@@ -82,6 +82,19 @@ function transformStyle(
   };
 }
 
+// MapLibre's stock pan inertia starts the coast at half the speed the map
+// had under the cursor, which reads as the map braking on release. A coast
+// of `amount` px over `duration` under a quartic ease-out starts at
+// 4 * amount / duration, and MapLibre's amount is speed * duration / 2 with
+// speed = release velocity * linearity — so linearity 0.5 hands the release
+// velocity over unchanged.
+const PAN_INERTIA = {
+  linearity: 0.5,
+  easing: (t: number) => 1 - (1 - t) ** 4,
+  deceleration: 3000,
+  maxSpeed: 2000
+};
+
 function createMap(container: HTMLElement): MapGL {
   const savedView = mapViewFromUrl();
   const center: [number, number] | undefined =
@@ -101,6 +114,7 @@ function createMap(container: HTMLElement): MapGL {
     keyboard: false,
     doubleClickZoom: false,
     dragRotate: false,
+    dragPan: PAN_INERTIA,
     canvasContextAttributes: { alpha: true }
   });
 }
