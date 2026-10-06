@@ -5,9 +5,9 @@ Geotagged photo map viewer with Apple Photos integration.
 ## Project Stats (as of 06.10.2026)
 
 - **TypeScript files**: 137
-- **Lines of code**: 15,260 (+ 7,376 tests)
-- **Total commits**: 733
-- **Total tokens**: ~3,561M | **Total cost**: ~$2,294
+- **Lines of code**: 15,241 (+ 7,383 tests)
+- **Total commits**: 735
+- **Total tokens**: ~3,566M | **Total cost**: ~$2,295
 
 ## Updating This Diary
 
@@ -49,7 +49,7 @@ git log --pretty=format:"%ad|%s" --date=format:"%Y-%m-%d" | head -50  # Recent c
 
 ## 06.10.2026 — help for a first-time user; pinch to zoom
 
-**Tokens**: 104M | **Cost**: $34.33
+**Tokens**: 109M | **Cost**: $35.54
 
 - A Help panel lists the keys, gestures and marker colours, and opens by itself on a first launch
 - Opening help moves the map so the photo card stays clear of it
