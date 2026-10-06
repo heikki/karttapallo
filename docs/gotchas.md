@@ -31,8 +31,8 @@ launch).
 **Setup.** `bun run cert --create` makes a self-signed code-signing cert — it
 need **not** be trusted (`CSSMERR_TP_NOT_TRUSTED` is fine; TCC keys on a stable
 identity, not Gatekeeper trust). The identity is hardcoded in
-`electrobun.config.ts` and only applies to `--env=stable` builds; a plain
-`build:app` is `--env=dev` and never signs. Then `bun run install:app` signs the
+`electrobun.config.ts` and only applies to `--env=stable` builds; `dev:app`
+builds with `--env=dev` and never signs. Then `bun run install:app` signs the
 build, and you add the app under System Settings ▸ Full Disk Access — the in-app
 "Salli" prompt does **not** persist, only the explicit FDA entry does.
 

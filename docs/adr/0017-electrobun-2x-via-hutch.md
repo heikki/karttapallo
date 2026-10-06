@@ -27,7 +27,7 @@ Electrobun 2.x serializes the config while loading it, so function-valued bundle
 
 ## Signing moved out of the config
 
-The same serialization boundary broke code signing: `electrobun.config.ts` used to set `ELECTROBUN_DEVELOPER_ID` on `process.env`, which reached 1.x's sign step because it ran in the same process. Hutch signs from another process, so the build now fails with `MissingDeveloperId`. The default lives in the `build:app:stable` script instead, where an explicit environment value still wins.
+The same serialization boundary broke code signing: `electrobun.config.ts` used to set `ELECTROBUN_DEVELOPER_ID` on `process.env`, which reached 1.x's sign step because it ran in the same process. Hutch signs from another process, so the build now fails with `MissingDeveloperId`. The default lives in the `build:app` script instead, where an explicit environment value still wins.
 
 `scripts/finalize-stable.sh` survives unchanged: 2.x still emits `entitlements.plist` beside the bundle and still ships the app as a `*.tar.zst` self-extractor payload, so patching `NSAppleEventsUsageDescription` into both copies and re-signing works exactly as before. 2.x has no config field for Info.plist usage descriptions either, so the script is still needed.
 
