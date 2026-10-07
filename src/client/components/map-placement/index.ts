@@ -40,11 +40,11 @@ export class MapPlacement extends SignalWatcher(MapFeatureElement) {
       text-align: center;
     }
     img {
-      width: 144px;
-      height: 108px;
-      object-fit: cover;
+      max-width: 144px;
+      max-height: 144px;
       border-radius: 6px;
       display: block;
+      margin: 0 auto;
     }
     .info {
       font-size: 11px;
@@ -54,6 +54,9 @@ export class MapPlacement extends SignalWatcher(MapFeatureElement) {
     .hint {
       font-size: 11px;
       color: #666;
+      white-space: nowrap;
+    }
+    .info + .hint {
       margin-top: 4px;
     }
   `;
@@ -79,7 +82,8 @@ export class MapPlacement extends SignalWatcher(MapFeatureElement) {
       <div class="panel">
         <img src=${getThumbUrl(photo)} alt="" />
         <div class="info">${formatDate(photo.date, photo.tz)}</div>
-        <div class="hint">Click map to set location. Esc to cancel.</div>
+        <div class="hint">Click map to set location.</div>
+        <div class="hint">Esc to cancel.</div>
       </div>
     `;
   }
