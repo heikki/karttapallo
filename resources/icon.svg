@@ -1,1 +1,56 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="#2563eb"/><circle cx="16" cy="13" r="5" fill="none" stroke="#fff" stroke-width="2"/><circle cx="16" cy="13" r="1.5" fill="#fff"/><path d="M16 18L16 26" stroke="#fff" stroke-width="2" stroke-linecap="round"/><path d="M12 26L20 26" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <clipPath id="sq"><rect width="1024" height="1024" rx="224"/></clipPath>
+    <clipPath id="globe"><circle cx="512" cy="1160" r="700"/></clipPath>
+
+    <!-- Sky -->
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#070a1c"/>
+      <stop offset="1" stop-color="#16225a"/>
+    </linearGradient>
+
+    <!-- Globe surface -->
+    <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3b7bf5"/>
+      <stop offset="0.45" stop-color="#3b7bf5"/>
+      <stop offset="1" stop-color="#16308f"/>
+    </linearGradient>
+
+    <!-- Atmosphere glow just outside the globe's edge -->
+    <radialGradient id="atmosphere" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0.88" stop-color="#7cc4ff" stop-opacity="0"/>
+      <stop offset="0.95" stop-color="#7cc4ff" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#7cc4ff" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Darkens the globe away from its top -->
+    <radialGradient id="shade" cx="0.5" cy="0.1" r="0.9">
+      <stop offset="0.6" stop-color="#000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1024" height="1024" rx="224" fill="url(#sky)"/>
+
+  <g clip-path="url(#sq)">
+    <circle cx="512" cy="1160" r="756" fill="url(#atmosphere)"/>
+
+    <g clip-path="url(#globe)">
+      <rect width="1024" height="1024" fill="url(#sea)"/>
+
+      <!-- Graticule -->
+      <g fill="none" stroke="#fff" stroke-opacity="0.8" stroke-width="10" transform="rotate(-14 512 1160)">
+        <ellipse cx="512" cy="1160" rx="252" ry="700"/>
+        <ellipse cx="512" cy="1160" rx="504" ry="700"/>
+        <ellipse cx="512" cy="1160" rx="700" ry="252"/>
+        <ellipse cx="512" cy="1160" rx="700" ry="504"/>
+        <path d="M512 460V1860M-188 1160H1212"/>
+      </g>
+
+      <circle cx="512" cy="1160" r="700" fill="url(#shade)"/>
+    </g>
+
+    <!-- Rim light -->
+    <circle cx="512" cy="1160" r="700" fill="none" stroke="#a9d6ff" stroke-width="8"/>
+  </g>
+</svg>
