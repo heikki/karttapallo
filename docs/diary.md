@@ -2,12 +2,12 @@
 
 Geotagged photo map viewer with Apple Photos integration.
 
-## Project Stats (as of 06.10.2026)
+## Project Stats (as of 08.10.2026)
 
-- **TypeScript files**: 137
-- **Lines of code**: 15,241 (+ 7,383 tests)
-- **Total commits**: 735
-- **Total tokens**: ~3,566M | **Total cost**: ~$2,295
+- **TypeScript files**: 139
+- **Lines of code**: 15,343 (+ 7,415 tests)
+- **Total commits**: 747
+- **Total tokens**: ~3,583M | **Total cost**: ~$2,298
 
 ## Updating This Diary
 
@@ -19,7 +19,8 @@ When adding an entry:
 Gather data with:
 
 ```bash
-bunx ccusage                    # Token usage and cost per day
+# Token usage and cost per day, this repo only
+bunx ccusage claude daily "--project=$(pwd | tr / -)"
 git log --oneline | wc -l       # Total commits
 
 # One list, pruned of what isn't the project's own code: dependencies, the
@@ -38,7 +39,7 @@ git log --pretty=format:"%ad|%s" --date=format:"%Y-%m-%d" | head -50  # Recent c
 
 **Style guide:**
 
-- Add `**Tokens**: NM | **Cost**: $N` from `bunx ccusage` for the entry's date; omit only if no record.
+- Add `**Tokens**: NM | **Cost**: $N` from the `ccusage` command above for the entry's date; omit only if no record.
 - The diary is a high-altitude view — commit log has the details. Don't restate it.
 - One short bullet (≲100 chars) per theme. Group related commits into one bullet; never one-per-commit.
 - No identifiers: skip file names, function names, symbol names, directory paths. Describe the theme.
@@ -47,14 +48,31 @@ git log --pretty=format:"%ad|%s" --date=format:"%Y-%m-%d" | head -50  # Recent c
 - Describe final outcomes, not reverted intermediate attempts.
 - Flat list, no sub-bullets or prose.
 
+## 08.10.2026 — circles that keep their size
+
+**Tokens**: 73M | **Cost**: $27.98
+
+- Markers and the selection ring no longer swell while zooming between levels 11 and 12
+- Internal: the map library is updated, carrying that fix until it lands upstream
+
+## 07.10.2026 — a pan that keeps its speed; a new icon
+
+**Tokens**: 63M | **Cost**: $27.93
+
+- Releasing a drag lets the map coast on at the speed it had, instead of braking
+- The app icon is a globe on a dark sky, and keeps its colour in the Dark icon style
+- The placement panel shows the whole photo instead of cropping it
+
 ## 06.10.2026 — help for a first-time user; pinch to zoom
 
-**Tokens**: 109M | **Cost**: $35.54
+**Tokens**: 34M | **Cost**: $12.51
 
 - A Help panel lists the keys, gestures and marker colours, and opens by itself on a first launch
 - Opening help moves the map so the photo card stays clear of it
 - Search suggestions float over the filter panel instead of stretching it, and follow the arrow keys
 - Trackpad pinch zooms the map around the cursor and glides on after release
+- Scroll zoom keeps the point it started around for the whole scroll
+- The Apple and Google Maps buttons open what the map is showing, at the same zoom
 - Internal: one docs map for agents replaces two lists that repeated each other
 
 ## 05.10.2026 — setup that works on a clean Mac
@@ -81,7 +99,7 @@ git log --pretty=format:"%ad|%s" --date=format:"%Y-%m-%d" | head -50  # Recent c
 
 ## 17.09.2026 — a macOS update, undone; a filter that wouldn't clear
 
-**Tokens**: 98M | **Cost**: $65.44
+**Tokens**: 54M | **Cost**: $35.58
 
 - The app no longer asks for Full Disk Access you have already given it
 - Search finds places, scene labels, titles and captions again
