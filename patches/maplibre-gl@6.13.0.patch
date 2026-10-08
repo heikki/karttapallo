@@ -1,3 +1,6 @@
+Upstream issue: https://github.com/maplibre/maplibre-gl-js/issues/8714
+Drop this patch once that is fixed in a release.
+
 diff --git a/dist/maplibre-gl-dev.mjs b/dist/maplibre-gl-dev.mjs
 index b3d33d925b4a55e529bb8be1f967df895d597384..1a2c91662b2e445ea0a1d9c8b49174fb6f5e5f14 100644
 --- a/dist/maplibre-gl-dev.mjs
