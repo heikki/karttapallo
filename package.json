@@ -25,15 +25,15 @@
     "e2e:install": "playwright install webkit"
   },
   "devDependencies": {
-    "@happy-dom/global-registrator": "^20.11.6",
+    "@happy-dom/global-registrator": "^20.14.6",
     "@ianvs/prettier-plugin-sort-imports": "^4.7.1",
-    "@playwright/test": "^1.62.1",
+    "@playwright/test": "^1.64.0",
     "@total-typescript/tsconfig": "^1.0.4",
     "@types/bun": "1.4.0",
     "@types/geojson": "^7946.0.16",
-    "eslint": "10.9.0",
-    "eslint-config-love": "155.0.0",
-    "prettier": "3.9.6",
+    "eslint": "10.12.0",
+    "eslint-config-love": "158.0.0",
+    "prettier": "3.9.9",
     "typescript": "^6.0.3"
   },
   "dependencies": {
@@ -41,8 +41,8 @@
     "@lit/context": "^1.1.6",
     "@turf/distance": "^7.4.0",
     "@turf/helpers": "^7.4.0",
-    "electrobun": "2.0.1",
-    "geo-tz": "8.1.8",
+    "electrobun": "2.0.2",
+    "geo-tz": "8.1.9",
     "lit": "^3.3.3",
     "maplibre-gl": "6.13.0"
   },

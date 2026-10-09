@@ -80,9 +80,9 @@ describe('matchesTerm', () => {
   });
 
   test('tolerates items from a snapshot predating these fields', () => {
-    const { place, description, ...stale } = photo();
-    void place;
-    void description;
+    const stale: Partial<Photo> = photo();
+    delete stale.place;
+    delete stale.description;
     expect(matchesTerm(stale as Photo, 'Kuhmo')).toBe(false);
   });
 });
