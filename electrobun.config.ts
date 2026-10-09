@@ -84,7 +84,10 @@ export default {
         'views/app/maplibre-gl-worker.mjs',
       'node_modules/maplibre-gl/dist/maplibre-gl-shared.mjs':
         'views/app/maplibre-gl-shared.mjs',
-      'resources/native/libkarttapallo.dylib': 'libkarttapallo.dylib'
+      'resources/native/libkarttapallo.dylib': 'libkarttapallo.dylib',
+      // See timezone.ts for why this cannot stay in node_modules.
+      'node_modules/geo-tz/data/timezones.geojson.geo.dat':
+        'geo-tz/timezones.geojson.geo.dat'
     },
 
     mac: {

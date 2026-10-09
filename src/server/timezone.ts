@@ -10,11 +10,29 @@
  * stored offset is only a fallback. See item-store.ts buildItemEntry.
  */
 
+import { existsSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+
 import {
   exifDatePattern,
   exifFromLocalEpoch,
   secondsToTzOffset
 } from './date-utils';
+
+// geo-tz finds its 28 MB boundary file relative to its own source, which the
+// bundler turns into the absolute path of node_modules on the machine that
+// built the app — readable nowhere else. The packaged app carries the file
+// itself (electrobun.config.ts) and says where.
+const bundledGeoTz = join(
+  dirname(process.argv[0] ?? '.'),
+  '..',
+  'Resources',
+  'app',
+  'geo-tz'
+);
+if (existsSync(join(bundledGeoTz, 'timezones.geojson.geo.dat'))) {
+  process.env.GEO_TZ_DATA_PATH = bundledGeoTz;
+}
 
 // Use require() for geo-tz: its CJS build declares ESM exports incorrectly,
 // causing bundler failures in Electrobun's Bun version.
