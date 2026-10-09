@@ -21,6 +21,10 @@ export function externalMapUrl(
   const z = Math.round(zoom) + 1;
 
   if (target === 'apple') {
+    // `q` is what drops the pin, and Maps then settles on a close zoom of its
+    // own whatever else the link says: `z` is ignored outright, and a `spn`
+    // span is honoured for a moment before the search result overrides it. A
+    // label in `q` searches for the label instead. So pinned means Maps' zoom.
     return pin
       ? `maps://?ll=${at}&q=${at}&z=${z}&t=k`
       : `maps://?ll=${at}&z=${z}&t=k`;
