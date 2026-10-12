@@ -44,9 +44,6 @@
     "electrobun": "2.0.2",
     "geo-tz": "8.1.9",
     "lit": "^3.3.3",
-    "maplibre-gl": "6.13.0"
-  },
-  "patchedDependencies": {
-    "maplibre-gl@6.13.0": "patches/maplibre-gl@6.13.0.patch"
+    "maplibre-gl": "^6.14.0"
   }
 }
