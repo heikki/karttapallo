@@ -7,8 +7,8 @@
 #   bun run cert --create --force    # delete existing, then recreate
 #   bun run cert --remove            # delete it
 #
-# The cert name defaults to "Karttapallo Signing" (the identity hardcoded in
-# electrobun.config.ts); pass an explicit name as a positional arg to override.
+# The cert name defaults to "Karttapallo Signing" (the identity `build:app`
+# signs with by default); pass an explicit name as a positional arg to override.
 #
 set -euo pipefail
 
@@ -34,7 +34,7 @@ if [[ -z "$ACTION" ]]; then
 fi
 
 # Cert name: explicit arg, else the project default (matches the identity
-# hardcoded in electrobun.config.ts).
+# `build:app` defaults to in package.json).
 NAME="${ARG_NAME:-Karttapallo Signing}"
 
 exists() { security find-identity -p codesigning | grep -qF "$NAME"; }

@@ -31,7 +31,8 @@ export const styles = css`
   .panel-header {
     position: relative;
     cursor: pointer;
-    user-select: none;
+    /* Prefixed only — this WKWebView drops the unprefixed form (gotchas.md). */
+    -webkit-user-select: none;
   }
   .help-btn {
     position: absolute;

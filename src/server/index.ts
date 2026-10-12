@@ -87,7 +87,7 @@ function findSupportDir() {
 
 /**
  * `~/Library/Caches` is the Time Machine exclusion that survives a cache clear
- * (docs/gotchas.md). A run that redirected the support dir keeps its derived
+ * (ADR-0015). A run that redirected the support dir keeps its derived
  * data beside it instead, so one directory holds everything that run created.
  */
 function findCacheRoot(supportDir: string) {

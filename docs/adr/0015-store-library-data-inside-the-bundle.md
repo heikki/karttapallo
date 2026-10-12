@@ -23,7 +23,7 @@ The pattern is that no property distinguishes a library from a copy of itself, b
 
 Data inside a bundle belongs to that bundle. Path, volume, machine and copy count stop mattering, because there is nothing left to look up. A move carries the routes; so does a copy, which is what a copy should do.
 
-This rests on one empirical fact, since Apple documents nothing about the bundle's layout: **Photos preserves a foreign top-level directory across a full rebuild.** Verified by deleting `database/` from a 62 GB library and letting Photos reconstruct from its journals — 4919 assets came back, matching the source exactly, and four planted probe files were byte-identical by SHA-256. Recorded with its numbers in [gotchas.md](../gotchas.md).
+This rests on one empirical fact, since Apple documents nothing about the bundle's layout: **Photos preserves a foreign top-level directory across a full rebuild.** Verified by deleting `database/` from a 62 GB library and letting Photos reconstruct from its journals — 4919 assets came back, matching the source exactly, and four planted probe files were byte-identical by SHA-256.
 
 The bundle's `private/` directory was considered and rejected: it is an Apple-managed per-client namespace keyed by bundle identifier, with its own conventions and its own cleanup, not a general extension point. Our directory sits at the top level alongside `database` and `originals`.
 

@@ -4,18 +4,6 @@ Non-obvious behaviors and workarounds that are easy to rediscover the hard way. 
 
 ## Electrobun runtime
 
-### Worker-thread console output is not forwarded
-
-Anything `console.log`'d from a worker thread inside the Electrobun launcher disappears — the launcher only forwards main-thread stdout. When debugging worker code, log to a file instead.
-
-### Load the webview URL at window creation, not via a later `loadURL`
-
-Pass the real app URL to the `BrowserWindow` constructor (`url: buildViewUrl()` in `src/server/index.ts`). Electrobun hands the constructor `url` to the native webview at creation (`BrowserView.init` → `createWebview({ url })`), so this is race-free.
-
-Do **not** create the window with `url: 'about:blank'` and then call `win.webview.loadURL(...)` separately during synchronous startup: `loadURL` fires `loadURLInWebView(this.ptr, ...)` immediately, and if it runs before the native webview has finished initializing, the navigation is dropped and the window stays permanently blank. This bit us once — the code "worked" only because an unrelated top-level `await import(...)` happened to yield a tick before the `loadURL`; deleting that import (it was for a since-removed iCloud backup) silently broke the production app while the dev server stayed fine. Later reloads (e.g. the post-rebuild refresh) are safe because the webview is long initialized by then.
-
-Verified 2026-06-30 by bisecting an empty-window regression to the import removal; the browser rendered the identical bundle correctly, isolating it to the WKWebView load timing.
-
 ### Ad-hoc signing makes the TCC grant re-prompt every launch
 
 The app reads another app's container at startup to find the active Photos
@@ -30,8 +18,9 @@ persists), not caching the path (ADR-0012 wants the detection to run fresh each
 launch).
 **Setup.** `bun run cert --create` makes a self-signed code-signing cert — it
 need **not** be trusted (`CSSMERR_TP_NOT_TRUSTED` is fine; TCC keys on a stable
-identity, not Gatekeeper trust). The identity is hardcoded in
-`electrobun.config.ts` and only applies to `--env=stable` builds; `dev:app`
+identity, not Gatekeeper trust). The identity comes from
+`ELECTROBUN_DEVELOPER_ID`, defaulted in the `build:app` script, and only applies
+to `--env=stable` builds; `dev:app`
 builds with `--env=dev` and never signs. Then `bun run install:app` signs the
 build, and you add the app under System Settings ▸ Full Disk Access — the in-app
 "Salli" prompt does **not** persist, only the explicit FDA entry does.
@@ -46,17 +35,13 @@ extraction doesn't touch), so the FDA grant still holds — no re-signing needed
 
 Signing the stable build turns on the **hardened runtime** (`codesign … flags=0x10000(runtime)`; it's what the `com.apple.security.cs.*` entitlements imply). Under the hardened runtime an app **cannot send Apple Events at all** unless it carries `com.apple.security.automation.apple-events`. Without it every `tell application "Photos"` — the location/date/timezone write path in `photos-edit.ts` — fails with _"Not authorized to send Apple events to Photos"_ (`errAEEventNotPermitted`, ‑1743), and macOS **never shows the consent prompt**, so no Automation entry ever appears in System Settings.
 
-This is a silent trap: adding signing (for the persistent FDA grant, above) simultaneously broke every Photos write, because dev builds have no hardened runtime and so sent Apple Events fine. The entitlement lives in `electrobun.config.ts` alongside the JIT/library-validation ones.
+This is a silent trap: adding signing (for the persistent FDA grant, above) simultaneously broke every Photos write, because dev builds have no hardened runtime and so sent Apple Events fine. The entitlement lives in `electrobun.config.ts` alongside the JIT ones.
 
-**The entitlement alone is not enough — you also need the `NSAppleEventsUsageDescription` Info.plist string.** Without the usage string, macOS still auto-denies Automation and _still never prompts_ — indistinguishable from the missing-entitlement case. Electrobun's CLI _does_ auto-derive usage strings from entitlements, but its `ENTITLEMENT_TO_PLIST_KEY` map omits `apple-events`, and the CLI ships as a **prebuilt binary** (the `electrobun` npm bin downloads and runs it), so the map cannot be patched from source — a `bun patch` on `node_modules/electrobun/src/cli/index.ts` is inert. So the key is injected post-build by `scripts/finalize-stable.sh` (run automatically by `bun run install:app`, after the build and before the copy to `/Applications`).
+**The entitlement alone is not enough — you also need the `NSAppleEventsUsageDescription` Info.plist string.** Without the usage string, macOS still auto-denies Automation and _still never prompts_ — indistinguishable from the missing-entitlement case. Electrobun has no config field for it, so `scripts/finalize-stable.sh` injects it post-build; its header explains why the payload inside the self-extractor has to be patched as well as the outer bundle.
 
-The subtle part: an `--env=stable` build is a **self-extractor**. The real app bundle lives compressed in `Contents/Resources/<hash>.tar.zst` and is unpacked _over the bundle_ on first launch — this overwrites `Contents/Info.plist` with the payload's copy. So patching only the outer `Contents/Info.plist` is useless (the first launch reverts it — this is exactly the bug that made the prompt never appear). `finalize-stable.sh` therefore unpacks the payload, injects the key into the **payload's** `Info.plist`, re-signs that inner bundle so its own `Contents/_CodeSignature` covers the change, repacks the tarball with the same `tar -cf`/zstd Electrobun uses, then patches and re-signs the outer bundle too. Verify a build with: `zstd -dc "$(ls build/stable-macos-arm64/Karttapallo.app/Contents/Resources/*.tar.zst)" | tar -xOf - Karttapallo.app/Contents/Info.plist | grep NSAppleEvents`. After reinstalling, the first edit shows _"Karttapallo wants to control Photos"_ → Allow. If the prompt is stuck from a previous denied state, clear it with `tccutil reset AppleEvents com.karttapallo.app`.
+Verify a build with: `zstd -dc "$(ls build/stable-macos-arm64/Karttapallo.app/Contents/Resources/*.tar.zst)" | tar -xOf - Karttapallo.app/Contents/Info.plist | grep NSAppleEvents`. After reinstalling, the first edit shows _"Karttapallo wants to control Photos"_ → Allow. If the prompt is stuck from a previous denied state, clear it with `tccutil reset AppleEvents com.karttapallo.app`.
 
 The failure was invisible for a second reason: `alert()` is a **no-op** in Electrobun's WKWebView (the host wires up no JS-dialog delegate), and the save path both swallowed the per-edit error and mutated the display optimistically — so a rejected write looked applied until the next rebuild reverted it. Fixed by returning per-edit `failures` from `/api/save-edits`, only mutating on success, and routing failures to the Shift+D debug log (not just `alert`). When surfacing errors to the user, prefer the debug log — `alert()` cannot be relied on here.
-
-### The build config is evaluated from a temp directory, and `.env` is not loaded
-
-Hutch evaluates `electrobun.config.ts` in its own runtime, with the working directory set to `.cottontail-tmp/electrobun/<pid>` — not the project root — and it does not read `.env` the way `bun run` does. Both bite the `define` block that bakes the `PUBLIC_*` API keys into the bundles: reading them straight off `process.env` yields `""`, and reading `.env` by a cwd-relative path finds nothing. The build still succeeds; the app just ships with the MML basemaps and the routing service silently switched off, which looks like the keys were never set. The config reads `.env` through a path anchored to `import.meta.url`, and an exported variable still takes precedence.
 
 ### maplibre's worker is a served file, and a 404 kills the map silently
 
@@ -78,9 +63,9 @@ From maplibre 6 the worker is fetched as a real URL derived from the bundle's ow
 
 ### Always prefix `user-select`
 
-This app's WKWebView is older than Safari 17.4 and silently drops unprefixed `user-select` — the bundle contains the declaration but the rendered CSSStyleRule in Web Inspector does not. Only `-webkit-user-select` is honored. When writing client CSS (Lit `css` literals or plain CSS), always use `-webkit-user-select`; the unprefixed companion adds noise without effect on this target.
+WebKit does not implement unprefixed `user-select`, and WKWebView silently drops it — the bundle contains the declaration but the parsed rule comes out empty. Only `-webkit-user-select` is honored. When writing client CSS (Lit `css` literals or plain CSS), always use `-webkit-user-select`; the unprefixed companion adds noise without effect on this target.
 
-Verified 2026-05-09 by inspecting the rendered shadow-DOM `:host` rule for `<filter-panel>`.
+Verified 2026-10-12 in the app on macOS 27.0.1 (Safari 27.0.1, WebKit 22625.1.29.11.28): `CSS.supports('user-select', 'none')` is `false`, and an element styled `user-select: none` computes to `-webkit-user-select: text`.
 
 ## Shadow DOM in WebKit
 
@@ -104,22 +89,6 @@ also tells you whether the selection is inside your root at all, which
 Verified 2026-07-30 in Playwright WebKit against the info panel: the `copy`
 event arrived with `''` while `getComposedRanges` returned the right text.
 
-## MapLibre basemap swap
-
-The basemap swap in `src/client/components/map-view/setup.ts` uses `setStyle(next, { transformStyle })`, where `transformStyle` carries app-owned sources and layers from `previousStyle` into the merged result by subtracting all basemap-config IDs.
-
-Smoke-tested 2026-04-29 (10 scenarios). The following survive the swap and do **not** need a `style.load` re-install hook:
-
-- **GeoJSON `setData()` state** — sources installed at boot and populated via `setData()` keep their data.
-- **Layer-bound event handlers** — `map.on('click' | 'mouseenter' | 'mouseleave', layerId, fn)` bindings remain attached.
-
-When adding a new map subsystem (GeoJSON source, custom WebGL layer, or layer-bound handler), install it once at boot in `initMap()`'s `map.on('load', ...)` handler. Do not add a `style.load` re-install — `transformStyle` will carry it across basemap swaps.
-
-**Caveats:**
-
-- Sprite or glyph changes force a full style reload regardless of `transformStyle`. All current basemaps are raster-only; if a vector basemap is added, this assumption needs re-verification.
-- Holds for the `maplibre-gl` version pinned in `package.json`. A major upgrade may change behavior.
-
 ## Apple Photos library internals
 
 ### Direct SQLite writes to `Photos.sqlite` survive only until the next journal coalesce — they are **not** durable
@@ -139,22 +108,6 @@ The consequence for us: **whether a direct-SQLite write survives a restore depen
 **Coalescing is opportunistic and unpredictable.** It is not triggered by opening, closing, or rebuilding the library, and shows no correlation with library size, change-log length, or age — it's background photolibraryd maintenance that fires whenever it fires. You can observe the last coalesce via `coalesceDate` in `resources/journals/Asset.plist`, and confirm whether a given direct write was swept in by grepping `Asset-snapshot.plj` for the value written (e.g. an IANA zone name like `Europe/Helsinki`, which Photos itself never writes — it uses `GMT+nnnn`).
 
 This is exactly how a batch of timezone edits was silently lost: the edits landed in the 7-week gap between the last coalesce (snapshot frozen) and a restore from an external drive, while the location/date edits from the same sessions — being AppleScript/journaled — survived. See [ADR-0013](adr/0013-derive-timezone-from-instant-and-coords.md) for the structural fix (stop depending on the offset column being durable).
-
-### A full rebuild preserves a foreign top-level directory in the bundle
-
-Apple documents nothing about the `.photoslibrary` layout, so whether Photos would discard a directory it did not create was an open question — and the whole of [ADR-0015](adr/0015-store-library-data-inside-the-bundle.md) rests on the answer.
-
-Measured on 2026-08-02: `database/` was deleted from a 62 GB library and Photos was allowed to reconstruct it from `resources/journals/`. All 4919 assets came back, matching the source library exactly; `Photos.sqlite` and `psi.sqlite` were regenerated; the only top-level difference before and after was `database/` reappearing. Four probe files planted under `karttapallo/` and `private/` were **byte-identical by SHA-256** afterwards.
-
-Worth re-checking after a major macOS release. It is an empirical result, not a promise.
-
-### `private/` is Apple's per-client scratch namespace, not an extension point
-
-It looks like the obvious place to put third-party data, and third parties do: `com.houdah.HoudahGeo` and `org.snafu.GeoTag` both have directories in this library. They are **0 bytes** — as are `com.apple.swift-frontend` and `com.apple.appkit.xpc.openAndSavePanelService`, which shows Photos auto-creates a namespace for any process that touches the library, whether or not it wanted one.
-
-The 26 entries are keyed by bundle identifier, with a convention of `appPrivateData.plist` plus `caches/` inside. Real users are Apple's own: `com.apple.mediaanalysisd` at 80 MB, `com.apple.photoanalysisd` at 22 MB, `com.apple.photolibraryd` at 548 KB.
-
-Since it is Apple-managed and has its own cleanup story, our directory sits at the bundle's top level instead. Undocumented, but stable enough that osxphotos' test fixtures carry it back to macOS 10.12.
 
 ### Album titles are stored NFD, and everything else in the app is NFC
 
@@ -188,19 +141,7 @@ Nothing in `src/server/index.ts` can recover it — the uuid is buffered there a
 
 Separately: replacing `/Applications/Karttapallo.app` in place does **not** make LaunchServices notice a newly declared URL scheme — `open` keeps answering `kLSApplicationNotFoundErr` against a bundle whose `Info.plist` plainly declares it. `bun run install:app` therefore ends with `lsregister -f` on the installed bundle.
 
-## Time Machine
-
-### `~/Library/Caches` is excluded by path policy, not by the exclusion xattr — and that is the stronger guarantee
-
-Two mechanisms look interchangeable and are not.
-
-The **xattr** (`com.apple.metadata:com_apple_backup_excludeItem`, value `bplist00_com.apple.backupd`) is what `tmutil addexclusion` sets and what Photos puts on `database/` and `external/`. It is **per item and not inherited**: a fresh directory inside an excluded one is `[Included]`, and — the part that bites — an exclusion does **not** survive the directory being deleted and recreated. Anything that clears a cache by removing its directory silently re-enrols the replacement into backups.
-
-**Path policy** is the system's own list, which covers `~/Library/Caches`. It is inherited by fresh subdirectories and survives recreation, because it is a property of the path rather than of the inode.
-
-So derived data goes in `~/Library/Caches/Karttapallo/` and no `tmutil` call appears anywhere in the app ([ADR-0015](adr/0015-store-library-data-inside-the-bundle.md)). Check with `tmutil isexcluded <path>`, which reports which mechanism applied.
-
-Note also that an external volume must be opted in explicitly: `defaults read /Library/Preferences/com.apple.TimeMachine IncludedVolumeUUIDs` lists them, and `SkipPaths` lists the per-path exclusions. A library on a drive that is not in `IncludedVolumeUUIDs` is not backed up at all, which is what makes "the bundle is covered, so pruning can delete outright" a claim worth re-checking rather than assuming.
+## Map
 
 ### A photo with no location is a marker at null island, not an absent marker
 

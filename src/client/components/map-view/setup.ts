@@ -52,7 +52,8 @@ function applyGlobeProjection(style: StyleSpecification): StyleSpecification {
 // Carry app-owned sources and layers across a basemap swap. App-owned =
 // anything in previousStyle not declared by any basemap config. The
 // next-basemap check guards against duplicate-ID crashes from auto-injected
-// layers.
+// layers. GeoJSON `setData()` state and layer-bound event handlers survive
+// the swap too, so nothing needs re-installing on `style.load`.
 function transformStyle(
   previousStyle: StyleSpecification | undefined,
   nextStyle: StyleSpecification
