@@ -18,8 +18,7 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "bun test src resources/native",
-    "test:watch": "bun test src resources/native --watch",
+    "test": "bun test",
     "e2e": "NODE_NO_WARNINGS=1 playwright test",
     "e2e:headed": "NODE_NO_WARNINGS=1 E2E_HEADED=1 playwright test --headed",
     "e2e:install": "playwright install webkit"

@@ -9,7 +9,6 @@ Run locally:
 
 ```sh
 bun run test         # bun:test only
-bun run test:watch   # bun:test in watch mode
 bun run e2e:install  # one-time WebKit binary download (~75 MB)
 bun run e2e          # Playwright against bun tests/server.ts (headless)
 bun run e2e:headed   # same, headed — defaults to slowMo=700ms; override with E2E_SLOW=200
