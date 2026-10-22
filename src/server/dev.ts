@@ -119,6 +119,7 @@ const fetch = createRequestHandler({
 // mode changes internal threading and error handling in ways that break the
 // app — only the production setting is supported here.
 const server = serve({
+  hostname: '127.0.0.1',
   routes: { '/': indexHtml },
   development: false,
   fetch

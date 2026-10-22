@@ -14,6 +14,7 @@ const { openLibrarySession } = await import('./library-session');
 const { resolveLibrary, libraryTitle } = await import('./photos-library');
 const { createRequestHandler } = await import('./request-handler');
 const { getSetting, setSetting } = await import('./state');
+const { enterUrl, newWindowKey, windowOnly } = await import('./window-only');
 
 // --- Deep links ------------------------------------------------------------
 //
@@ -263,7 +264,9 @@ async function checkFullDiskAccess(response: Response, pathname: string) {
   }
 }
 
-const fetch = createRequestHandler({
+// Only the app's window gets in; see windowOnly.
+const windowKey = newWindowKey();
+const handler = createRequestHandler({
   routeApi: session.routeApiRequest,
   staticRoots: [viewsDir],
   onResponse: async (req, res, pathname) => {
@@ -273,7 +276,11 @@ const fetch = createRequestHandler({
   }
 });
 
-const server = Bun.serve({ port: 0, fetch });
+const server = Bun.serve({
+  hostname: '127.0.0.1',
+  port: 0,
+  fetch: windowOnly(windowKey, handler)
+});
 
 const baseUrl = `http://127.0.0.1:${server.port}`;
 console.log(`[main] Server running on ${baseUrl}`);
@@ -364,7 +371,7 @@ const win = new BrowserWindow<typeof rpc>({
   // construction with no setTitle follow-up: the active library is resolved
   // once per launch and cannot change under a running window (ADR-0012).
   title: `Karttapallo — ${libraryTitle(libraryPath)}`,
-  url: initialViewUrl(),
+  url: enterUrl(initialViewUrl(), windowKey),
   frame: savedFrame ?? defaultFrame,
   rpc
 });

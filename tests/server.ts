@@ -216,6 +216,7 @@ const fetch = createRequestHandler({
 });
 
 serve({
+  hostname: '127.0.0.1',
   port,
   routes: { '/': indexHtml },
   development: false,
