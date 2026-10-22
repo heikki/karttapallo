@@ -2,8 +2,8 @@ import { SignalWatcher } from '@lit-labs/signals';
 import { html, LitElement, nothing } from 'lit';
 import { customElement } from 'lit/decorators.js';
 
-import { helpPanelOpen, toggleHelp } from '@common/panels';
-import { GPS_COLORS } from '@common/utils';
+import { helpPanelOpen, toggleHelp } from '@/common/panels';
+import { GPS_COLORS } from '@/common/utils';
 
 import { styles } from './styles';
 

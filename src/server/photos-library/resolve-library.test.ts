@@ -7,7 +7,7 @@ import {
 } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
-import type { ActiveLibraryResult } from '@native/native-bridge';
+import type { ActiveLibraryResult } from '@/native/native-bridge';
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 
 import {

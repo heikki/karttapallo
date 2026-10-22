@@ -1,6 +1,6 @@
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import indexHtml from '@client/index.html';
+import indexHtml from '@/client/index.html';
 import { serve } from 'bun';
 
 import type { EditResultEvent } from './api-routes';

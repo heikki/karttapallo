@@ -19,7 +19,7 @@ import {
   convertToJpeg,
   extractVideoFrame,
   resizeToJpeg
-} from '@native/native-bridge';
+} from '@/native/native-bridge';
 
 import { defaultLibraryPath, type AssetRecord } from './db';
 import {

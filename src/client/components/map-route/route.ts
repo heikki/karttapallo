@@ -1,7 +1,7 @@
 import { signal, type Signal } from '@lit-labs/signals';
 
-import { HAS_ROUTING } from '@common/features';
-import type { Photo } from '@common/types';
+import { HAS_ROUTING } from '@/common/features';
+import type { Photo } from '@/common/types';
 
 import * as routeData from './data';
 import type { RouteData, SegMethod } from './data';

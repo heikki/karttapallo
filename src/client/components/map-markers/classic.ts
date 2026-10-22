@@ -7,9 +7,9 @@ import type {
   Map as MapGL
 } from 'maplibre-gl';
 
-import * as edits from '@common/edits';
-import type { Photo } from '@common/types';
-import { gpsColorExpression } from '@common/utils';
+import * as edits from '@/common/edits';
+import type { Photo } from '@/common/types';
+import { gpsColorExpression } from '@/common/utils';
 
 const radius: ExpressionSpecification = [
   'interpolate',
@@ -150,7 +150,7 @@ const LAYERS: LayerSpecification[] = [
 
 const LAYER_IDS = LAYERS.map((l) => l.id);
 
-// Named off the signal rather than exported from `@common/edits`, which keeps
+// Named off the signal rather than exported from `@/common/edits`, which keeps
 // the pending-edit shape that module's own business.
 type PendingCoords = ReturnType<typeof edits.pendingCoords.get>;
 

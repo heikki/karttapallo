@@ -2,9 +2,9 @@ import type { Feature, FeatureCollection, LineString, Point } from 'geojson';
 import { customElement } from 'lit/decorators.js';
 import type { GeoJSONSource, LayerSpecification } from 'maplibre-gl';
 
-import * as data from '@common/data';
-import { effect } from '@common/signals';
-import { MapFeatureElement } from '@components/map-view/api';
+import * as data from '@/common/data';
+import { effect } from '@/common/signals';
+import { MapFeatureElement } from '@/components/map-view/api';
 
 const LAYERS: LayerSpecification[] = [
   {

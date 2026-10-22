@@ -2,10 +2,10 @@ import { signal, SignalWatcher } from '@lit-labs/signals';
 import { css, html, LitElement, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 
-import * as actions from '@common/actions';
-import * as edits from '@common/edits';
-import * as interactionMode from '@common/interaction-mode';
-import type { Photo } from '@common/types';
+import * as actions from '@/common/actions';
+import * as edits from '@/common/edits';
+import * as interactionMode from '@/common/interaction-mode';
+import type { Photo } from '@/common/types';
 import {
   computeDateOffsetHours,
   computeFullDatetimeOffsetHours,
@@ -16,7 +16,7 @@ import {
   isVideo,
   parseExifDate,
   parseUserDatetime
-} from '@common/utils';
+} from '@/common/utils';
 
 // Module-level copy buffers shared across popup mounts. Signals so that
 // paste-button visibility reacts the moment the user copies.

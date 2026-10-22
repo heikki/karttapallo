@@ -1,8 +1,8 @@
 import type { Map as MapGL, Popup } from 'maplibre-gl';
 
-import * as edits from '@common/edits';
-import selection from '@common/selection';
-import { centerPxForZoom } from '@components/map-view/zoom-math';
+import * as edits from '@/common/edits';
+import selection from '@/common/selection';
+import { centerPxForZoom } from '@/components/map-view/zoom-math';
 
 // One full wheel notch (deltaY ≈ 100) ≈ 1/3 of a zoom level.
 const WHEEL_ZOOM_RATE = 1 / 300;

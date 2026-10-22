@@ -56,7 +56,7 @@ function uuidFromPath(url: URL): string | null {
 /**
  * The in-app URL a deep link resolves to. `focus=1` marks it as a deep link
  * rather than restored state, so the client may widen filters and move the
- * camera to land on the photo — see `@common/deep-link`.
+ * camera to land on the photo — see `@/common/deep-link`.
  *
  * Filters and map position are deliberately dropped: a deep link means "show
  * me this photo", and inheriting a restored year/album filter is exactly what

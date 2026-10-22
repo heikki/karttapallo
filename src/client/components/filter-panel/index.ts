@@ -2,16 +2,16 @@ import { SignalWatcher } from '@lit-labs/signals';
 import { css, html, LitElement, nothing } from 'lit';
 import { customElement, state as litState, query } from 'lit/decorators.js';
 
-import * as actions from '@common/actions';
-import * as data from '@common/data';
-import * as edits from '@common/edits';
-import { HAS_MML } from '@common/features';
-import * as interactionMode from '@common/interaction-mode';
-import { toggleHelp } from '@common/panels';
-import selection from '@common/selection';
-import { resetUrl } from '@common/url-state';
-import { GPS_COLORS, isVideo } from '@common/utils';
-import { viewState } from '@common/view-state';
+import * as actions from '@/common/actions';
+import * as data from '@/common/data';
+import * as edits from '@/common/edits';
+import { HAS_MML } from '@/common/features';
+import * as interactionMode from '@/common/interaction-mode';
+import { toggleHelp } from '@/common/panels';
+import selection from '@/common/selection';
+import { resetUrl } from '@/common/url-state';
+import { GPS_COLORS, isVideo } from '@/common/utils';
+import { viewState } from '@/common/view-state';
 
 import './album-controls';
 import '../search-field';

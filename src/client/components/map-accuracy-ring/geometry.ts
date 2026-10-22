@@ -1,6 +1,6 @@
 import type { Feature, LineString } from 'geojson';
 
-import type { Photo } from '@common/types';
+import type { Photo } from '@/common/types';
 
 const EARTH_RADIUS_M = 6371008.8;
 

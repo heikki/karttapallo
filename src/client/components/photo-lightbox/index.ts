@@ -2,8 +2,8 @@ import { SignalWatcher } from '@lit-labs/signals';
 import { css, html, LitElement, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 
-import selection from '@common/selection';
-import { getFullUrl, getVideoUrl, isVideo } from '@common/utils';
+import selection from '@/common/selection';
+import { getFullUrl, getVideoUrl, isVideo } from '@/common/utils';
 
 function stopPropagation(e: Event) {
   e.stopPropagation();

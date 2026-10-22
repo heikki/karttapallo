@@ -3,11 +3,11 @@ import { css, html, nothing } from 'lit';
 import { customElement } from 'lit/decorators.js';
 import type { MapMouseEvent } from 'maplibre-gl';
 
-import * as edits from '@common/edits';
-import * as interactionMode from '@common/interaction-mode';
-import selection from '@common/selection';
-import { formatDate, getThumbUrl } from '@common/utils';
-import { MapFeatureElement } from '@components/map-view/api';
+import * as edits from '@/common/edits';
+import * as interactionMode from '@/common/interaction-mode';
+import selection from '@/common/selection';
+import { formatDate, getThumbUrl } from '@/common/utils';
+import { MapFeatureElement } from '@/components/map-view/api';
 
 function onPlacementClick(e: MapMouseEvent) {
   const uuid = selection.selectedPhotoUuid.get();

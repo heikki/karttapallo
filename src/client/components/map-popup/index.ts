@@ -2,16 +2,16 @@ import { customElement } from 'lit/decorators.js';
 import { Popup } from 'maplibre-gl';
 import type { MapMouseEvent } from 'maplibre-gl';
 
-import * as actions from '@common/actions';
-import * as edits from '@common/edits';
-import * as interactionMode from '@common/interaction-mode';
-import { helpPanelOpen } from '@common/panels';
-import selection from '@common/selection';
-import { effect } from '@common/signals';
-import type { Photo } from '@common/types';
-import { getThumbUrl } from '@common/utils';
-import { MapFeatureElement } from '@components/map-view/api';
-import type { PhotoPopup } from '@components/photo-popup';
+import * as actions from '@/common/actions';
+import * as edits from '@/common/edits';
+import * as interactionMode from '@/common/interaction-mode';
+import { helpPanelOpen } from '@/common/panels';
+import selection from '@/common/selection';
+import { effect } from '@/common/signals';
+import type { Photo } from '@/common/types';
+import { getThumbUrl } from '@/common/utils';
+import { MapFeatureElement } from '@/components/map-view/api';
+import type { PhotoPopup } from '@/components/photo-popup';
 
 import * as gestures from './gestures';
 import { flyToPopupTo, panToFitPopup } from './pan';

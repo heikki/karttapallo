@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test } from 'bun:test';
 
-import { clear as clearEdits } from '@common/edits';
-import type { Photo } from '@common/types';
+import { clear as clearEdits } from '@/common/edits';
+import type { Photo } from '@/common/types';
 
 import type { RouteData, RoutePoint, RouteSegment } from './data';
 import * as route from './route';

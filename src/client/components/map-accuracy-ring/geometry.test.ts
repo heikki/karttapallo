@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import type { Photo } from '@common/types';
+import type { Photo } from '@/common/types';
 
 import { accuracyRing, ringFeature } from './geometry';
 

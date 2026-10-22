@@ -9,11 +9,11 @@ import type {
   MapMouseEvent
 } from 'maplibre-gl';
 
-import * as interactionMode from '@common/interaction-mode';
+import * as interactionMode from '@/common/interaction-mode';
 import {
   MapFeatureElement,
   setLayersVisibility
-} from '@components/map-view/api';
+} from '@/components/map-view/api';
 
 const SOURCES = ['measure-points', 'measure-line'] as const;
 const LAYERS: LayerSpecification[] = [

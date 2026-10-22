@@ -1,6 +1,6 @@
-import * as edits from '@common/edits';
-import type { Photo } from '@common/types';
-import { toUtcSortKey } from '@common/utils';
+import * as edits from '@/common/edits';
+import type { Photo } from '@/common/types';
+import { toUtcSortKey } from '@/common/utils';
 
 import {
   insertPoint,

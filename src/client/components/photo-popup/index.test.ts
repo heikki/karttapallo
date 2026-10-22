@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 
-import * as edits from '@common/edits';
-import type { Photo } from '@common/types';
+import * as edits from '@/common/edits';
+import type { Photo } from '@/common/types';
 
 import { PhotoPopup } from './index';
 

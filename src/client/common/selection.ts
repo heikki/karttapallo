@@ -1,11 +1,11 @@
 import { signal } from '@lit-labs/signals';
 
-import * as data from '@common/data';
-import * as deepLink from '@common/deep-link';
-import * as interactionMode from '@common/interaction-mode';
-import { effect } from '@common/signals';
-import type { Photo } from '@common/types';
-import { urlSignal } from '@common/url-state';
+import * as data from '@/common/data';
+import * as deepLink from '@/common/deep-link';
+import * as interactionMode from '@/common/interaction-mode';
+import { effect } from '@/common/signals';
+import type { Photo } from '@/common/types';
+import { urlSignal } from '@/common/url-state';
 
 export const selectedPhotoUuid = urlSignal<string | null>(
   'id',

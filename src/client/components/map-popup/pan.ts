@@ -1,6 +1,6 @@
 import type { Map as MapGL, Popup } from 'maplibre-gl';
 
-import { rightInset } from '@common/panels';
+import { rightInset } from '@/common/panels';
 
 // The right edge is the panels' — see `rightInset`, which widens it while the
 // Help panel is open.

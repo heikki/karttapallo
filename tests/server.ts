@@ -10,12 +10,12 @@
 
 import { copyFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import indexHtml from '@client/index.html';
-import type { ItemEntry } from '@server/item-store';
-import { openLibrarySession } from '@server/library-session';
-import type { PhotosLibrary } from '@server/photos-library';
-import { createRequestHandler } from '@server/request-handler';
-import { setSetting } from '@server/state';
+import indexHtml from '@/client/index.html';
+import type { ItemEntry } from '@/server/item-store';
+import { openLibrarySession } from '@/server/library-session';
+import type { PhotosLibrary } from '@/server/photos-library';
+import { createRequestHandler } from '@/server/request-handler';
+import { setSetting } from '@/server/state';
 import { serve } from 'bun';
 
 const port = Number(process.env.E2E_PORT ?? 4757);

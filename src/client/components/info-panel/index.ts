@@ -2,10 +2,10 @@ import { SignalWatcher } from '@lit-labs/signals';
 import { html, LitElement, nothing } from 'lit';
 import { customElement, state as litState, property } from 'lit/decorators.js';
 
-import * as data from '@common/data';
-import { PanelDrag } from '@common/panel-drag';
-import { infoPanelOpen } from '@common/panels';
-import selection from '@common/selection';
+import * as data from '@/common/data';
+import { PanelDrag } from '@/common/panel-drag';
+import { infoPanelOpen } from '@/common/panels';
+import selection from '@/common/selection';
 
 import { styles } from './styles';
 

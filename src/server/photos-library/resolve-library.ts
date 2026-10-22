@@ -17,7 +17,7 @@ import { basename, dirname, join } from 'node:path';
 import {
   resolveActiveLibraryPath,
   type ActiveLibraryResult
-} from '@native/native-bridge';
+} from '@/native/native-bridge';
 
 import { defaultLibraryPath } from './db';
 

@@ -4,9 +4,9 @@ import type {
   Map as MapGL
 } from 'maplibre-gl';
 
-import * as data from '@common/data';
-import type { Photo } from '@common/types';
-import { gpsColorExpression } from '@common/utils';
+import * as data from '@/common/data';
+import type { Photo } from '@/common/types';
+import { gpsColorExpression } from '@/common/utils';
 
 import { buildLineFeatures } from '../data';
 import type { RouteData } from '../data';

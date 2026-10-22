@@ -1,5 +1,5 @@
-import * as data from '@common/data';
-import * as edits from '@common/edits';
+import * as data from '@/common/data';
+import * as edits from '@/common/edits';
 
 /**
  * Surface a message both as an alert and in the Shift+D debug log. WKWebView

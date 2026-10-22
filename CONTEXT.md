@@ -34,7 +34,7 @@ An Apple Photos album. Read-only on the client; on the server (`AlbumStore`), it
 The list of an Album's title and UUID for every user album in a Library, read from `ZGENERICALBUM` and normalised to NFC. It is what `AlbumStore` resolves names against, and what tells it which subtrees are orphaned.
 
 **Pending Edit**:
-A coord or time change buffered client-side via `@common/edits` signals, not yet persisted back to Photos.app. Cleared on Save (writes through to `Photos.sqlite` via NSAppleScript) or Discard.
+A coord or time change buffered client-side via `@/common/edits` signals, not yet persisted back to Photos.app. Cleared on Save (writes through to `Photos.sqlite` via NSAppleScript) or Discard.
 
 **Location precision**:
 The GPS-source classification on each item: `Exif` (camera-set), `Inferred` (Photos.app guessed), `User` (manually set), or `None` (no GPS). Drives marker color and the Location filter.
@@ -43,7 +43,7 @@ The GPS-source classification on each item: `Exif` (camera-set), `Inferred` (Pho
 The dashed circle drawn on the ground around the selected photo, its radius the horizontal accuracy the camera recorded, in metres. Answers how much to trust a pin, so it exists only where something was actually measured: an `Exif` **Location precision** and no **Pending Edit**. Distinct from **Location precision** — that is a four-way classification of where a location came from, this is a distance.
 
 **Selection**:
-The one **Photo** the app is currently about — its popup is open, the **Info panel** describes it, and the arrow keys step from it. Held as a UUID in `@common/selection` and mirrored to the `id` URL param. Null only when no photo passes the current filters: whenever the filtered set is non-empty the app keeps a Selection, auto-selecting the newest (or the one a filter change last displaced) if the current one falls out. Because it is never idly null, the popup is not dismissable — Escape only **hides** it, leaving the Selection standing and its marker lit; any change of Selection reveals it again, as does Space. See [ADR-0016](docs/adr/0016-always-keep-a-selection.md).
+The one **Photo** the app is currently about — its popup is open, the **Info panel** describes it, and the arrow keys step from it. Held as a UUID in `@/common/selection` and mirrored to the `id` URL param. Null only when no photo passes the current filters: whenever the filtered set is non-empty the app keeps a Selection, auto-selecting the newest (or the one a filter change last displaced) if the current one falls out. Because it is never idly null, the popup is not dismissable — Escape only **hides** it, leaving the Selection standing and its marker lit; any change of Selection reveals it again, as does Space. See [ADR-0016](docs/adr/0016-always-keep-a-selection.md).
 _Avoid_: active photo, current photo, cursor.
 
 **Info panel**:
@@ -70,7 +70,7 @@ A chronologically-ordered line connecting an album's filtered photos. Owned by t
 A third-party `.gpx` file dropped into an album. Read-only, rendered as colored line + waypoint markers. Distinct from a **Route**.
 
 **Interaction mode**:
-The exclusive map-input mode: `placement`, `measure`, or `route-edit`. One signal in `@common/interaction-mode` makes them mutually exclusive by construction; entering one fires the previous mode's `onExit`.
+The exclusive map-input mode: `placement`, `measure`, or `route-edit`. One signal in `@/common/interaction-mode` makes them mutually exclusive by construction; entering one fires the previous mode's `onExit`.
 
 **Basemap**:
 The underlying map style — `Aerial` (default), `Topo`, `Maasto`, `Orto`. Switched via the filter panel; persisted as the `style` URL param. App-owned layers survive basemap swaps via MapLibre's `transformStyle`.

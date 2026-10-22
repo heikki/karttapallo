@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test } from 'bun:test';
 
-import { clear as clearEdits, setCoord } from '@common/edits';
-import type { Photo } from '@common/types';
+import { clear as clearEdits, setCoord } from '@/common/edits';
+import type { Photo } from '@/common/types';
 
 import {
   buildDefault,

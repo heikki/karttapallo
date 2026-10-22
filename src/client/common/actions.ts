@@ -1,6 +1,6 @@
-import { showAlbumFiles } from '@components/files-modal';
-import { refreshInfo } from '@components/info-panel';
-import { showLightbox } from '@components/photo-lightbox';
+import { showAlbumFiles } from '@/components/files-modal';
+import { refreshInfo } from '@/components/info-panel';
+import { showLightbox } from '@/components/photo-lightbox';
 
 import { saveEdits as saveEditsImpl } from '../save';
 

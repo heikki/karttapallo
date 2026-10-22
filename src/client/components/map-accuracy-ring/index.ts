@@ -1,12 +1,12 @@
 import { customElement } from 'lit/decorators.js';
 import type { GeoJSONSource, LayerSpecification } from 'maplibre-gl';
 
-import * as edits from '@common/edits';
-import { infoPanelOpen } from '@common/panels';
-import selection from '@common/selection';
-import { effect } from '@common/signals';
-import { GPS_COLORS } from '@common/utils';
-import { MapFeatureElement } from '@components/map-view/api';
+import * as edits from '@/common/edits';
+import { infoPanelOpen } from '@/common/panels';
+import selection from '@/common/selection';
+import { effect } from '@/common/signals';
+import { GPS_COLORS } from '@/common/utils';
+import { MapFeatureElement } from '@/components/map-view/api';
 
 import { accuracyRing, ringFeature, type AccuracyRing } from './geometry';
 

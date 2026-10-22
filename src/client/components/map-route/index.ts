@@ -7,15 +7,15 @@ import type {
   Map as MapGL
 } from 'maplibre-gl';
 
-import * as data from '@common/data';
-import * as edits from '@common/edits';
-import * as interactionMode from '@common/interaction-mode';
-import { effect } from '@common/signals';
-import { viewState } from '@common/view-state';
+import * as data from '@/common/data';
+import * as edits from '@/common/edits';
+import * as interactionMode from '@/common/interaction-mode';
+import { effect } from '@/common/signals';
+import { viewState } from '@/common/view-state';
 import {
   MapFeatureElement,
   setLayersVisibility
-} from '@components/map-view/api';
+} from '@/components/map-view/api';
 
 import { buildLineFeatures } from './data';
 import type { RouteData } from './data';

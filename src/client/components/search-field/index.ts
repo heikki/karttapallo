@@ -9,9 +9,9 @@ import { SignalWatcher } from '@lit-labs/signals';
 import { html, LitElement, nothing } from 'lit';
 import { customElement, state as litState, query } from 'lit/decorators.js';
 
-import * as actions from '@common/actions';
-import * as data from '@common/data';
-import { suggest, type CorpusField, type Suggestion } from '@common/search';
+import * as actions from '@/common/actions';
+import * as data from '@/common/data';
+import { suggest, type CorpusField, type Suggestion } from '@/common/search';
 
 import { styles } from './styles';
 

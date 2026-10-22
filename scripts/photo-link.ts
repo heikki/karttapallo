@@ -15,14 +15,14 @@
  *   bun scripts/photo-link.ts AF597F6B
  */
 
-import { buildItemEntry } from '@server/item-store';
+import { buildItemEntry } from '@/server/item-store';
 import {
   openPhotosDb,
   queryNotInAlbumUuid,
   queryPhotos,
   queryVideos,
   resolveLibrary
-} from '@server/photos-library';
+} from '@/server/photos-library';
 
 const query = process.argv[2];
 if (query === undefined || query === '') {

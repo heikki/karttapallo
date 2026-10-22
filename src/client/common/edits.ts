@@ -1,7 +1,7 @@
 import { computed, signal } from '@lit-labs/signals';
 
-import type { Photo } from '@common/types';
-import { exifDatePattern } from '@common/utils';
+import type { Photo } from '@/common/types';
+import { exifDatePattern } from '@/common/utils';
 
 interface Coord {
   lat: number;

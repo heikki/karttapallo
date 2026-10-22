@@ -1,7 +1,7 @@
 import { css, html, LitElement, nothing } from 'lit';
 import { customElement, state as litState, property } from 'lit/decorators.js';
 
-import { reloadAlbumGpx } from '@common/actions';
+import { reloadAlbumGpx } from '@/common/actions';
 
 export function showAlbumFiles(album: string) {
   document.querySelector<FilesModal>('files-modal')?.show(album);

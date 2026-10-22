@@ -6,11 +6,11 @@ import {
 } from 'maplibre-gl';
 import type { StyleSpecification } from 'maplibre-gl';
 
-import * as interactionMode from '@common/interaction-mode';
-import selection from '@common/selection';
-import { effect } from '@common/signals';
-import { mapViewFromUrl, mapViewToUrl } from '@common/url-state';
-import { viewState } from '@common/view-state';
+import * as interactionMode from '@/common/interaction-mode';
+import selection from '@/common/selection';
+import { effect } from '@/common/signals';
+import { mapViewFromUrl, mapViewToUrl } from '@/common/url-state';
+import { viewState } from '@/common/view-state';
 
 import type { MapApi } from './api';
 import background from './background';

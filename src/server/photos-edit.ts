@@ -9,7 +9,7 @@
  */
 
 import { join } from 'node:path';
-import { runAppleScript } from '@native/native-bridge';
+import { runAppleScript } from '@/native/native-bridge';
 import { Database } from 'bun:sqlite';
 
 import { defaultLibraryPath } from './photos-library';

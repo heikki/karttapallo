@@ -1,8 +1,8 @@
 import { html, LitElement } from 'lit';
 import { customElement } from 'lit/decorators.js';
 
-import * as data from '@common/data';
-import { openHelpOnFirstRun } from '@common/panels';
+import * as data from '@/common/data';
+import { openHelpOnFirstRun } from '@/common/panels';
 
 const debugLog: string[] = [];
 

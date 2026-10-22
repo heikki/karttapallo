@@ -2,10 +2,10 @@ import { SignalWatcher } from '@lit-labs/signals';
 import { html, LitElement, type PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 
-import * as actions from '@common/actions';
-import * as interactionMode from '@common/interaction-mode';
-import { viewState } from '@common/view-state';
-import { current as routeCurrent } from '@components/map-route/route';
+import * as actions from '@/common/actions';
+import * as interactionMode from '@/common/interaction-mode';
+import { viewState } from '@/common/view-state';
+import { current as routeCurrent } from '@/components/map-route/route';
 
 import { styles } from './styles';
 

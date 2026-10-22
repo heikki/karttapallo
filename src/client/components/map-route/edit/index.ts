@@ -4,11 +4,11 @@ import type {
   MapMouseEvent
 } from 'maplibre-gl';
 
-import * as data from '@common/data';
-import * as edits from '@common/edits';
-import * as interactionMode from '@common/interaction-mode';
-import { effect } from '@common/signals';
-import { setLayersVisibility } from '@components/map-view/api';
+import * as data from '@/common/data';
+import * as edits from '@/common/edits';
+import * as interactionMode from '@/common/interaction-mode';
+import { effect } from '@/common/signals';
+import { setLayersVisibility } from '@/components/map-view/api';
 
 import * as route from '../route';
 import {

@@ -1,6 +1,6 @@
 import { css, unsafeCSS } from 'lit';
 
-import { GPS_COLORS } from '@common/utils';
+import { GPS_COLORS } from '@/common/utils';
 
 export const styles = css`
   *,

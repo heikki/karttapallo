@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 
-import * as data from '@common/data';
-import selection from '@common/selection';
-import type { Photo } from '@common/types';
+import * as data from '@/common/data';
+import selection from '@/common/selection';
+import type { Photo } from '@/common/types';
 
 import { InfoPanel, refreshInfo } from './index';
 

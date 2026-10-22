@@ -1,14 +1,14 @@
 import { customElement } from 'lit/decorators.js';
 import { LngLatBounds } from 'maplibre-gl';
 
-import * as data from '@common/data';
-import * as deepLink from '@common/deep-link';
-import * as edits from '@common/edits';
-import { FILTER_PANEL_INSET, rightInset } from '@common/panels';
-import selection from '@common/selection';
-import { effect } from '@common/signals';
-import { mapViewFromUrl } from '@common/url-state';
-import { MapFeatureElement } from '@components/map-view/api';
+import * as data from '@/common/data';
+import * as deepLink from '@/common/deep-link';
+import * as edits from '@/common/edits';
+import { FILTER_PANEL_INSET, rightInset } from '@/common/panels';
+import selection from '@/common/selection';
+import { effect } from '@/common/signals';
+import { mapViewFromUrl } from '@/common/url-state';
+import { MapFeatureElement } from '@/components/map-view/api';
 
 // Close enough to read the surroundings, wide enough to place a photo by
 // eye. Shared by the single-photo fit and by deep links so both land the

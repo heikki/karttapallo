@@ -1,12 +1,12 @@
 import { customElement } from 'lit/decorators.js';
 import type { MapLayerMouseEvent, PointLike } from 'maplibre-gl';
 
-import * as data from '@common/data';
-import * as edits from '@common/edits';
-import * as interactionMode from '@common/interaction-mode';
-import selection from '@common/selection';
-import { effect } from '@common/signals';
-import { MapFeatureElement } from '@components/map-view/api';
+import * as data from '@/common/data';
+import * as edits from '@/common/edits';
+import * as interactionMode from '@/common/interaction-mode';
+import selection from '@/common/selection';
+import { effect } from '@/common/signals';
+import { MapFeatureElement } from '@/components/map-view/api';
 
 import { ClassicLayer } from './classic';
 

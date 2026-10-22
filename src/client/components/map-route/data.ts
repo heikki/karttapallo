@@ -1,8 +1,8 @@
 import type { Feature, LineString } from 'geojson';
 
-import * as edits from '@common/edits';
-import type { Photo } from '@common/types';
-import { toUtcSortKey } from '@common/utils';
+import * as edits from '@/common/edits';
+import type { Photo } from '@/common/types';
+import { toUtcSortKey } from '@/common/utils';
 
 export interface RoutePoint {
   type: 'photo' | 'waypoint';

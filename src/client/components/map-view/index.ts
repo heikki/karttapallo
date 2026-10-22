@@ -3,12 +3,12 @@ import { css, html, LitElement, nothing } from 'lit';
 import { customElement, query, state } from 'lit/decorators.js';
 import type { Map as MapGL, PointLike } from 'maplibre-gl';
 
-import * as edits from '@common/edits';
-import selection from '@common/selection';
-import type { MapFit } from '@components/map-fit';
-import type { MapGpx } from '@components/map-gpx';
-import type { MapMarkers } from '@components/map-markers';
-import type { MapPopup } from '@components/map-popup';
+import * as edits from '@/common/edits';
+import selection from '@/common/selection';
+import type { MapFit } from '@/components/map-fit';
+import type { MapGpx } from '@/components/map-gpx';
+import type { MapMarkers } from '@/components/map-markers';
+import type { MapPopup } from '@/components/map-popup';
 
 import { mapContext, type MapApi } from './api';
 import { externalMapUrl } from './external-url';
