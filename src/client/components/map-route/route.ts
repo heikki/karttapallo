@@ -1,4 +1,4 @@
-import { signal, type Signal } from '@lit-labs/signals';
+import { type Signal, signal } from '@lit-labs/signals';
 
 import { HAS_ROUTING } from '@/common/features';
 import type { Photo } from '@/common/types';

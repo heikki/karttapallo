@@ -1,4 +1,4 @@
-import { InvalidNameError, type AlbumStore } from './album-store';
+import { type AlbumStore, InvalidNameError } from './album-store';
 import type {
   EditResults,
   ItemStore,

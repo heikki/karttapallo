@@ -16,11 +16,11 @@
 import type { Database } from 'bun:sqlite';
 
 import {
+  type AssetRecord,
   defaultLibraryPath,
   openPhotosDb,
   queryAssetIndex,
-  queryMetadata,
-  type AssetRecord
+  queryMetadata
 } from './db';
 import type { ImageCache } from './image-cache';
 import {

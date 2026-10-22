@@ -6,6 +6,7 @@
  * claimed first or the orphaned albums were ever pruned.
  */
 
+import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import {
   existsSync,
   mkdirSync,
@@ -16,10 +17,9 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 
 import type { ItemEntry } from './item-store';
-import { openLibrarySession, type LibrarySession } from './library-session';
+import { type LibrarySession, openLibrarySession } from './library-session';
 import type { AlbumRoster, PhotosLibrary } from './photos-library';
 
 const LIVE = '11111111-1111-4111-8111-111111111111';

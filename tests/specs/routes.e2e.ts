@@ -1,4 +1,5 @@
 import { rmSync } from 'node:fs';
+
 import type { Page } from '@playwright/test';
 
 import { expect, test } from './_fixtures';

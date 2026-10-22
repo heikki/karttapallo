@@ -1,13 +1,13 @@
+import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 
 import {
   buildItemEntry,
-  openItemStore,
   type ItemEntry,
-  type ItemStore
+  type ItemStore,
+  openItemStore
 } from './item-store';
 import type { PhotosWriter } from './photos-edit';
 import type { LibraryResolution, PhotoRecord } from './photos-library';

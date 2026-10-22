@@ -1,4 +1,5 @@
 import { basename } from 'node:path';
+
 import type {
   FullConfig,
   Reporter,

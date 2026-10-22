@@ -8,7 +8,7 @@ import { effect } from '@/common/signals';
 import { GPS_COLORS } from '@/common/utils';
 import { MapFeatureElement } from '@/components/map-view/api';
 
-import { accuracyRing, ringFeature, type AccuracyRing } from './geometry';
+import { type AccuracyRing, accuracyRing, ringFeature } from './geometry';
 
 const SOURCE = 'accuracy-ring';
 

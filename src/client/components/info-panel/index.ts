@@ -1,6 +1,6 @@
 import { SignalWatcher } from '@lit-labs/signals';
 import { html, LitElement, nothing } from 'lit';
-import { customElement, state as litState, property } from 'lit/decorators.js';
+import { customElement, property, state as litState } from 'lit/decorators.js';
 
 import * as data from '@/common/data';
 import { PanelDrag } from '@/common/panel-drag';

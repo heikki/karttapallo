@@ -8,9 +8,10 @@
  * IANA timezone lookup lives in timezone.ts.
  */
 
-import { join } from 'node:path';
-import { runAppleScript } from '@/native/native-bridge';
 import { Database } from 'bun:sqlite';
+import { join } from 'node:path';
+
+import { runAppleScript } from '@/native/native-bridge';
 
 import { defaultLibraryPath } from './photos-library';
 

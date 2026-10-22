@@ -15,13 +15,14 @@ import {
   utimesSync
 } from 'node:fs';
 import { extname, join } from 'node:path';
+
 import {
   convertToJpeg,
   extractVideoFrame,
   resizeToJpeg
 } from '@/native/native-bridge';
 
-import { defaultLibraryPath, type AssetRecord } from './db';
+import { type AssetRecord, defaultLibraryPath } from './db';
 import {
   PHOTO_EDIT_EXT,
   resolveEditedPath,

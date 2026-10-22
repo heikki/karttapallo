@@ -1,3 +1,4 @@
+import { dlopen, FFIType, ptr } from 'bun:ffi';
 /**
  * TypeScript FFI wrapper for libkarttapallo.dylib.
  *
@@ -6,7 +7,6 @@
  */
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { dlopen, FFIType, ptr } from 'bun:ffi';
 
 function findDylib() {
   const argv0Dir = dirname(process.argv[0] ?? '.');

@@ -1,4 +1,4 @@
-import { signal, type Signal } from '@lit-labs/signals';
+import { type Signal, signal } from '@lit-labs/signals';
 
 import { effect } from './signals';
 

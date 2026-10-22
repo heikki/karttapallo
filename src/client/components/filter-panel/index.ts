@@ -1,6 +1,6 @@
 import { SignalWatcher } from '@lit-labs/signals';
 import { css, html, LitElement, nothing } from 'lit';
-import { customElement, state as litState, query } from 'lit/decorators.js';
+import { customElement, query, state as litState } from 'lit/decorators.js';
 
 import * as actions from '@/common/actions';
 import * as data from '@/common/data';

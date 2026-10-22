@@ -14,9 +14,10 @@
 import { closeSync, existsSync, openSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { basename, dirname, join } from 'node:path';
+
 import {
-  resolveActiveLibraryPath,
-  type ActiveLibraryResult
+  type ActiveLibraryResult,
+  resolveActiveLibraryPath
 } from '@/native/native-bridge';
 
 import { defaultLibraryPath } from './db';

@@ -10,7 +10,7 @@ import type { MapGpx } from '@/components/map-gpx';
 import type { MapMarkers } from '@/components/map-markers';
 import type { MapPopup } from '@/components/map-popup';
 
-import { mapContext, type MapApi } from './api';
+import { type MapApi, mapContext } from './api';
 import { externalMapUrl } from './external-url';
 import setupMap from './setup';
 

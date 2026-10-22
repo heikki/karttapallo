@@ -23,9 +23,9 @@
  * Internal to photos-library/.
  */
 
+import { Database } from 'bun:sqlite';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { Database } from 'bun:sqlite';
 
 /** Terms attached to one asset, each field ordered most specific first. */
 export interface SearchTerms {

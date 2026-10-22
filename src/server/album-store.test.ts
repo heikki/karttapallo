@@ -1,3 +1,4 @@
+import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import {
   existsSync,
   mkdirSync,
@@ -7,14 +8,13 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 
 import {
+  type AlbumRoster,
+  type AlbumStore,
   createAlbumStore,
   InvalidNameError,
-  UnknownAlbumError,
-  type AlbumRoster,
-  type AlbumStore
+  UnknownAlbumError
 } from './album-store';
 
 const HELSINKI = '11111111-1111-4111-8111-111111111111';
