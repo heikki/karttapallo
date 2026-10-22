@@ -16,8 +16,8 @@
     "postinstall": "electrobun sync",
     "typecheck": "bun check",
     "lint": "eslint .",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
+    "format": "bun fmt",
+    "format:check": "bun fmt --check",
     "test": "bun test",
     "e2e": "NODE_NO_WARNINGS=1 playwright test",
     "e2e:headed": "NODE_NO_WARNINGS=1 E2E_HEADED=1 playwright test --headed",
@@ -25,14 +25,12 @@
   },
   "devDependencies": {
     "@happy-dom/global-registrator": "^20.14.6",
-    "@ianvs/prettier-plugin-sort-imports": "^4.7.1",
     "@playwright/test": "^1.64.0",
     "@total-typescript/tsconfig": "^1.0.4",
     "@types/bun": "1.4.3",
     "@types/geojson": "^7946.0.16",
     "eslint": "10.12.0",
     "eslint-config-love": "158.0.0",
-    "prettier": "3.9.9",
     "typescript": "^6.0.3"
   },
   "dependencies": {
