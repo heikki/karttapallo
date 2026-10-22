@@ -51,7 +51,6 @@ export default {
 
     bun: {
       entrypoint: 'src/server/index.ts',
-      external: ['prettier'],
       define: {
         'process.env.PUBLIC_ORS_API_KEY': JSON.stringify(
           publicKey('PUBLIC_ORS_API_KEY')
